@@ -31,6 +31,7 @@ using namespace std;
 
 
 
+#if 0
 static const char* createEnvironmentMap = {
 	"CREATE TABLE IF NOT EXISTS ENVIRONMENT_MAP ("
 	"KEYSTRING TEXT UNIQUE NOT NULL, "		// key string of MCC:MNC:LAC:CI
@@ -46,6 +47,7 @@ static const char* createEnvironmentMap = {
 	"CA TEXT NOT NULL "					// GSM cell allocation
 	")"
 };
+#endif
 
 static const char* createSpectrumMap = {
 	"CREATE TABLE IF NOT EXISTS SPECTRUM_MAP ("

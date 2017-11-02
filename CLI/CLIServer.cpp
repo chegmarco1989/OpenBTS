@@ -205,7 +205,7 @@ void Parser::cliServer()
 					if (len < (int) sizeof(len)) // should never get here
 					{
 						char buf[BUFSIZ];
-						sprintf(buf, "Unable to read complete length, s.b. %d bytes, got %d bytes\n", sizeof(len), len);
+						sprintf(buf, "Unable to read complete length, s.b. %zu bytes, got %d bytes\n", sizeof(len), len);
 						LOG(ERR) << buf;
 						gReports.incr("OpenBTS.CLI.Command.ResponseFailure");
 						break;

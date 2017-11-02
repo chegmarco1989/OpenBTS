@@ -390,6 +390,7 @@ static CLIStatus gprsTestBSN(int argc, char **argv, int argi, ostream&os)
 	return SUCCESS;
 }
 
+#if INTERNAL_SGSN==0
 // Create an uplink block as would be sent by an MS.
 // The payload in sequential blocks will be ascending 16-bit words.
 // Ie, payload of first block is 0,1,2,3,4,5,6,7,8,9
@@ -445,6 +446,7 @@ static RLCRawBlock *fakeablock(int bsn, int tfi, int final)
 
 	return rawblock;
 }
+#endif
 
 #if INTERNAL_SGSN==0
 static CLIStatus gprsTestUl(int argc, char **argv, int argi, ostream&os)

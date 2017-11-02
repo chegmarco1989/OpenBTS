@@ -20,7 +20,7 @@
 #
 
 GPROF_OPTIONS ?=
-AM_CXXFLAGS := -g -O2 -Wall -pthread -ldl -rdynamic -DTIMESTAMP_ISO=`date +'"%Y-%m-%dT%H:%M:%S"'`
+AM_CXXFLAGS := -g -O2 -Wall -Wno-nonnull-compare -pthread -ldl -rdynamic -DTIMESTAMP_ISO=`date +'"%Y-%m-%dT%H:%M:%S"'`
 # AM_CFLAGS := -g -O2 -DTIMESTAMP_ISO=`date +'"%Y-%m-%dT%H:%M:%S"'`
 
 # (oley) Each piece has its own set defined in their own */Makefile.am, overwriting these

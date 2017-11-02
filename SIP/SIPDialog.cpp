@@ -146,6 +146,7 @@ void SipMOInviteClientTransactionLayer::MOUssdSendINVITE(string ussd, const L3Lo
 //old args: const char * calledUser, const char * calledDomain, short rtpPort, Control::CodecSet codec,
 void SipMOInviteClientTransactionLayer::MOCSendINVITE(const L3LogicalChannel *chan)
 {
+#if 0
 	static const char* xmlGeoprivTemplate = 
 		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 		 "<presence xmlns=\"urn:ietf:params:xml:ns:pidf\"\n"
@@ -169,6 +170,7 @@ void SipMOInviteClientTransactionLayer::MOCSendINVITE(const L3LogicalChannel *ch
 		   "</status>\n"
 		  "</tuple>\n"
 		 "</presence>\n";
+#endif
 
 	LOG(INFO) << "user " << sipLocalUsername() << " state " << getSipState() <<sdbText();
 #if PAT_TEST_SIP_DIRECT
@@ -1463,11 +1465,13 @@ void SipDialog::handleInviteResponse(int status,
 			dialogPushState(SSFail,status,'D');
 			gReports.incr("OpenBTS.SIP.Failed.Remote.6xx");
 			if (sendAck) MOCSendACK();
+			break;
 		default:
 			LOG(NOTICE) << "unhandled status code " << status <<sdbText();
 			dialogPushState(SSFail,status,'D');
 			gReports.incr("OpenBTS.SIP.Failed.Remote.xxx");
 			if (sendAck) MOCSendACK();
+			break;
 	}
 }
 

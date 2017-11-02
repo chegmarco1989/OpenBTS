@@ -937,7 +937,7 @@ RLCDownlinkDataBlock* RLCDownEngine::engineFillBlock(unsigned bsn,
 				if (mDownlinkPdu) {delete mDownlinkPdu;}
 				mDownlinkPdu = dlmsg;
 				getTBF()->mtDescription = dlmsg->mDescr;
-				LOGWATCHF("pdu %d\n",mDownPDU.size());
+				LOGWATCHF("pdu %zu\n",mDownPDU.size());
 				GPRSLOG(1) <<getTBF() <<" <=== engineWriteHighSidePull: size="<<mDownPDU.size() <<" "<< dlmsg->mDescr<<timestr();
 				GPRSLOG(2048)<<" <=== engineWriteHighSidePull size="<<mDownPDU.size()<<" pdu:"<<mDownPDU.hexstr();
 			}
@@ -1052,7 +1052,7 @@ RLCDownlinkDataBlock* RLCDownEngine::engineFillBlock(unsigned bsn,
 		// Add the pdu segments.
 		for (int j = 0; j < pducnt; j++) {
 			block->mPayload.append(pdus[j]);
-			if (GPRSDebug) sprintf(report+strlen(report)," seg=%d",pdus[j].size());
+			if (GPRSDebug) sprintf(report+strlen(report)," seg=%zu",pdus[j].size());
 		}
 		// Add filler, if any.  Unused RLC data field filled with 0x2b as per 04.60 10.4.16
 		int fillsize = payloadsize - block->mPayload.size();

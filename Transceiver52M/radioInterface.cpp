@@ -37,11 +37,17 @@ RadioInterface::RadioInterface(RadioDevice *wRadio,
 			       int wReceiveOffset,
 			       int wSPS,
 			       GSM::Time wStartTime)
-  : underrun(false), sendCursor(0), recvCursor(0), mOn(false),
-    mRadio(wRadio), receiveOffset(wReceiveOffset),
-    mSPSTx(wSPS), mSPSRx(1), powerScaling(1.0),
-    loadTest(false), sendBuffer(NULL), recvBuffer(NULL),
-    convertRecvBuffer(NULL), convertSendBuffer(NULL)
+  : mRadio(wRadio),
+    mSPSTx(wSPS), mSPSRx(1),
+    sendBuffer(NULL), recvBuffer(NULL),
+    sendCursor(0), recvCursor(0),
+    convertRecvBuffer(NULL), convertSendBuffer(NULL),
+    underrun(false),
+    overrun(false),
+    receiveOffset(wReceiveOffset),
+    mOn(false),
+    powerScaling(1.0),
+    loadTest(false)
 {
   mClock.set(wStartTime);
 }
@@ -130,7 +136,7 @@ int RadioInterface::unRadioifyVector(float *floatVector,
     return -1;
   }
 
-  for (int i = 0; i < newVector.size(); i++) {
+  for (size_t i = 0; i < newVector.size(); i++) {
     *itr++ = Complex<float>(floatVector[2 * i + 0],
 			    floatVector[2 * i + 1]);
   }
@@ -323,7 +329,7 @@ void RadioInterface::pushBuffer()
                                   sendCursor,
                                   &underrun,
                                   writeTimestamp);
-  if (num_sent != sendCursor) {
+  if (num_sent != (int)sendCursor) {
           LOG(ALERT) << "Transmit error " << num_sent;
   }
 

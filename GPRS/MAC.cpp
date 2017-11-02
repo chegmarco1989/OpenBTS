@@ -658,10 +658,10 @@ static void dumpPdch()
 {
 
 	PDCHL1FEC *ch;
-	printf("PDCHs=%d:",gL2MAC.macPDCHs.size());
+	printf("PDCHs=%zu:",gL2MAC.macPDCHs.size());
 	RN_MAC_FOR_ALL_PDCH(ch) { printf(" %s",ch->shortId()); }
 	printf("\n");
-	printf("PACCHs=%d",gL2MAC.macPacchs.size());
+	printf("PACCHs=%zu",gL2MAC.macPacchs.size());
 	RN_MAC_FOR_ALL_PACCH(ch) { printf(" %s",ch->shortId()); }
 	printf("\n");
 }

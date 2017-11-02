@@ -457,7 +457,7 @@ static CLIStatus sendsimple(int argc, char** argv, ostream& os)
 		"To: sip:IMSI%s@127.0.0.1\r\n"
 		"Call-ID: %x@127.0.0.1:%d\r\n"
 		"CSeq: 1 MESSAGE\r\n"
-		"Content-Type: text/plain\nContent-Length: %u\r\n"
+		"Content-Type: text/plain\nContent-Length: %zu\r\n"
 		"\r\n%s\r\n";
 	static char buffer[1500];
 	snprintf(buffer,1499,form,
@@ -600,7 +600,7 @@ static CLIStatus handover(int argc, char** argv, ostream& os)
 		int nth = atoi(peerarg+1);
 		vector<string> neighbors = gConfig.getVectorOfStrings("GSM.Neighbors");
 		if (nth < 0 || nth >= (int)neighbors.size()) {
-			os << format("Specified neighbor index '%d' out of bounds.  There are %d neighbors.",nth,neighbors.size());
+			os << format("Specified neighbor index '%d' out of bounds.  There are %zu neighbors.",nth,neighbors.size());
 			return BAD_VALUE;
 		}
 		peer = neighbors[nth];

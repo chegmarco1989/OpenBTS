@@ -26,7 +26,7 @@ class ViterbiBase {
 	// (pat) Return error count from most recent decoder run.
 	// If you get -1 from this, the method is not defined in the Viterbi class.
 	virtual int getBEC() { return -1; }
-	//virtual ~ViterbiBase();   Currently None of these have destructors.
+	virtual ~ViterbiBase();  // Currently None of these have destructors.
 
 	// These functions are logically part of the Viterbi functionality, even though they do not use any class variables.
 	unsigned applyPoly(uint64_t val, uint64_t poly);

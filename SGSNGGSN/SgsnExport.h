@@ -107,8 +107,8 @@ class MSUEAdapter {
 	void sgsnPrint(uint32_t mshandle, int options, std::ostream &os);
 	void sgsnFreePdpAll(uint32_t mshandle);
 
-	//MSUEAdapter() {}
-	//virtual ~MSUEAdapter() {}
+	MSUEAdapter() {}
+	virtual ~MSUEAdapter() {}
 	virtual std::string msid() const = 0;	// A human readable name for the MS or UE.
 
 #if RN_UMTS

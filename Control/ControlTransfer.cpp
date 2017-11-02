@@ -100,6 +100,7 @@ const char* CCState::callStateString(CallState state)
 		case HandoverProgress: return "HANDOVER Progress";
 		case HandoverOutbound: return "HANDOVER Outbound";
 		//case BusyReject: return "Busy Reject";	not used
+		case TranDeleted: return "TranDeleted";
 		// Do not add a default case.  Let the compiler whine so we know if we covered all the cases.
 		// default: return NULL;
 	}

@@ -717,6 +717,8 @@ MySipInterface gSipInterface;	// Here it is.
 extern "C" {
 	static void ortpLogFunc(const char *domain, OrtpLogLevel /*lev unused*/, const char *fmt, va_list args)
 	{
+		(void)domain;
+
 		// This floods the system with error messages, so regulate output to the console.
 		static time_t lasttime = 0;	// No more than one message per minute.
 		char buf[202];

@@ -120,7 +120,7 @@ bool doCmd(int fd, char *cmd) // return false to abort/exit
 		exit(1);
 	}
 	if (nread != (int) sizeof(len)) {
-		printf("Partial read of length from server, expected %d, got %d\n", sizeof(len), len);
+		printf("Partial read of length from server, expected %zu, got %d\n", sizeof(len), len);
 		exit(1);
 	}
 	len = ntohl(len);
@@ -337,6 +337,7 @@ int main(int argc, char *argv[])
                     }
                             // shutdown via upstart
                     if (strcmp(cmd,"shutdown")==0) {
+#if 0
                         printf("terminating openbts\n");
                         if (getuid() == 0)
                             system("stop openbts");
@@ -345,6 +346,9 @@ int main(int argc, char *argv[])
                             printf("If prompted, enter the password you use for sudo\n");
                             system("sudo stop openbts");
                         }
+#else
+			printf("unimplemented\n");
+#endif
                         break;
                     }
                     // shell escape?

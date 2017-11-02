@@ -1213,7 +1213,8 @@ void MMLayer::mmGetPages(NewPagingList_t &pages)
 		pages.reserve(MMUsers.size());
 		for (MMUserMap::iterator it = MMUsers.begin(); it != MMUsers.end(); ) {
 			MMUser *mmu = it->second;
-			MMUserMap::iterator thisone = it++;
+			//MMUserMap::iterator thisone = it;
+			it++;
 			LOG(DEBUG)<<LOGVAR(mmu);
 			if (mmu->mmuIsAttached()) { // Is it already attached to a radio channel?
 				LOG(DEBUG) << "MMUser already attached:"<<mmu->mmuImsi;

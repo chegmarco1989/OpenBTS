@@ -591,7 +591,7 @@ bool miniggsn_init()
 	}
 
 	// Firewall rules:
-	bool firewall_enable;
+	int firewall_enable;
 	if ((firewall_enable = gConfig.getNum(SQL_FIREWALL_ENABLE))) {
 		// Block anything in the routed range:
 		addFirewallRule(route_basenl,route_masknl);

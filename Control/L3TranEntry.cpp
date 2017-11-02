@@ -1801,6 +1801,9 @@ L3CDR *TranEntry::createCDR(bool makeCMR, TermCause cause)	// If true, make a CM
 				cdr.cdrToNumber = lookupPhoneNumber(cdr.cdrToImsi);
 			}
 			break;
+		default:
+			/* no-op */
+			break;
 	};
 
 	if (cdr.cdrType == "") {

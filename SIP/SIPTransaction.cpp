@@ -560,6 +560,7 @@ void SipRegisterTU::TUWriteHighSideV(SipMessage *sipmsg)
 	} else switch ((code/100) * 100) {
 		case 100: return;	// we dont care.
 		case 200: LOG(ERR) <<whatami<<"received invalid code:"<<code <<" in message:"<<sipmsg;	// Code in the range 201-299 is allegedly impossible.
+			__attribute__((fallthrough));
 		default:
 			if (stKind == KindRegister) {
 				sendAuthFailMessage(code,"",sipmsg->msmHeaders.paramFind(pRejectCauseHeader));

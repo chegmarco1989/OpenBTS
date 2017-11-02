@@ -201,7 +201,7 @@ bool Resampler::init(float bw)
 	size_t hist_len = filt_len - 1;
 
 	/* Filterbank filter internals */
-	if (initFilters(bw) < 0)
+	if (!initFilters(bw))
 		return false;
 
 	/* History buffer */

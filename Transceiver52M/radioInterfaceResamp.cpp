@@ -209,7 +209,7 @@ void RadioInterfaceResamp::pushBuffer()
 	int rc, chunks, num_sent;
 	int inner_len, outer_len;
 
-	if (sendCursor < resamp_inchunk)
+	if ((int)sendCursor < resamp_inchunk)
 		return;
 
 	if (sendCursor > innerSendBuffer->size())

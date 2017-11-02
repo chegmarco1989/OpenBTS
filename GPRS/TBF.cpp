@@ -755,7 +755,7 @@ void TBF::mtSetState(TBFState::type wstate)
 		}
 
 		if (mtState == TBFState::DataTransmit) {
-			LOGWATCHF("%s Start%s bytes=%d down/up=%d/%d\n", tbfid(1),
+			LOGWATCHF("%s Start%s bytes=%d down/up=%zu/%zu\n", tbfid(1),
 				mtAssignmentOnCCCH ? " CCCH" : "",
 				engineGetBytesPending(), mtMS->msPCHDowns.size(),mtMS->msPCHUps.size());
 			// FIXME:

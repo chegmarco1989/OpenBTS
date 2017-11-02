@@ -55,7 +55,8 @@ Transceiver::Transceiver(int wBasePort,
 	:mDataSocket(wBasePort+2,TRXAddress,wBasePort+102),
 	 mControlSocket(wBasePort+1,TRXAddress,wBasePort+101),
 	 mClockSocket(wBasePort,TRXAddress,wBasePort+100),
-	 mSPSTx(wSPS), mSPSRx(1), mNoises(NOISE_CNT)
+	 mNoises(NOISE_CNT),
+	 mSPSTx(wSPS), mSPSRx(1)
 {
   GSM::Time startTime(random() % gHyperframe,0);
 

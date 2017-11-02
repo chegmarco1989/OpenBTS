@@ -64,6 +64,9 @@ unsigned ViterbiBase::applyPoly(uint64_t val, uint64_t poly)
 	return prod & 0x01;
 }
 
+ViterbiBase::~ViterbiBase()
+{
+}
 
 
 //void BitVector::encode(const ViterbiR2O4& coder, BitVector& target)

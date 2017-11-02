@@ -426,6 +426,7 @@ class RLCDownlinkDataBlock
 	int headerSizeBytes() { return 3; }
 
 	RLCDownlinkDataBlock(ChannelCodingType wCC) : mIdle(0), mChannelCoding(wCC) {}
+	virtual ~RLCDownlinkDataBlock() {}
 
 	// Convert the Downlink Data Block into a BitVector.
 	// We do this right before sending it down to the encoder.

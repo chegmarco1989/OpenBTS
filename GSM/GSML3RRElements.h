@@ -845,6 +845,8 @@ class L3MeasurementResults : public L3ProtocolElement {
 
 	L3MeasurementResults()
 		:L3ProtocolElement(),
+		mBA_USED(false),
+		mDTX_USED(false),
 		mMEAS_VALID(true),			// true means invalid.
 		mRXLEV_FULL_SERVING_CELL(0),
 		mRXLEV_SUB_SERVING_CELL(0),

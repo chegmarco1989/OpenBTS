@@ -772,7 +772,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (sCount<(numARFCNs*8)) {
+	if (sCount<(int)(numARFCNs*8)) {
 		LOG(CRIT) << "Only " << sCount << " timeslots configured in an " << numARFCNs << "-ARFCN system.";
 	}
 
