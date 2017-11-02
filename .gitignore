@@ -5,6 +5,8 @@
 *.o
 *.lo
 *.la
+*.pyc
+*.pcapng
 Makefile
 aclocal.m4
 autom4te.cache
@@ -39,13 +41,16 @@ TransceiverRAD1/RAD1SN
 TransceiverRAD1/RAD1ping
 TransceiverRAD1/sigProcLibTest
 TransceiverRAD1/transceiver
+apps/
 apps/OpenBTS
 apps/OpenBTSCLI
 apps/JSONEventsClient
 GSMShare/A51Test
 GSMShare/AMRTest
 GSMShare/ViterbiTest
+Transceiver52M/transceiver
 TransceiverRAD1/PowerScanner
 debian/files
 debian/substvars
 debian/openbts*
+debian/tmp/

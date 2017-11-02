@@ -326,6 +326,7 @@ L3Frame * L2LogicalChannel::l2recv(unsigned timeout_ms)
 {
 	//LOG(DEBUG);
 	L3Frame *result = mL3Out.read(timeout_ms);
+	LOG(INFO) << "received this: "  << LOGVAR(result);
 	if (result) WATCHINFO("l2recv " << this <<LOGVAR2("sap",result->getSAPI()) <<LOGVAR(result));
 	return result;
 }

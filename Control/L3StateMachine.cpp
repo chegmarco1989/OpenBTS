@@ -558,8 +558,9 @@ static bool checkPrimitive(Primitive prim, L3LogicalChannel *lch, int sapi)
 		LOG(ERR) << "Layer3 received ERROR from layer2 on channel "<<lch<<LOGVAR(sapi);
 
 		// FIXME: This prim needs to be passed to the state machines to abort procedures.
-
+		LOG(ALERT) << "MDL_ERROR_INDICATION: Channel Released." <<lch<<LOGVAR(prim) << LOGVAR(sapi);
 		lch->chanRelease(L3_RELEASE_REQUEST,TermCause::Local(L3Cause::Layer2_Error)); 		// Kill off all the transactions associated with this channel.
+		
 		return false;
 
 	//case HARDRELEASE:		///< forced release after an assignment

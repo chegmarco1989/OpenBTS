@@ -597,7 +597,7 @@ L3Frame::L3Frame(const L3Message& msg, Primitive wPrimitive, SAPI_t wSapi)
 
 
 L3Frame::L3Frame(SAPI_t sapi,const char* hexString)
-	:mPrimitive(L3_DATA),mSapi(sapi)
+	:mPrimitive(L3_UNIT_DATA),mSapi(sapi)
 {
 	f3init();
 	size_t len = strlen(hexString);
@@ -612,19 +612,17 @@ L3Frame::L3Frame(SAPI_t sapi,const char* hexString)
 	}
 }
 
-
-// (pat) 9-8-2014 removed, unused.
-//L3Frame::L3Frame(const char* binary, size_t len)
-//	:mPrimitive(L3_DATA),mSapi(SAPIUndefined)
-//{
-//	f3init();
-//	mL2Length = len;
-//	resize(len*8);
-//	size_t wp=0;
-//	for (size_t i=0; i<len; i++) {
-//		writeField(wp,binary[i],8);
-//	}
-//}
+L3Frame::L3Frame(const char* binary, size_t len, SAPI_t sapi)
+	:mPrimitive(L3_DATA),mSapi(sapi) // Changed this mSapi from SAPIUNDEFINED to SAPI3 for Testcall function
+{
+	f3init();
+	mL2Length = len;
+	resize(len*8);
+	size_t wp=0;
+	for (size_t i=0; i<len; i++) {
+		writeField(wp,binary[i],8);
+	}
+}
 
 unsigned L3Frame::MTI() const
 {
