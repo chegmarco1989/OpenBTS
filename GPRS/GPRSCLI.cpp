@@ -13,44 +13,44 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 */
 
-#define LOG_GROUP LogGroup::GPRS		// Can set Log.Level.GPRS for debugging
+#define LOG_GROUP LogGroup::GPRS // Can set Log.Level.GPRS for debugging
 
-#include "GPRSInternal.h"
-#include "TBF.h"
-#include "RLCEngine.h"
-#include "MAC.h"
-#include "FEC.h"
-#include "RLCMessages.h"
-#include "Interthread.h"
 #include "BSSG.h"
-#include "LLC.h"
 #include "CLI.h"
-#define strmatch(what,pat) (0==strncmp(what,pat,strlen(pat)))
+#include "FEC.h"
+#include "GPRSInternal.h"
+#include "Interthread.h"
+#include "LLC.h"
+#include "MAC.h"
+#include "RLCEngine.h"
+#include "RLCMessages.h"
+#include "TBF.h"
 
+#define strmatch(what, pat) (0 == strncmp(what, pat, strlen(pat)))
 
-#define RN_CMD_OPTION(opt) (argi<argc && 0==strcmp(argv[argi],opt) ? ++argi : 0)
-#define RN_CMD_ARG (argi<argc ? argv[argi++] : NULL)
+#define RN_CMD_OPTION(opt) (argi < argc && 0 == strcmp(argv[argi], opt) ? ++argi : 0)
+#define RN_CMD_ARG (argi < argc ? argv[argi++] : NULL)
 //#define RN_CMD_OPTION(o) (argc>1 && 0==strncmp(argv[1],o,strlen(o)) ? argc--,argv++,1 : 0)
 
 namespace GPRS {
+
 using namespace BSSG;
 using namespace SGSN;
 using namespace CommandLine;
 
-
-static CLIStatus gprsMem(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsMem(int argc, char **argv, int argi, ostream &os)
 {
 	gMemStats.text(os);
 	return SUCCESS;
 }
 
-static void printChans(bool verbose, ostream&os)
+static void printChans(bool verbose, ostream &os)
 {
 	PDCHL1FEC *pch;
-	RN_MAC_FOR_ALL_PDCH(pch) { pch->mchDump(os,verbose); }
+	RN_MAC_FOR_ALL_PDCH(pch) { pch->mchDump(os, verbose); }
 }
 
-//static int gprsChans(int argc, char **argv, int argi, ostream&os)
+// static int gprsChans(int argc, char **argv, int argi, ostream&os)
 //{
 //	bool verbose=0;
 //	while (argi < argc) {
@@ -62,85 +62,123 @@ static void printChans(bool verbose, ostream&os)
 //	return SUCCESS;
 //}
 
-static CLIStatus gprsList(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsList(int argc, char **argv, int argi, ostream &os)
 {
-	bool xflag=0, aflag=0, listms=0, listtbf=0, listch=0;
+	bool xflag = 0, aflag = 0, listms = 0, listtbf = 0, listch = 0;
 	int options = 0;
 	int id = -1;
 	while (argi < argc) {
-		if (strmatch(argv[argi],"ch")) { listch = 1; argi++; continue; }
-		if (strmatch(argv[argi],"tbf")) { listtbf = 1; argi++; continue; }
-		if (strmatch(argv[argi],"ms")) { listms = 1; argi++; continue; }
-		if (strmatch(argv[argi],"-v")) { options |= printVerbose; argi++; continue; }
-		if (strmatch(argv[argi],"-c")) { options |= printCaps; argi++; continue; }
-		if (strmatch(argv[argi],"-x")) { xflag = 1; argi++; continue; }
-		if (strmatch(argv[argi],"-a")) { aflag = 1; argi++; continue; }
+		if (strmatch(argv[argi], "ch")) {
+			listch = 1;
+			argi++;
+			continue;
+		}
+		if (strmatch(argv[argi], "tbf")) {
+			listtbf = 1;
+			argi++;
+			continue;
+		}
+		if (strmatch(argv[argi], "ms")) {
+			listms = 1;
+			argi++;
+			continue;
+		}
+		if (strmatch(argv[argi], "-v")) {
+			options |= printVerbose;
+			argi++;
+			continue;
+		}
+		if (strmatch(argv[argi], "-c")) {
+			options |= printCaps;
+			argi++;
+			continue;
+		}
+		if (strmatch(argv[argi], "-x")) {
+			xflag = 1;
+			argi++;
+			continue;
+		}
+		if (strmatch(argv[argi], "-a")) {
+			aflag = 1;
+			argi++;
+			continue;
+		}
 		if (isdigit(argv[argi][0])) {
-			if (id >= 0) goto oops;  // already found a number
+			if (id >= 0)
+				goto oops; // already found a number
 			id = atoi(argv[argi]);
 			argi++;
 			continue;
 		}
-		oops:
+	oops:
 		os << "oops! unrecognized arg:" << argv[argi] << "\n";
 		return SUCCESS;
 	}
 
-	bool all = !(listch|listtbf|listms);
+	bool all = !(listch | listtbf | listms);
 
-	if (all|listms) {
+	if (all | listms) {
 		MSInfo *ms;
-		for (RListIterator<MSInfo*> itr(xflag ? gL2MAC.macExpiredMSs : gL2MAC.macMSs); itr.next(ms); ) {
-			if (id>=0 && (int)ms->msDebugId != id) continue;
-			if (aflag || ! ms->msDeprecated) { ms->msDump(os,(PrintOptions)options); }
+		for (RListIterator<MSInfo *> itr(xflag ? gL2MAC.macExpiredMSs : gL2MAC.macMSs); itr.next(ms);) {
+			if (id >= 0 && (int)ms->msDebugId != id)
+				continue;
+			if (aflag || !ms->msDeprecated) {
+				ms->msDump(os, (PrintOptions)options);
+			}
 		}
 	}
-	if (all|listtbf) {
+	if (all | listtbf) {
 		TBF *tbf;
-		//RN_MAC_FOR_ALL_TBF(tbf) { os << tbf->tbfDump(verbose); }
-		for (RListIterator<TBF*> itr(xflag ? gL2MAC.macExpiredTBFs : gL2MAC.macTBFs); itr.next(tbf); ) {
+		// RN_MAC_FOR_ALL_TBF(tbf) { os << tbf->tbfDump(verbose); }
+		for (RListIterator<TBF *> itr(xflag ? gL2MAC.macExpiredTBFs : gL2MAC.macTBFs); itr.next(tbf);) {
 			// If the id matches a MS, print the TBFs associated with that MS.
-			if (id>=0 && (int)tbf->mtDebugId != id && (int)tbf->mtMS->msDebugId != id) continue;
-			os << tbf->tbfDump(options&printVerbose) << endl;
+			if (id >= 0 && (int)tbf->mtDebugId != id && (int)tbf->mtMS->msDebugId != id)
+				continue;
+			os << tbf->tbfDump(options & printVerbose) << endl;
 		}
 	}
-	if (all|listch) {
-		printChans(options&printVerbose,os);
+	if (all | listch) {
+		printChans(options & printVerbose, os);
 	}
 	return SUCCESS;
 }
 
-static CLIStatus gprsFree(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsFree(int argc, char **argv, int argi, ostream &os)
 {
 	char *what = RN_CMD_ARG;
 	char *idstr = RN_CMD_ARG;
-	if (!idstr) return BAD_NUM_ARGS;
+	if (!idstr)
+		return BAD_NUM_ARGS;
 	int id = atoi(idstr);
-	MSInfo *ms;  TBF *tbf;
-	if (strmatch(what,"ms")) {
-		RN_MAC_FOR_ALL_MS(ms) {
+	MSInfo *ms;
+	TBF *tbf;
+	if (strmatch(what, "ms")) {
+		RN_MAC_FOR_ALL_MS(ms)
+		{
 			if (ms->msDebugId == (unsigned)id) {
-				os << "Deleting " <<ms <<"\n";
+				os << "Deleting " << ms << "\n";
 				ms->msDelete(1);
 				return SUCCESS;
 			}
 		}
-		os << "MS# "<<id <<" not found.\n";
-	} else if (strmatch(what,"tbf")) {
-		RN_MAC_FOR_ALL_TBF(tbf) {
+		os << "MS# " << id << " not found.\n";
+	} else if (strmatch(what, "tbf")) {
+		RN_MAC_FOR_ALL_TBF(tbf)
+		{
 			if (tbf->mtDebugId == (unsigned)id) {
-				os << "Deleting " <<tbf <<"\n";
+				os << "Deleting " << tbf << "\n";
 				tbf->mtDelete(1);
 				return SUCCESS;
 			}
 		}
-		os << "TBF# "<<id <<" not found.\n";
-	} else if (strmatch(what,"ch")) {
+		os << "TBF# " << id << " not found.\n";
+	} else if (strmatch(what, "ch")) {
 		// They dont have an id.  Just delete the nth one.
-		PDCHL1FEC*pch;
-		RN_MAC_FOR_ALL_PDCH(pch) {
+		PDCHL1FEC *pch;
+		RN_MAC_FOR_ALL_PDCH(pch)
+		{
 			if (id-- == 0) {
-				os << "Deleting " <<pch <<"\n";
+				os << "Deleting " << pch << "\n";
 				delete pch;
 				return SUCCESS;
 			}
@@ -152,46 +190,41 @@ static CLIStatus gprsFree(int argc, char **argv, int argi, ostream&os)
 	return SUCCESS;
 }
 
-static CLIStatus gprsFreeExpired(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsFreeExpired(int argc, char **argv, int argi, ostream &os)
 {
 	MSInfo *ms;
-	for (RListIterator<MSInfo*> itr(gL2MAC.macExpiredMSs); itr.next(ms); ) {
+	for (RListIterator<MSInfo *> itr(gL2MAC.macExpiredMSs); itr.next(ms);) {
 		itr.erase();
 		delete ms;
 	}
 	TBF *tbf;
-	for (RListIterator<TBF*> itr(gL2MAC.macExpiredTBFs); itr.next(tbf); ) {
+	for (RListIterator<TBF *> itr(gL2MAC.macExpiredTBFs); itr.next(tbf);) {
 		itr.erase();
 		delete tbf;
 	}
 	return SUCCESS;
 }
 
-static CLIStatus gprsStats(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsStats(int argc, char **argv, int argi, ostream &os)
 {
 	if (!GPRSConfig::IsEnabled()) {
 		os << "GPRS is not enabled.  See 'GPRS.Enable' option.\n";
 		return FAILURE;
 	}
 	GSM::Time now = gBTS.time();
-	os << "GSM FN=" << now.FN() << " GPRS BSN=" << gBSNNext << "\n"; 
+	os << "GSM FN=" << now.FN() << " GPRS BSN=" << gBSNNext << "\n";
 	os << "Current number of"
-		<< " PDCH=" << gL2MAC.macPDCHs.size()
-		<< " MS=" << gL2MAC.macMSs.size()
-		<< " TBF=" << gL2MAC.macTBFs.size()
-		<< "\n";
+	   << " PDCH=" << gL2MAC.macPDCHs.size() << " MS=" << gL2MAC.macMSs.size() << " TBF=" << gL2MAC.macTBFs.size()
+	   << "\n";
 	os << "Total number of"
-		<< " PDCH=" << Stats.countPDCH
-		<< " MS=" << Stats.countMSInfo
-		<< " TBF=" << Stats.countTBF
-		<< " RACH=" << Stats.countRach
-		<< "\n";
+	   << " PDCH=" << Stats.countPDCH << " MS=" << Stats.countMSInfo << " TBF=" << Stats.countTBF
+	   << " RACH=" << Stats.countRach << "\n";
 	os << "Downlink utilization=" << gL2MAC.macDownlinkUtilization << "\n";
-	os << LOGVAR2("ServiceLoopTime",Stats.macServiceLoopTime) << "\n";
+	os << LOGVAR2("ServiceLoopTime", Stats.macServiceLoopTime) << "\n";
 	return SUCCESS;
 }
 
-#if 0	// pinghttp test code not linked in yet.
+#if 0 // pinghttp test code not linked in yet.
 static int gprsPingHttp(int argc, char **argv, int argi, ostream&os)
 {
 	if (argi >= argc) { os << "syntax: gprs pinghttp address\n"; return 1; }
@@ -203,13 +236,16 @@ static int gprsPingHttp(int argc, char **argv, int argi, ostream&os)
 
 // Start the service and allocate a channel.
 // This is redundant - can call rach.
-static CLIStatus gprsStart(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsStart(int argc, char **argv, int argi, ostream &os)
 {
 	// Start the thread, if not running.
 	char *modearg = RN_CMD_ARG;
 	if (modearg) {
-		gL2MAC.macSingleStepMode = strmatch(modearg,"s");
-		if (!gL2MAC.macSingleStepMode) { os << "Unrecognized arg: "<<modearg<<"\n"; return BAD_VALUE; }
+		gL2MAC.macSingleStepMode = strmatch(modearg, "s");
+		if (!gL2MAC.macSingleStepMode) {
+			os << "Unrecognized arg: " << modearg << "\n";
+			return BAD_VALUE;
+		}
 	} else {
 		gL2MAC.macSingleStepMode = 0;
 	}
@@ -220,8 +256,7 @@ static CLIStatus gprsStart(int argc, char **argv, int argi, ostream&os)
 	if (gL2MAC.macRunning) {
 		os << "gprs service thread already running.\n";
 	} else if (gL2MAC.macStart()) {
-		os << "started gprs service "
-				<<(gL2MAC.macSingleStepMode ? "single step mode" : "thread") << "\n";
+		os << "started gprs service " << (gL2MAC.macSingleStepMode ? "single step mode" : "thread") << "\n";
 	} else {
 		os << "failed to start gprs service.\n";
 	}
@@ -234,8 +269,10 @@ static CLIStatus gprsStart(int argc, char **argv, int argi, ostream&os)
 	sleep(1);
 
 	// Allocate a channel, if none already allocated.
-	if (! gL2MAC.macActiveChannels()) { gL2MAC.macAddChannel(); }
-	if (! gL2MAC.macActiveChannels()) {
+	if (!gL2MAC.macActiveChannels()) {
+		gL2MAC.macAddChannel();
+	}
+	if (!gL2MAC.macActiveChannels()) {
 		os << "failed to allocate channel for gprs.\n";
 	} else {
 		PDCHL1FEC *pdch = gL2MAC.macPickChannel();
@@ -245,7 +282,7 @@ static CLIStatus gprsStart(int argc, char **argv, int argi, ostream&os)
 	return SUCCESS;
 }
 
-static CLIStatus gprsStop(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsStop(int argc, char **argv, int argi, ostream &os)
 {
 	bool cflag = RN_CMD_OPTION("-c");
 	gL2MAC.macStop(cflag);
@@ -253,20 +290,20 @@ static CLIStatus gprsStop(int argc, char **argv, int argi, ostream&os)
 }
 
 #if NO_LONGER_WORKING // (pat 2-2014) This code has eroded so I just disabled it.
-static CLIStatus gprsTestRach(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsTestRach(int argc, char **argv, int argi, ostream &os)
 {
 	GSM::Time now = gBTS.time();
 	unsigned RA = 15 << 5;
-	GPRSProcessRACH(RA,now,-20,0.5);
+	GPRSProcessRACH(RA, now, -20, 0.5);
 	return SUCCESS;
 }
 #endif
 
 extern "C" {
-	int gprs_llc_fcs(uint8_t *data, unsigned int len);
+int gprs_llc_fcs(uint8_t *data, unsigned int len);
 }
 
-static CLIStatus gprsTest(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsTest(int argc, char **argv, int argi, ostream &os)
 {
 #if 0
 	LLCParity parity;
@@ -286,15 +323,15 @@ static CLIStatus gprsTest(int argc, char **argv, int argi, ostream&os)
 	}
 #endif
 
-	//GPRSLOG(1) << "An unterminated string";
-	//GPRSLOG(1) << "Another unterminated string";
+	// GPRSLOG(1) << "An unterminated string";
+	// GPRSLOG(1) << "Another unterminated string";
 	return SUCCESS;
 }
 
 // Try printing out all the RLC messages.
 // For the small ones, we will just print them out to see if that functionality works.
 // For most of the big ones, we will actually call the function that generates these messages.
-static CLIStatus gprsTestMsg(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsTestMsg(int argc, char **argv, int argi, ostream &os)
 {
 	if (!gL2MAC.macActiveChannels()) {
 		os << "Oops!  You must allocate GPRS channels before running this test; try grps start.\n";
@@ -302,12 +339,12 @@ static CLIStatus gprsTestMsg(int argc, char **argv, int argi, ostream&os)
 	}
 
 	Time gsmfn = gBTS.clock().FN();
-	os << "Test Messages, Current time:"<<LOGVAR(gsmfn)<<LOGVAR(gBSNNext)<<"\n";
+	os << "Test Messages, Current time:" << LOGVAR(gsmfn) << LOGVAR(gBSNNext) << "\n";
 
 	// Create a dummy RLCRawBLock for the uplink messages to parse.
-	BitVector bvdummy(52*8);
+	BitVector bvdummy(52 * 8);
 	bvdummy.zero();
-	RLCRawBlock rb(99,bvdummy,0,0,ChannelCodingCS1);
+	RLCRawBlock rb(99, bvdummy, 0, 0, ChannelCodingCS1);
 
 	// NOTE NOTE NOTE!  This debug code is running in a different thread
 	// than the MAC service loop.  If you try to run the code below while
@@ -315,13 +352,13 @@ static CLIStatus gprsTestMsg(int argc, char **argv, int argi, ostream&os)
 	gL2MAC.macStop(0);
 
 	// Create an MS, and some TBFs.
-	PDCHL1FEC *pdch = gL2MAC.macPickChannel();	// needed for immediate assignment msg.
-	MSInfo *ms = new MSInfo(123456);	// number is the TLLI.
+	PDCHL1FEC *pdch = gL2MAC.macPickChannel(); // needed for immediate assignment msg.
+	MSInfo *ms = new MSInfo(123456);	   // number is the TLLI.
 	RLCDownEngine *downengine = new RLCDownEngine(ms);
 	TBF *downtbf = downengine->getTBF();
-	RLCUpEngine *upengine = new RLCUpEngine(ms,0);
+	RLCUpEngine *upengine = new RLCUpEngine(ms, 0);
 	TBF *uptbf = upengine->getTBF();
-	uptbf->mtAttach();		// Assigns USF and TFI for the tbf, so we can see it in the messages.
+	uptbf->mtAttach(); // Assigns USF and TFI for the tbf, so we can see it in the messages.
 	downtbf->mtAttach();
 	os << "uplink TBF for messages is:\n";
 	os << uptbf->tbfDump(1);
@@ -362,35 +399,35 @@ static CLIStatus gprsTestMsg(int argc, char **argv, int argi, ostream&os)
 	msgdowndummy.text(os);
 
 	os << "\n\nL3ImmediateAssignment for Single Block Packet Assignment\n";
-	//ms->msMode = RROperatingMode::PacketIdle;
-	sendAssignment(pdch,downtbf, &os);
+	// ms->msMode = RROperatingMode::PacketIdle;
+	sendAssignment(pdch, downtbf, &os);
 
 	os << "\n\nclass RLCMsgPacketDownlinkAssignment : public RLCDownlinkMessage\n";
-	//ms->msMode = RROperatingMode::PacketTransfer;
+	// ms->msMode = RROperatingMode::PacketTransfer;
 	ms->msT3193.set();
 	// To force the MS to send the message on PACH we can set T3191
-	sendAssignment(pdch,downtbf, &os);
+	sendAssignment(pdch, downtbf, &os);
 	ms->msT3193.reset();
 
 	os << "\n\nclass RLCMsgPacketUplinkAssignment : public RLCDownlinkMessage\n";
-	sendAssignment(pdch,uptbf, &os);
+	sendAssignment(pdch, uptbf, &os);
 
 	return SUCCESS;
 }
 
-static CLIStatus gprsTestBSN(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsTestBSN(int argc, char **argv, int argi, ostream &os)
 {
 	RLCBSN_t bsn = 0;
 	int fn = 0;
 	for (fn = 0; fn < 100; fn++) {
 		bsn = FrameNumber2BSN(fn);
 		int fn2 = BSN2FrameNumber(bsn);
-		os << LOGVAR(fn) <<LOGVAR(bsn) <<LOGVAR(fn2) <<"\n";
+		os << LOGVAR(fn) << LOGVAR(bsn) << LOGVAR(fn2) << "\n";
 	}
 	return SUCCESS;
 }
 
-#if INTERNAL_SGSN==0
+#if INTERNAL_SGSN == 0
 // Create an uplink block as would be sent by an MS.
 // The payload in sequential blocks will be ascending 16-bit words.
 // Ie, payload of first block is 0,1,2,3,4,5,6,7,8,9
@@ -408,21 +445,21 @@ static RLCRawBlock *fakeablock(int bsn, int tfi, int final)
 	// Create the uplink block header structure, which we can write into the bitvector.
 	RLCUplinkDataBlockHeader bh;
 	bh.mmac.mPayloadType = MACPayloadType::RLCData;
-	bh.mmac.mCountDownValue = final ? 0 : 15;	// countdown, just use 15 until final block.
-	bh.mmac.mSI = 0;	// stall indicator from MS.
-	bh.mmac.mR = 0;		// retry bit from MS.
-	bh.mSpare = 0;		// Doesnt matter.
-	bh.mPI = 0;			// We dont use this.
+	bh.mmac.mCountDownValue = final ? 0 : 15; // countdown, just use 15 until final block.
+	bh.mmac.mSI = 0;			  // stall indicator from MS.
+	bh.mmac.mR = 0;				  // retry bit from MS.
+	bh.mSpare = 0;				  // Doesnt matter.
+	bh.mPI = 0;				  // We dont use this.
 	bh.mTFI = tfi;
-	bh.mTI = 0;			// We dont use this.
+	bh.mTI = 0; // We dont use this.
 	// Octet 2: (starts at bit 16)
 	bh.mBSN = bsn;
-	bh.mE = 1;	// Extension bit: 1 means whole block is data
+	bh.mE = 1; // Extension bit: 1 means whole block is data
 
 	// Create a bitvector with an image of the header above followed by the
 	// data, which will just be sequential integers starting at bsn.
 	// Size is 1 byte MAC header + 2 bytes RLC header + payload
-	BitVector vec(8*(1 + 2 + payloadsize));
+	BitVector vec(8 * (1 + 2 + payloadsize));
 
 	// Create a MsgCommon BitVector writer:
 	MsgCommonWrite mcw(vec);
@@ -432,36 +469,36 @@ static RLCRawBlock *fakeablock(int bsn, int tfi, int final)
 	bh.writeRLCHeader(mcw);
 
 	// Write the payload.
-	int numwords = payloadsize/2;
-	uint16_t dataword = bsn * numwords;	// Starting payload word for this bsn.
-	for ( ; numwords > 0; numwords--) {
-		mcw.writeField(dataword++,16); // Write as a 16 bit word.
+	int numwords = payloadsize / 2;
+	uint16_t dataword = bsn * numwords; // Starting payload word for this bsn.
+	for (; numwords > 0; numwords--) {
+		mcw.writeField(dataword++, 16); // Write as a 16 bit word.
 	}
 
 	// The BitVector now looks like something the MS would send us.
 	// Go through the steps GPRS code uses to parse the incoming BitVector:
 
 	// The GSM radio queues us an RLCRawBlock:
-	RLCRawBlock *rawblock = new RLCRawBlock(bsn,vec,0,0,ChannelCodingCS1);
+	RLCRawBlock *rawblock = new RLCRawBlock(bsn, vec, 0, 0, ChannelCodingCS1);
 
 	return rawblock;
 }
 #endif
 
-#if INTERNAL_SGSN==0
-static CLIStatus gprsTestUl(int argc, char **argv, int argi, ostream&os)
+#if INTERNAL_SGSN == 0
+static CLIStatus gprsTestUl(int argc, char **argv, int argi, ostream &os)
 {
 	bool randomize = RN_CMD_OPTION("-r");
 	int32_t mytlli = 6789;
 	MSInfo *ms = new MSInfo(mytlli);
-	RLCUpEngine *upengine = new RLCUpEngine(ms,0);
+	RLCUpEngine *upengine = new RLCUpEngine(ms, 0);
 	TBF *uptbf = upengine->getTBF();
 
 	InterthreadQueue<NSMsg> testQ;
-	gBSSG.mbsTestQ = &testQ;	// Put uplink blocks on our own queue.
+	gBSSG.mbsTestQ = &testQ; // Put uplink blocks on our own queue.
 
 	int payloadsize = RLCPayloadSizeInBytes[ChannelCodingCS1]; // 20 bytes / block.
-	int numbytes = 200;			// Max PDU size is 1500; we will test 20*20 == 400 to start.
+	int numbytes = 200; // Max PDU size is 1500; we will test 20*20 == 400 to start.
 	int numblocks = numbytes / payloadsize;
 	// The window size is only 64, so we would normlly have to wait for the ack before proceeding.
 	// If we single stepped the MAC service loop while doing this, the dlservice routine
@@ -469,47 +506,47 @@ static CLIStatus gprsTestUl(int argc, char **argv, int argi, ostream&os)
 	int bsn;
 	int TFI = 1; // Use a fake tfi for this test.
 	for (int j = 0; j < numblocks; j++) {
-		if (randomize && j < numblocks-16) {
+		if (randomize && j < numblocks - 16) {
 			// Goof up the order to see if blocks are reassembled in proper order.
 			// I left the last few blocks alone to simplify.
 			bsn = (j & 0xffff0) + ~(j & 0xf);
 		} else {
 			bsn = j;
 		}
-		int final = bsn == numblocks-1;
-		RLCRawBlock *rawblock = fakeablock(bsn,TFI,final);
+		int final = bsn == numblocks - 1;
+		RLCRawBlock *rawblock = fakeablock(bsn, TFI, final);
 		// Raw uplink blocks are dequeued by processRLCUplinkDataBlock which
 		// sends them to the uplink engine thusly:
 		RLCUplinkDataBlock *rb = new RLCUplinkDataBlock(rawblock);
-		//rb->text(os);
+		// rb->text(os);
 		// TODO: call processRLCUplinkDataBlock to test tfis
 		delete rawblock;
-		uptbf->engineRecvDataBlock(rb,0);
+		uptbf->engineRecvDataBlock(rb, 0);
 		// The final block has E bit set, which makes the RLCUpEngine call sendPDU(),
 		// which sends the blocks to the BSSG, which puts them on our own queue.
 	}
-	gBSSG.mbsTestQ = NULL;	// Restore BSSG to normal use.
+	gBSSG.mbsTestQ = NULL; // Restore BSSG to normal use.
 
 	// Examine results on the testq.Get the block from the BSSG transmit queue.
 	if (testQ.size() != 1) {
-		os << "Unexpected BSSG Queue size="<<testQ.size()<<"\n";
-		return SUCCESS;	// We might be leaving some memory unfreed.
+		os << "Unexpected BSSG Queue size=" << testQ.size() << "\n";
+		return SUCCESS; // We might be leaving some memory unfreed.
 	}
-	
+
 	// ulmsg is a BSSGMsgULUnitData.
 	NSMsg *msg = testQ.read();
-	BSSGMsgULUnitData *ulmsg = (BSSGMsgULUnitData*)msg;
+	BSSGMsgULUnitData *ulmsg = (BSSGMsgULUnitData *)msg;
 
 	// Check some things in the header.
 	int expected = mytlli;
 	if (ulmsg->getTLLI() != expected) {
-		os << "ULUnitData msg wrong tlli=" << ulmsg->getTLLI() <<LOGVAR(expected)<<"\n";
+		os << "ULUnitData msg wrong tlli=" << ulmsg->getTLLI() << LOGVAR(expected) << "\n";
 	}
 
 	BSSGMsgULUnitDataHeader *ulhdr = ulmsg->getHeader();
 	expected = BSPDUType::UL_UNITDATA;
 	if (ulhdr->mbuPDUType != expected) {
-		os << "ULUnitData msg wrong PDUType=" << ulhdr->mbuPDUType <<LOGVAR(expected)<<"\n";
+		os << "ULUnitData msg wrong PDUType=" << ulhdr->mbuPDUType << LOGVAR(expected) << "\n";
 	}
 
 	int hdrsize = BSSGMsgULUnitData::HeaderLength;
@@ -517,9 +554,9 @@ static CLIStatus gprsTestUl(int argc, char **argv, int argi, ostream&os)
 		// This test is incorrect: the output byte vector is always allocated max size
 		// so it does not have to be grown.
 		int msgsize = ulmsg->size();
-		expected = numbytes+hdrsize;
+		expected = numbytes + hdrsize;
 		if (msgsize != expected) {
-			os << "BSSG UL UnitData msg wrong size" << LOGVAR(msgsize) << LOGVAR(expected)<<"\n";
+			os << "BSSG UL UnitData msg wrong size" << LOGVAR(msgsize) << LOGVAR(expected) << "\n";
 		}
 	}
 
@@ -528,10 +565,11 @@ static CLIStatus gprsTestUl(int argc, char **argv, int argi, ostream&os)
 	int offset;
 	int bads = 0;
 	for (offset = 0; offset < numbytes; offset += sizeof(short), expected++) {
-		int got = ulmsg->getUInt16(hdrsize+offset);
+		int got = ulmsg->getUInt16(hdrsize + offset);
 		if (got != expected) {
-			os << "BSSG data wrong at "<<LOGVAR(offset)<<LOGVAR(got)<<LOGVAR(expected)<<"\n";
-			if (++bads > 10) break;
+			os << "BSSG data wrong at " << LOGVAR(offset) << LOGVAR(got) << LOGVAR(expected) << "\n";
+			if (++bads > 10)
+				break;
 		}
 	}
 
@@ -552,32 +590,38 @@ static CLIStatus gprsTestUl(int argc, char **argv, int argi, ostream&os)
 }
 #endif
 
-
-static CLIStatus gprsDebug(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsDebug(int argc, char **argv, int argi, ostream &os)
 {
 	if (argi < argc) {
-		int newval = strtol(argv[argi++],NULL,0); // strtol allows hex
-		gConfig.set("GPRS.Debug",newval);
+		int newval = strtol(argv[argi++], NULL, 0); // strtol allows hex
+		gConfig.set("GPRS.Debug", newval);
 		GPRSSetDebug(newval);
-	} else if (! GPRSDebug) {
-		//GPRSSetDebug(3);
+	} else if (!GPRSDebug) {
+		// GPRSSetDebug(3);
 	}
-	char buf[100]; sprintf(buf,"GPRSDebug=0x%x\n",GPRSDebug);
+	char buf[100];
+	sprintf(buf, "GPRSDebug=0x%x\n", GPRSDebug);
 	os << buf;
 	return SUCCESS;
 }
 
-static CLIStatus gprsSet(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsSet(int argc, char **argv, int argi, ostream &os)
 {
 	char *what = RN_CMD_ARG;
-	if (!what) { return BAD_NUM_ARGS; }
-	char *val = RN_CMD_ARG;		// may be null.
+	if (!what) {
+		return BAD_NUM_ARGS;
+	}
+	char *val = RN_CMD_ARG; // may be null.
 
-	if (strmatch(what,"clock") || strmatch(what,"sync")) {
-		if (val) { gFixSyncUseClock = atoi(val); }
+	if (strmatch(what, "clock") || strmatch(what, "sync")) {
+		if (val) {
+			gFixSyncUseClock = atoi(val);
+		}
 		os << LOGVAR(gFixSyncUseClock) << "\n";
-	} else if (strmatch(what,"console")) {
-		if (val) { gLogToConsole = atoi(val); }
+	} else if (strmatch(what, "console")) {
+		if (val) {
+			gLogToConsole = atoi(val);
+		}
 		os << LOGVAR(gLogToConsole) << "\n";
 	} else {
 		os << "gprs set: unrecognized argument: " << what << "\n";
@@ -585,11 +629,11 @@ static CLIStatus gprsSet(int argc, char **argv, int argi, ostream&os)
 	return SUCCESS;
 }
 
-static CLIStatus gprsStep(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsStep(int argc, char **argv, int argi, ostream &os)
 {
 	if (!gL2MAC.macSingleStepMode) {
 		os << "error: MAC is not in single step mode\n";
-		return FAILURE;	// disaster would ensue if we accidently started another serviceloop.
+		return FAILURE; // disaster would ensue if we accidently started another serviceloop.
 	}
 	// We single step it ignoring the global clock, which
 	// might result in messages from the channel service routines.
@@ -598,51 +642,56 @@ static CLIStatus gprsStep(int argc, char **argv, int argi, ostream&os)
 	return FAILURE;
 }
 
-static CLIStatus gprsConsole(int argc, char **argv, int argi, ostream&os)
+static CLIStatus gprsConsole(int argc, char **argv, int argi, ostream &os)
 {
-	gLogToConsole = !gLogToConsole;		// Default: toggle.
-	if (argi < argc) { gLogToConsole = atoi(argv[argi++]); }
+	gLogToConsole = !gLogToConsole; // Default: toggle.
+	if (argi < argc) {
+		gLogToConsole = atoi(argv[argi++]);
+	}
 	os << "LogToConsole=" << gLogToConsole << "\n";
 	return SUCCESS;
 }
 
 static struct GprsSubCmds {
 	const char *name;
-	CLIStatus (*subcmd)(int argc, char **argv, int argi,std::ostream&os);
+	CLIStatus (*subcmd)(int argc, char **argv, int argi, std::ostream &os);
 	const char *syntax;
 } gprsSubCmds[] = {
-	{ "list",gprsList,	"list [ms|tbf|ch] [-v] [-x] [-c] [id]  # list active objects of specified type;\n\t\t -v => verbose; -c => include MS Capabilities -x => list expired rather than active" },
-	{ "stat",gprsStats, "stat  # Show GPRS statistics" },
-	{ "free",gprsFree, "free ms|tbf|ch id   # Delete something" },
-	{ "freex",gprsFreeExpired, "freex	# free expired ms and tbf structs" },
-	{ "debug",gprsDebug,	"debug [level]  # Set debug level; 0 turns off" },
-	{ "start",gprsStart,	"start [step]   # Start gprs, optionally in single-step-mode;\n\t\t- can also start by 'gprs rach'" },
-	{ "stop",gprsStop,	"stop [-c]  # stop gprs thread and if -c release channels" },
-	{ "step",gprsStep,	"step    # single step the MAC service loop (requires 'start step')." },
-	{ "set",gprsSet,	"set name [val]   # print and optionally set a variable - see source for names" },
+	{"list", gprsList,
+	 "list [ms|tbf|ch] [-v] [-x] [-c] [id]  # list active objects of specified type;\n\t\t -v => verbose; -c => "
+	 "include MS Capabilities -x => list expired rather than active"},
+	{"stat", gprsStats, "stat  # Show GPRS statistics"},
+	{"free", gprsFree, "free ms|tbf|ch id   # Delete something"},
+	{"freex", gprsFreeExpired, "freex	# free expired ms and tbf structs"},
+	{"debug", gprsDebug, "debug [level]  # Set debug level; 0 turns off"},
+	{"start", gprsStart,
+	 "start [step]   # Start gprs, optionally in single-step-mode;\n\t\t- can also start by 'gprs rach'"},
+	{"stop", gprsStop, "stop [-c]  # stop gprs thread and if -c release channels"},
+	{"step", gprsStep, "step    # single step the MAC service loop (requires 'start step')."},
+	{"set", gprsSet, "set name [val]   # print and optionally set a variable - see source for names"},
 	//{ "rach",gprsTestRach,	"rach   # Simulate a RACH, which starts gprs service" },
-	{ "testmsg",gprsTestMsg,	"testmsg   # Test message functions" },
-	{ "testbsn",gprsTestBSN,	"testbsn   # Test bsn<->frame number functions" },
-#if INTERNAL_SGSN==0
-	{ "testul",gprsTestUl,	"testul [-r]   # Send a test PDU through the RLCEngine; -r => randomize order " },
+	{"testmsg", gprsTestMsg, "testmsg   # Test message functions"},
+	{"testbsn", gprsTestBSN, "testbsn   # Test bsn<->frame number functions"},
+#if INTERNAL_SGSN == 0
+	{"testul", gprsTestUl, "testul [-r]   # Send a test PDU through the RLCEngine; -r => randomize order "},
 #endif
-	{ "console",gprsConsole, "console [0|1]  # Send messages to console as well as /var/log/OpenBTS.log;\n\t\t (default=1 for debugging)" },
-	{ "mem",gprsMem,	"mem   # Memory leak detector - print numbers of structs in use" },
-	{ "test",gprsTest,	"test   # Temporary test" },
+	{"console", gprsConsole,
+	 "console [0|1]  # Send messages to console as well as /var/log/OpenBTS.log;\n\t\t (default=1 for debugging)"},
+	{"mem", gprsMem, "mem   # Memory leak detector - print numbers of structs in use"},
+	{"test", gprsTest, "test   # Temporary test"},
 	// Dont have the source code for pinghttp linked in yet.
 	//{ "pinghttp",gprsPingHttp,"pinghttp address  # Send an http request to address (dont use google.com)" },
 	// The "help" command is handled internally by gprsCLI.
-	{ NULL,NULL }
-};
+	{NULL, NULL}};
 
-static void help(std::ostream&os)
+static void help(std::ostream &os)
 {
 	os << "gprs sub-commands to control GPRS radio mode.  Syntax: gprs subcommand <options...>\n";
 	os << "subcommands are:\n";
 	struct GprsSubCmds *gscp;
 	for (gscp = gprsSubCmds; gscp->name; gscp++) {
 		os << "\t" << gscp->syntax;
-		//if (gcp->arg) os << " " << gcp->arg;
+		// if (gcp->arg) os << " " << gcp->arg;
 		os << "\n";
 	}
 	os << "Notes:\n";
@@ -666,36 +715,39 @@ static void debugdefaults()
 // Should return: SUCCESS (0), BAD_NUM_ARGS(1), BAD_VALUE(2), FAILURE (5)
 // but sadly, these are defined in CLI.cpp, so I guess we just return 0.
 // Note: argv includes command name so argc==1 implies no args.
-CLIStatus gprsCLI(int argc, char **argv, std::ostream&os)
+CLIStatus gprsCLI(int argc, char **argv, std::ostream &os)
 {
-	//debugdefaults();
+	// debugdefaults();
 	ScopedLock lock(gL2MAC.macLock);
 
-	if (argc <= 1) { help(os); return BAD_NUM_ARGS; }
-	int argi = 1;	// The number of arguments consumed so far; argv[0] was "gprs"
+	if (argc <= 1) {
+		help(os);
+		return BAD_NUM_ARGS;
+	}
+	int argi = 1; // The number of arguments consumed so far; argv[0] was "gprs"
 	char *subcmd = argv[argi++];
 
 	struct GprsSubCmds *gscp;
-	CLIStatus status = SUCCESS;	// maybe success
+	CLIStatus status = SUCCESS; // maybe success
 	for (gscp = gprsSubCmds; gscp->name; gscp++) {
-		if (0 == strcasecmp(subcmd,gscp->name)) {
-			status = gscp->subcmd(argc,argv,argi,os);
+		if (0 == strcasecmp(subcmd, gscp->name)) {
+			status = gscp->subcmd(argc, argv, argi, os);
 			if (status == BAD_NUM_ARGS) {
 				os << "wrong number of arguments\n";
 			}
 			return status;
-			//if (gscp->arg == NULL || (argi < argc && 0 == strcasecmp(gscp->arg,argv[argi+1]))) {
-				//gscp->subcmd(argc,argv,argi + (gscp->arg?1:0),os);
+			// if (gscp->arg == NULL || (argi < argc && 0 == strcasecmp(gscp->arg,argv[argi+1]))) {
+			// gscp->subcmd(argc,argv,argi + (gscp->arg?1:0),os);
 			//}
 		}
 	}
 
-	if (strcasecmp(subcmd,"help")) {
-		os << "gprs: unrecognized sub-command: "<<subcmd<<"\n";
-		status = BAD_VALUE;	// bad command
+	if (strcasecmp(subcmd, "help")) {
+		os << "gprs: unrecognized sub-command: " << subcmd << "\n";
+		status = BAD_VALUE; // bad command
 	}
 	help(os);
 	return status;
 }
 
-};	// namespace
+}; // namespace GPRS

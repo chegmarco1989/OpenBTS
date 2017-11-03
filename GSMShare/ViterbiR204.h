@@ -28,122 +28,116 @@
 
 #include "Viterbi.h"
 
-
 /**
 	Class to represent convolutional coders/decoders of rate 1/2, memory length 4.
 	This is the "workhorse" coder for most GSM channels.
 */
 class ViterbiR2O4 : public ViterbiBase {
 
-	private:
-		/**name Lots of precomputed elements so the compiler can optimize like hell. */
-		//@{
-		/**@name Core values. */
-		//@{
-		static const unsigned mIRate = 2;	///< reciprocal of rate
-		static const unsigned mOrder = 4;	///< memory length of generators
-		//@}
-		/**@name Derived values. */
-		//@{
-		static const unsigned mIStates = 0x01 << mOrder;	///< (16) number of states, number of survivors
-		static const uint32_t mSMask = mIStates-1;			///< survivor mask
-		static const uint32_t mCMask = (mSMask<<1) | 0x01;	///< candidate mask
-		static const uint32_t mOMask = (0x01<<mIRate)-1;	///< ouput mask, all iRate low bits set
-		static const unsigned mNumCands = mIStates*2;		///< number of candidates to generate during branching
-		static const unsigned mDeferral = 6*mOrder;			///< deferral to be used
-		//@}
-		//@}
+private:
+	/**name Lots of precomputed elements so the compiler can optimize like hell. */
+	//@{
+	/**@name Core values. */
+	//@{
+	static const unsigned mIRate = 2; ///< reciprocal of rate
+	static const unsigned mOrder = 4; ///< memory length of generators
+	//@}
+	/**@name Derived values. */
+	//@{
+	static const unsigned mIStates = 0x01 << mOrder;     ///< (16) number of states, number of survivors
+	static const uint32_t mSMask = mIStates - 1;	 ///< survivor mask
+	static const uint32_t mCMask = (mSMask << 1) | 0x01; ///< candidate mask
+	static const uint32_t mOMask = (0x01 << mIRate) - 1; ///< ouput mask, all iRate low bits set
+	static const unsigned mNumCands = mIStates * 2;      ///< number of candidates to generate during branching
+	static const unsigned mDeferral = 6 * mOrder;	///< deferral to be used
+	//@}
+	//@}
 
-		/** Precomputed tables. */
-		//@{
-		uint32_t mCoeffs[mIRate];					///< polynomial for each generator
-		// (pat) There are 16 states, each of which has two possible output states.
-		// These are stored in these two tables in consecutive locations.
-		uint32_t mStateTable[mIRate][2*mIStates];	///< precomputed generator output tables
-		// mGeneratorTable is the encoder output state for a given input state and encoder input bit.
-		uint32_t mGeneratorTable[2*mIStates];		///< precomputed coder output table
-		//@}
-		int mBitErrorCnt;
-	
-	public:
+	/** Precomputed tables. */
+	//@{
+	uint32_t mCoeffs[mIRate]; ///< polynomial for each generator
+	// (pat) There are 16 states, each of which has two possible output states.
+	// These are stored in these two tables in consecutive locations.
+	uint32_t mStateTable[mIRate][2 * mIStates]; ///< precomputed generator output tables
+	// mGeneratorTable is the encoder output state for a given input state and encoder input bit.
+	uint32_t mGeneratorTable[2 * mIStates]; ///< precomputed coder output table
+	//@}
+	int mBitErrorCnt;
 
-		/**
-		  A candidate sequence in a Viterbi decoder.
-		  The 32-bit state register can support a deferral of 6 with a 4th-order coder.
-		 */
-		typedef struct candStruct {
-			uint32_t iState;	///< encoder input associated with this candidate
-			uint32_t oState;	///< encoder output associated with this candidate
-			float cost;			///< cost (metric value), float to support soft inputs
-			int bitErrorCnt;	///< number of bit errors in the encoded vector being decoded.
-		} vCand;
+public:
+	/**
+	  A candidate sequence in a Viterbi decoder.
+	  The 32-bit state register can support a deferral of 6 with a 4th-order coder.
+	 */
+	typedef struct candStruct {
+		uint32_t iState; ///< encoder input associated with this candidate
+		uint32_t oState; ///< encoder output associated with this candidate
+		float cost;      ///< cost (metric value), float to support soft inputs
+		int bitErrorCnt; ///< number of bit errors in the encoded vector being decoded.
+	} vCand;
 
-		/** Clear a structure. */
-		void vitClear(vCand& v)
-		{
-			v.iState=0;
-			v.oState=0;
-			v.cost=0;
-			v.bitErrorCnt = 0;
-		}
-		
+	/** Clear a structure. */
+	void vitClear(vCand &v)
+	{
+		v.iState = 0;
+		v.oState = 0;
+		v.cost = 0;
+		v.bitErrorCnt = 0;
+	}
 
-	private:
+private:
+	/**@name Survivors and candidates. */
+	//@{
+	vCand mSurvivors[mIStates];      ///< current survivor pool
+	vCand mCandidates[2 * mIStates]; ///< current candidate pool
+					 //@}
 
-		/**@name Survivors and candidates. */
-		//@{
-		vCand mSurvivors[mIStates];			///< current survivor pool
-		vCand mCandidates[2*mIStates];		///< current candidate pool
-		//@}
+public:
+	unsigned iRate() const { return mIRate; }
+	uint32_t cMask() const { return mCMask; }
+	uint32_t stateTable(unsigned g, unsigned i) const { return mStateTable[g][i]; }
+	unsigned deferral() const { return mDeferral; }
 
-	public:
+	ViterbiR2O4();
 
-		unsigned iRate() const { return mIRate; }
-		uint32_t cMask() const { return mCMask; }
-		uint32_t stateTable(unsigned g, unsigned i) const { return mStateTable[g][i]; }
-		unsigned deferral() const { return mDeferral; }
-		
+	/** Set all cost metrics to zero. */
+	void initializeStates();
 
-		ViterbiR2O4();
+	/**
+		Full cycle of the Viterbi algorithm: branch, metrics, prune, select.
+		@return reference to minimum-cost candidate.
+	*/
+	const vCand *vstep(uint32_t inSample, const float *probs, const float *iprobs, bool isNotTailBits);
 
-		/** Set all cost metrics to zero. */
-		void initializeStates();
+private:
+	/** Branch survivors into new candidates. */
+	void branchCandidates();
 
-		/**
-			Full cycle of the Viterbi algorithm: branch, metrics, prune, select.
-			@return reference to minimum-cost candidate.
-		*/
-		const vCand* vstep(uint32_t inSample, const float *probs, const float *iprobs, bool isNotTailBits);
+	/** Compute cost metrics for soft-inputs. */
+	void getSoftCostMetrics(uint32_t inSample, const float *probs, const float *iprobs);
 
-	private:
+	/** Select survivors from the candidate set. */
+	void pruneCandidates();
 
-		/** Branch survivors into new candidates. */
-		void branchCandidates();
+	/** Find the minimum cost survivor. */
+	const vCand &minCost() const;
 
-		/** Compute cost metrics for soft-inputs. */
-		void getSoftCostMetrics(uint32_t inSample, const float *probs, const float *iprobs);
+	/**
+		Precompute the state tables.
+		@param g Generator index 0..((1/rate)-1)
+	*/
+	void computeStateTables(unsigned g);
 
-		/** Select survivors from the candidate set. */
-		void pruneCandidates();
+	/**
+		Precompute the generator outputs.
+		mCoeffs must be defined first.
+	*/
+	void computeGeneratorTable();
 
-		/** Find the minimum cost survivor. */
-		const vCand& minCost() const;
-
-		/**
-			Precompute the state tables.
-			@param g Generator index 0..((1/rate)-1)
-		*/
-		void computeStateTables(unsigned g);
-
-		/**
-			Precompute the generator outputs.
-			mCoeffs must be defined first.
-		*/
-		void computeGeneratorTable();
-
-	public:
-		void encode(const BitVector &in, BitVector& target) const;
-		void decode(const SoftVector &in, BitVector& target);
-		int getBEC() { return mBitErrorCnt; }
+public:
+	void encode(const BitVector &in, BitVector &target) const;
+	void decode(const SoftVector &in, BitVector &target);
+	int getBEC() { return mBitErrorCnt; }
 };
+
 #endif

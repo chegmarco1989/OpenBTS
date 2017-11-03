@@ -18,73 +18,62 @@
 #ifndef SCANNING_H
 #define SCANNING_H
 
-
 #include <list>
+
 #include <GSMCommon.h>
 
 struct sqlite3;
 
 namespace GSM {
-	class L3SystemInformationType1;
-	class L3SystemInformationType2;
-	class L3SystemInformationType3;
-}
 
+class L3SystemInformationType1;
+class L3SystemInformationType2;
+class L3SystemInformationType3;
+
+}; // namespace GSM
 
 typedef std::list<unsigned> ARFCNList;
-
 
 /** A C++ API to the SPECTRUM_MAP database table. */
 class SpectrumMap {
 
-	private:
+private:
+	sqlite3 *mDB; ///< database connection
 
-	sqlite3 *mDB;		///< database connection
-
-
-	public:
-
+public:
 	class LinkDirection {
-		public:
-			static const int Up;
-			static const int Down;
+	public:
+		static const int Up;
+		static const int Down;
 
-			LinkDirection() {
-				mDir = Up;
-			}
-			LinkDirection(const LinkDirection &that) {
-				mDir = that.mDir;
-			}
-			LinkDirection(const int that) {
-				mDir = that;
-			}
+		LinkDirection() { mDir = Up; }
+		LinkDirection(const LinkDirection &that) { mDir = that.mDir; }
+		LinkDirection(const int that) { mDir = that; }
 
-			bool operator==(LinkDirection& that) const {
-				return mDir == that.mDir;
+		bool operator==(LinkDirection &that) const { return mDir == that.mDir; }
+		bool operator==(int that) const { return mDir == that; }
+		void operator=(int dir)
+		{
+			if (dir == Up || dir == Down) {
+				mDir = dir;
 			}
-			bool operator==(int that) const {
-				return mDir == that;
+		}
+		const char *string() const
+		{
+			if (mDir == Up) {
+				return "up";
+			} else if (mDir == Down) {
+				return "down";
 			}
-			void operator=(int dir) {
-				if (dir == Up || dir == Down) {
-					mDir = dir;
-				}
-			}
-			const char *string() const {
-				if (mDir == Up) {
-					return "up";
-				} else if (mDir == Down) {
-					return "down";
-				}
-				return "";
-			}
+			return "";
+		}
 
-		private:
-			int mDir;
+	private:
+		int mDir;
 	};
 
 	/** The constructor connects to the database and inits the table. */
-	SpectrumMap(const char* path);
+	SpectrumMap(const char *path);
 
 	/** The destructor closes the database connection. */
 	~SpectrumMap();
@@ -93,22 +82,20 @@ class SpectrumMap {
 	void clear();
 
 	/** Mark a given ARFCN as having a given power level. */
-	void power(GSM::GSMBand band, unsigned ARFCN, float freq, LinkDirection& linkDir, float dBm);
+	void power(GSM::GSMBand band, unsigned ARFCN, float freq, LinkDirection &linkDir, float dBm);
 
 	/** Mark a given ARFCN as having a given power level. */
-	void power(GSM::GSMBand band, unsigned ARFCN, LinkDirection& linkDir, float dBm);
+	void power(GSM::GSMBand band, unsigned ARFCN, LinkDirection &linkDir, float dBm);
 
 	/** Mark a given ARFCN as having a given power level. */
-	//void power(GSM::GSMBand band, unsigned ARFCN, float freq, float dBm);
+	// void power(GSM::GSMBand band, unsigned ARFCN, float freq, float dBm);
 
 	/** Return a list of up to count of the most powerful ARFCNs in a given band. */
 	ARFCNList topPower(GSM::GSMBand band, unsigned count) const;
 
 	/** Return a list of up to count of the least powerful ARFCNs in a given band. */
 	ARFCNList minimumPower(GSM::GSMBand band, unsigned count) const;
-
 };
-
 
 #if 0
 class BTSRecord {
@@ -154,23 +141,20 @@ class BTSRecord {
 };
 #endif
 
-
 /** A list of ARFCNs waiting to be scanned. */
 class ScanList {
 
-	private:
+private:
+	ARFCNList mNewARFCNs; ///< ARFCNs that still need to be scanned.
+	ARFCNList mOldARFCNs; ///< ARFCNs that have already been scanned.
 
-	ARFCNList mNewARFCNs;		///< ARFCNs that still need to be scanned.
-	ARFCNList mOldARFCNs;		///< ARFCNs that have already been scanned.
-
-	public:
-
+public:
 	size_t size() const { return mNewARFCNs.size(); }
 
 	/** Add ARFCNs to the mNewARFCNs if it is not already scanned or pending for scanning. */
-	void add(const ARFCNList& moreARFCNs);
+	void add(const ARFCNList &moreARFCNs);
 
-	void add(const std::vector<unsigned>& moreARFCNs);
+	void add(const std::vector<unsigned> &moreARFCNs);
 
 	/** Add an ARFCN to the mNewARFCNs if it is not already scanned or pending for scanning. */
 	void add(unsigned ARFCN);
@@ -181,21 +165,14 @@ class ScanList {
 	int next();
 
 	/** Return true if the scan is complete. */
-	bool allDone() const { return mNewARFCNs.size()==0; }
+	bool allDone() const { return mNewARFCNs.size() == 0; }
 
 	/** Clear both lists; reset the object. */
 	void clear();
 
-	private:
-
+private:
 	/** Return true if a given ARFCN is already in mNewARFCNs or mOldARFCNs. */
 	bool alreadyListed(unsigned ARFCN) const;
 };
 
-
-
-
-
 #endif
-
-// vim: ts=4 sw=4

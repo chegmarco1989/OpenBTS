@@ -21,25 +21,13 @@
 
 #include "radioVector.h"
 
-radioVector::radioVector(const signalVector& wVector, GSM::Time& wTime)
-	: signalVector(wVector), mTime(wTime)
-{
-}
+radioVector::radioVector(const signalVector &wVector, GSM::Time &wTime) : signalVector(wVector), mTime(wTime) {}
 
-GSM::Time radioVector::getTime() const
-{
-	return mTime;
-}
+GSM::Time radioVector::getTime() const { return mTime; }
 
-void radioVector::setTime(const GSM::Time& wTime)
-{
-	mTime = wTime;
-}
+void radioVector::setTime(const GSM::Time &wTime) { mTime = wTime; }
 
-bool radioVector::operator>(const radioVector& other) const
-{
-	return mTime > other.mTime;
-}
+bool radioVector::operator>(const radioVector &other) const { return mTime > other.mTime; }
 
 noiseVector::noiseVector(size_t n)
 {
@@ -54,7 +42,7 @@ float noiseVector::avg()
 	for (size_t i = 0; i < size(); i++)
 		val += (*this)[i];
 
-	return val / (float) size();
+	return val / (float)size();
 }
 
 bool noiseVector::insert(float val)
@@ -70,27 +58,18 @@ bool noiseVector::insert(float val)
 	return true;
 }
 
-unsigned VectorFIFO::size()
-{
-	return mQ.size();
-}
+unsigned VectorFIFO::size() { return mQ.size(); }
 
-void VectorFIFO::put(radioVector *ptr)
-{
-	mQ.put((void*) ptr);
-}
+void VectorFIFO::put(radioVector *ptr) { mQ.put((void *)ptr); }
 
-radioVector *VectorFIFO::get()
-{
-	return (radioVector*) mQ.get();
-}
+radioVector *VectorFIFO::get() { return (radioVector *)mQ.get(); }
 
 GSM::Time VectorQueue::nextTime() const
 {
 	GSM::Time retVal;
 	mLock.lock();
 
-	while (mQ.size()==0)
+	while (mQ.size() == 0)
 		mWriteSignal.wait(mLock);
 
 	retVal = mQ.top()->getTime();
@@ -99,16 +78,16 @@ GSM::Time VectorQueue::nextTime() const
 	return retVal;
 }
 
-radioVector* VectorQueue::getStaleBurst(const GSM::Time& targTime)
+radioVector *VectorQueue::getStaleBurst(const GSM::Time &targTime)
 {
 	mLock.lock();
-	if ((mQ.size()==0)) {
+	if ((mQ.size() == 0)) {
 		mLock.unlock();
 		return NULL;
 	}
 
 	if (mQ.top()->getTime() < targTime) {
-		radioVector* retVal = mQ.top();
+		radioVector *retVal = mQ.top();
 		mQ.pop();
 		mLock.unlock();
 		return retVal;
@@ -118,16 +97,16 @@ radioVector* VectorQueue::getStaleBurst(const GSM::Time& targTime)
 	return NULL;
 }
 
-radioVector* VectorQueue::getCurrentBurst(const GSM::Time& targTime)
+radioVector *VectorQueue::getCurrentBurst(const GSM::Time &targTime)
 {
 	mLock.lock();
-	if ((mQ.size()==0)) {
+	if ((mQ.size() == 0)) {
 		mLock.unlock();
 		return NULL;
 	}
 
 	if (mQ.top()->getTime() == targTime) {
-		radioVector* retVal = mQ.top();
+		radioVector *retVal = mQ.top();
 		mQ.pop();
 		mLock.unlock();
 		return retVal;

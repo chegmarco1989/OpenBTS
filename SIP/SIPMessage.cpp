@@ -2,7 +2,8 @@
 * Copyright 2008 Free Software Foundation, Inc.
 * Copyright 2014 Range Networks, Inc.
 *
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing information for this specific distribution.
+* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
+information for this specific distribution.
 *
 * This use of this software may be subject to additional restrictions.
 * See the LEGAL file in the main directory for details.
@@ -13,27 +14,24 @@
 
 */
 
+#define LOG_GROUP LogGroup::SIP // Can set Log.Level.SIP for debugging
 
-
-#define LOG_GROUP LogGroup::SIP		// Can set Log.Level.SIP for debugging
-
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
 
 #include <ortp/ortp.h>
 
-#include "SIPUtility.h"
-#include "SIPMessage.h"
 #include "SIPBase.h"
+#include "SIPMessage.h"
+#include "SIPUtility.h"
 #include <OpenBTSConfig.h>
-#undef WARNING		// The nimrods defined this to "warning"
-#undef CR			// This too
+#undef WARNING // The nimrods defined this to "warning"
+#undef CR      // This too
 
 using namespace std;
 
 namespace SIP {
-
 
 // Matching replies to requests:
 // RFC3261 is an evolved total botch-up.  Forensically, messages were originally identified by method + cseq,
@@ -41,21 +39,21 @@ namespace SIP {
 // so the to-tag and and apparently completely redundant from-tag were added, but that was insufficient for proxies,
 // so finally the via-branch was added, which now trumps all other id methods.
 // The call-id is constant for all transactions within a dialog, and for all REGISTER to a Registrar.
-// The via-branch is unique for all requests except for CANCEL and ACK, which use the via-branch of the request being cancelled,
-// however, this is a new feature.  The via header is copied into the response.
-// The current rules as per RFC3261 are as follows:
-// 17.1.3 specifies how to match responses to client transactions:
-// 		o  If the via branch and the cseq-method match the request.   (cseq-method needed because CANCEL
-//		uses the same via-branch of the initial INVITE.)  This is unique because we added that via-branch ourselves.
+// The via-branch is unique for all requests except for CANCEL and ACK, which use the via-branch of the request being
+// cancelled, however, this is a new feature.  The via header is copied into the response. The current rules as per
+// RFC3261 are as follows: 17.1.3 specifies how to match responses to client transactions: 		o  If the via
+// branch and the cseq-method match the request.   (cseq-method needed because CANCEL
+//		uses the same via-branch of the initial INVITE.)  This is unique because we added that via-branch
+// ourselves.
 // 		Note that this rule is universally applicable for both SIP endpoints and proxies; as a sip-endpoint
 //		we could use a different system, for example call-id + from-tag + cseq-method + cseq-number.
 //		Note that this rule matches responses to requests, but does not differentiate multiple replies
 //		from different endpoints to the same request, which would be differentiated by from/to-tag for dialogs.
-//		For direct BTS-to-BTS connection where there are two calls on the same BTS talking to each other directly
-//		without an intervening SIP server, then the via-branch, call-id are identical
-//		for both dialogs.  (Because the the response copies call-id, from-tag and via-header from the request.)
-//		Options for differentiating the messages are to use the local-tag (which is identical in both dialogs
-//		but is the from-tag in the originating dialog and the to-tag in the terminating dialog.
+//		For direct BTS-to-BTS connection where there are two calls on the same BTS talking to each other
+// directly 		without an intervening SIP server, then the via-branch, call-id are identical 		for both
+// dialogs.  (Because the the response copies call-id, from-tag and via-header from the request.) 		Options
+// for differentiating the messages are to use the local-tag (which is identical in both dialogs 		but is
+// the from-tag in the originating dialog and the to-tag in the terminating dialog.
 //		or to use the to-tag (which is not known when original response to dialog is received),
 //		or the CSEQ-number and make sure the CSEQ-number of the two dialogs are non-overlapping.
 //		A -- INVITE -> B
@@ -64,20 +62,22 @@ namespace SIP {
 // 17.2.3 specifies how to match requests for the purpose of identifying a duplicate request.
 // 		1.  If via-branch begins with "z9hG4bK" (they couldnt rev the spec number?) then:
 //		top via branch and via sent-by match, and method matches request except for ACK which matches INVITE.
-// 		2. Otherwise: The request-URI, to-tag, from-tag, call-id, cseq, and top-via-header all match those of the
+// 		2. Otherwise: The request-URI, to-tag, from-tag, call-id, cseq, and top-via-header all match those of
+// the
 //		request that is being duplicated.
-//		For duplicated ACK detection, the to-tag must match the to-tag of the response sent by the server (of course,
-//		which is just another way of saying the ACK is the same as the previous ACK.)
-//		Note: the initial INVITE request does not contain a to-tag, so the 'to-tag' part of this rule for matching
-//		a duplicated INVITE means the to-tag is empty, because a re-INVITE will include the to-tag of the final response
-//		to the INVITE.
-
+//		For duplicated ACK detection, the to-tag must match the to-tag of the response sent by the server (of
+// course, 		which is just another way of saying the ACK is the same as the previous ACK.)
+//		Note: the initial INVITE request does not contain a to-tag, so the 'to-tag' part of this rule for
+// matching
+//		a duplicated INVITE means the to-tag is empty, because a re-INVITE will include the to-tag of the final
+// response 		to the INVITE.
 
 // 8.1.3.3: The Via header in an inbound response must have only one via, or it should be discarded.
 // The vias in an inbound request include all the proxies, and must be copied verbatim to the outbound response.
 // ACK and CANCEL have a single via equal the top via header of the original request, which is interesting
 // because it means the proxies must be stateful.
-// 18.2.1: for server transport layer: if top via-sent-by is a domain name, must add "received" param with IP address it came from.
+// 18.2.1: for server transport layer: if top via-sent-by is a domain name, must add "received" param with IP address it
+// came from.
 
 // Request inside INVITE
 // Write:
@@ -91,7 +91,7 @@ namespace SIP {
 // User-Agent: OpenBTS 4.0TRUNK Build Date May 25 2013^M
 // Max-Forwards: 70^M
 // Content-Length: 0^M
-// 
+//
 // Receive:
 // SIP/2.0 200 OK^M
 // Via: SIP/2.0/UDP 127.0.0.1:5062;branch=z9hG4bKobts28b7bf3680791a653;received=127.0.0.1;rport=5062^M
@@ -158,30 +158,29 @@ namespace SIP {
 // P-Preferred-Identity: <sip:IMSI001690000000002@127.0.0.1:5060>^M
 // Content-Length: 0^M
 
-
-
-
-static void appendHeader(string *result,const char *name,string value)
+static void appendHeader(string *result, const char *name, string value)
 {
-	if (value.empty()) return;
+	if (value.empty())
+		return;
 	result->append(name);
 	result->append(": ");
 	result->append(value);
 	result->append("\r\n");
 }
-static void appendHeader(string *result,const char *name,const char *value)
+static void appendHeader(string *result, const char *name, const char *value)
 {
-	if (*value == 0) return;
+	if (*value == 0)
+		return;
 	result->append(name);
 	result->append(": ");
 	result->append(value);
 	result->append("\r\n");
 }
-static void appendHeader(string *result,const char *name,int val)
+static void appendHeader(string *result, const char *name, int val)
 {
 	char buf[30];
-	snprintf(buf,30,"%d",val);
-	appendHeader(result,name,buf);
+	snprintf(buf, 30, "%d", val);
+	appendHeader(result, name, buf);
 }
 
 // Generate the string representing this sip message.
@@ -194,89 +193,95 @@ string SipMessage::smGenerate(string userAgent)
 	// First line.
 	if (msmCode == 0) {
 		// It is a request
-		string uri = this->msmReqUri;	// This includes the URI params and headers, if any.
-		snprintf(buf,200,"%s %s SIP/2.0\r\n", this->msmReqMethod.c_str(), uri.c_str());
+		string uri = this->msmReqUri; // This includes the URI params and headers, if any.
+		snprintf(buf, 200, "%s %s SIP/2.0\r\n", this->msmReqMethod.c_str(), uri.c_str());
 	} else {
 		// It is a reply.
-		snprintf(buf,200,"SIP/2.0 %u %s\r\n", msmCode, msmReason.c_str());
+		snprintf(buf, 200, "SIP/2.0 %u %s\r\n", msmCode, msmReason.c_str());
 	}
 	result.append(buf);
 
-	appendHeader(&result,"To",this->msmTo.value());
-	appendHeader(&result,"From",this->msmFrom.value());
+	appendHeader(&result, "To", this->msmTo.value());
+	appendHeader(&result, "From", this->msmFrom.value());
 
-	appendHeader(&result,"Via",this->msmVias);
+	appendHeader(&result, "Via", this->msmVias);
 
-	appendHeader(&result,"Route",this->msmRoutes);
+	appendHeader(&result, "Route", this->msmRoutes);
 
-	appendHeader(&result,"Call-ID",this->msmCallId);
+	appendHeader(&result, "Call-ID", this->msmCallId);
 
-	snprintf(buf,200,"%d %s",msmCSeqNum,msmCSeqMethod.c_str());
-	appendHeader(&result,"CSeq",buf);
+	snprintf(buf, 200, "%d %s", msmCSeqNum, msmCSeqMethod.c_str());
+	appendHeader(&result, "CSeq", buf);
 
-	if (! msmContactValue.empty()) { appendHeader(&result,"Contact",msmContactValue); }
-	if (! msmAuthorizationValue.empty()) { appendHeader(&result,"Authorization",msmAuthorizationValue); }
+	if (!msmContactValue.empty()) {
+		appendHeader(&result, "Contact", msmContactValue);
+	}
+	if (!msmAuthorizationValue.empty()) {
+		appendHeader(&result, "Authorization", msmAuthorizationValue);
+	}
 	// The WWW-Authenticate header occurs only in inbound replies from the Registrar, so we ignore it here.
-	if (! msmMaxForwards.empty()) { appendHeader(&result,"Max-Forwards",msmMaxForwards); }
+	if (!msmMaxForwards.empty()) {
+		appendHeader(&result, "Max-Forwards", msmMaxForwards);
+	}
 
 	// These are other headers we dont otherwise process.
 	for (SipParamList::iterator it = msmHeaders.begin(); it != msmHeaders.end(); it++) {
 		// Take out the headers we are going to add below.
 		const char *name = it->mName.c_str();
-		if (strcasecmp(name,"User-Agent") && /*strcasecmp(name,"Max-Forwards") &&*/
-		    strcasecmp(name,"Content-Type") && strcasecmp(name,"Content-Length")) {
-			appendHeader(&result,it->mName.c_str(),it->mValue);
+		if (strcasecmp(name, "User-Agent") && /*strcasecmp(name,"Max-Forwards") &&*/
+		    strcasecmp(name, "Content-Type") && strcasecmp(name, "Content-Length")) {
+			appendHeader(&result, it->mName.c_str(), it->mValue);
 		}
 	}
-	appendHeader(&result,"User-Agent",userAgent);
+	appendHeader(&result, "User-Agent", userAgent);
 
 	// Append termination cause text see examples below
 	// Reason: SIP ;cause=580 ;text="Precondition Failure"
 	// Reason: Q.850 ;cause=16 ;text="Terminated"
 	// SVG Added 4/21/14 for Lynx  SIPCallTermination
 
-	//LOG(INFO) << "SIP term info copy SIP call termination reasons to SIP message, count: " << SIPMsgCallTerminationList.size(); // SVGDBG
-	//string sTemp = SIPMsgCallTerminationList.getTextForAllMsgs();;
-	//LOG(INFO) << "SIP term info in smGenerate text: " << sTemp.c_str(); // SVGDBG
-	//result.append(sTemp.c_str());
-	if (msmReasonHeader.size()) { appendHeader(&result,"Reason",msmReasonHeader); }
+	// LOG(INFO) << "SIP term info copy SIP call termination reasons to SIP message, count: " <<
+	// SIPMsgCallTerminationList.size(); // SVGDBG  string sTemp = SIPMsgCallTerminationList.getTextForAllMsgs();;
+	// LOG(INFO) << "SIP term info in smGenerate text: " << sTemp.c_str(); // SVGDBG
+	// result.append(sTemp.c_str());
+	if (msmReasonHeader.size()) {
+		appendHeader(&result, "Reason", msmReasonHeader);
+	}
 
 	// Create the body, if any.
-	appendHeader(&result,"Content-Type",msmContentType);
-	appendHeader(&result,"Content-Length",msmBody.size());
+	appendHeader(&result, "Content-Type", msmContentType);
+	appendHeader(&result, "Content-Length", msmBody.size());
 	result.append("\r\n");
 	result.append(msmBody);
 	msmContent = result;
-	LOG(INFO) << "SIP term info generated SIP msg: \r\n" << result.c_str();  //SVGDBG
+	LOG(INFO) << "SIP term info generated SIP msg: \r\n" << result.c_str(); // SVGDBG
 
 	return msmContent;
 }
 
 // Copy the top via from other into this.
-void SipMessage::smCopyTopVia(SipMessage *other)
-{
-	this->msmVias = commaListFront(other->msmVias);
-}
+void SipMessage::smCopyTopVia(SipMessage *other) { this->msmVias = commaListFront(other->msmVias); }
 
 // Add a new Via with a new unique branch.
 void SipMessage::smAddViaBranch3(string transport, string proxy, string branch)
 {
-	string newvia = format("SIP/2.0/%s %s;branch=%s\r\n",transport,proxy,branch);
-	commaListPushFront(&msmVias,newvia);
+	string newvia = format("SIP/2.0/%s %s;branch=%s\r\n", transport, proxy, branch);
+	commaListPushFront(&msmVias, newvia);
 }
 
 void SipMessage::smAddViaBranch(string transport, string branch)
 {
-	smAddViaBranch3(transport,localIPAndPort(),branch);
+	smAddViaBranch3(transport, localIPAndPort(), branch);
 }
 
 void SipMessage::smAddViaBranch(SipBase *dialog, string branch)
 {
 	// Add a visible hint to the tag for debugging.  Use the Request Method, if any.
-	string newvia = format("SIP/2.0/%s %s;branch=%s\r\n",dialog->transportName(),dialog->localIPAndPort(),branch);
-	commaListPushFront(&msmVias,newvia);
+	string newvia =
+		format("SIP/2.0/%s %s;branch=%s\r\n", dialog->transportName(), dialog->localIPAndPort(), branch);
+	commaListPushFront(&msmVias, newvia);
 }
-string SipMessage::smPopVia()		// Pop and return the top via; modifies msmVias.
+string SipMessage::smPopVia() // Pop and return the top via; modifies msmVias.
 {
 	return commaListPopFront(&msmVias);
 }
@@ -284,102 +289,135 @@ string SipMessage::smPopVia()		// Pop and return the top via; modifies msmVias.
 string SipMessage::smGetProxy() const
 {
 	string topvia = commaListFront(msmVias);
-	if (topvia.empty()) { return string(""); }	// oops
+	if (topvia.empty()) {
+		return string("");
+	} // oops
 	SipVia via(topvia);
 	return via.mSentBy;
 }
 
-void SipMessage::addCallTerminationReasonSM(CallTerminationCause::termGroup group, int cause, string desc) {
+void SipMessage::addCallTerminationReasonSM(CallTerminationCause::termGroup group, int cause, string desc)
+{
 	LOG(INFO) << "SIP term info addCallTerminationReasonSM cause: " << cause;
 	SIPMsgCallTerminationList.add(group, cause, desc);
 }
 
-
-string SipMessage::smGetBranch()
-{
-	return SipVia(msmVias).mViaBranch;
-}
+string SipMessage::smGetBranch() { return SipVia(msmVias).mViaBranch; }
 
 string SipMessage::smGetReturnIPAndPort()
 {
 	string contactUri;
-	if (! crackUri(msmContactValue, NULL,&contactUri,NULL)) {
+	if (!crackUri(msmContactValue, NULL, &contactUri, NULL)) {
 		LOG(ERR);
 	}
 	string contact = SipUri(contactUri).uriHostAndPort();
 	return contact;
 }
 
-
 string SipMessage::text(bool verbose) const
 {
 	std::ostringstream ss;
 	ss << "SipMessage(";
-	{ int code = smGetCode(); ss <<LOGVAR(code); }
-	if (!msmReqMethod.empty()) ss <<LOGVAR2("ReqMethod",msmReqMethod);
-	if (!msmReason.empty()) ss <<LOGVAR2("reason",msmReason);
-	if (!msmCSeqMethod.empty()) ss<<" CSeq="<<msmCSeqNum<< " "<<msmCSeqMethod;
-	if (!msmCallId.empty()) ss <<LOGVAR2("callid",msmCallId);
-	if (!msmReqUri.empty()) ss << LOGVAR2("ReqUri",msmReqUri);
-	{ string To = msmTo.value(); if (!To.empty()) ss << LOGVAR(To); }
-	{ string From = msmFrom.value(); if (!From.empty()) ss<<LOGVAR(From); }
-	if (!msmVias.empty()) ss <<LOGVAR2("Vias",msmVias);
-	if (!msmRoutes.empty()) ss <<LOGVAR2("Routes",msmRoutes);
-	if (!msmRecordRoutes.empty()) ss <<LOGVAR2("RecordRoutes",msmRecordRoutes);
-	if (!msmContactValue.empty()) ss <<LOGVAR2("Contact",msmContactValue);
-	//list<SipBody> msmBodies;
-	if (!msmContentType.empty()) ss<<LOGVAR2("ContentType",msmContentType);
-	if (!msmBody.empty()) ss<<LOGVAR2("Body",msmBody);
-	//if (!msmAuthenticateValue.empty()) ss<<LOGVARM(msmAuthenticateValue);
-	if (!msmAuthorizationValue.empty()) ss<<LOGVARM(msmAuthorizationValue);
+	{
+		int code = smGetCode();
+		ss << LOGVAR(code);
+	}
+	if (!msmReqMethod.empty())
+		ss << LOGVAR2("ReqMethod", msmReqMethod);
+	if (!msmReason.empty())
+		ss << LOGVAR2("reason", msmReason);
+	if (!msmCSeqMethod.empty())
+		ss << " CSeq=" << msmCSeqNum << " " << msmCSeqMethod;
+	if (!msmCallId.empty())
+		ss << LOGVAR2("callid", msmCallId);
+	if (!msmReqUri.empty())
+		ss << LOGVAR2("ReqUri", msmReqUri);
+	{
+		string To = msmTo.value();
+		if (!To.empty())
+			ss << LOGVAR(To);
+	}
+	{
+		string From = msmFrom.value();
+		if (!From.empty())
+			ss << LOGVAR(From);
+	}
+	if (!msmVias.empty())
+		ss << LOGVAR2("Vias", msmVias);
+	if (!msmRoutes.empty())
+		ss << LOGVAR2("Routes", msmRoutes);
+	if (!msmRecordRoutes.empty())
+		ss << LOGVAR2("RecordRoutes", msmRecordRoutes);
+	if (!msmContactValue.empty())
+		ss << LOGVAR2("Contact", msmContactValue);
+	// list<SipBody> msmBodies;
+	if (!msmContentType.empty())
+		ss << LOGVAR2("ContentType", msmContentType);
+	if (!msmBody.empty())
+		ss << LOGVAR2("Body", msmBody);
+	// if (!msmAuthenticateValue.empty()) ss<<LOGVARM(msmAuthenticateValue);
+	if (!msmAuthorizationValue.empty())
+		ss << LOGVARM(msmAuthorizationValue);
 	for (SipParamList::const_iterator it = msmHeaders.begin(); it != msmHeaders.end(); it++) {
-		ss <<" header "<<it->mName <<"="<<it->mValue;
+		ss << " header " << it->mName << "=" << it->mValue;
 	}
 
-	if (verbose) { ss << LOGVARM(msmContent); } else { ss << LOGVAR2("firstLine",smGetFirstLine()); }
+	if (verbose) {
+		ss << LOGVARM(msmContent);
+	} else {
+		ss << LOGVAR2("firstLine", smGetFirstLine());
+	}
 	ss << ")";
 	return ss.str();
 }
-ostream& operator<<(ostream& os, const SipMessage&msg) { os << msg.text(); return os; }
-ostream& operator<<(ostream& os, const SipMessage*msg) { os << (msg ? msg->text(false) : "(null SipMessage)"); return os; }
-
-string SipMessage::smGetFirstLine() const
+ostream &operator<<(ostream &os, const SipMessage &msg)
 {
-	return string(msmContent,0, msmContent.find('\n'));
+	os << msg.text();
+	return os;
 }
+ostream &operator<<(ostream &os, const SipMessage *msg)
+{
+	os << (msg ? msg->text(false) : "(null SipMessage)");
+	return os;
+}
+
+string SipMessage::smGetFirstLine() const { return string(msmContent, 0, msmContent.find('\n')); }
 
 static bool isNumeric(const char *str)
 {
-	for ( ; *str; str++) { if (!isdigit(*str)) return false; }
+	for (; *str; str++) {
+		if (!isdigit(*str))
+			return false;
+	}
 	return true;
 }
 
 // Validate the IMSI string "IMSI"+digits; return pointer to digits or NULL if invalid.
-const char* extractIMSI(const char *IMSI)
+const char *extractIMSI(const char *IMSI)
 {
 	// Form of the name is IMSI<digits>, and it should always be 18 or 19 char.
 	// IMSIs are 14 or 15 char + "IMSI" prefix
 	unsigned namelen = strlen(IMSI);
-	if (strncmp(IMSI,"IMSI",4) || (namelen>19) || (namelen<18) || !isNumeric(IMSI+4)) {
-		// Note that if you use this on a non-INVITE it will fail, because it may have fields like "222-0123" which are not IMSIs.
-		// Dont warn here.  We print a better warning just once in newCheckInvite.
+	if (strncmp(IMSI, "IMSI", 4) || (namelen > 19) || (namelen < 18) || !isNumeric(IMSI + 4)) {
+		// Note that if you use this on a non-INVITE it will fail, because it may have fields like "222-0123"
+		// which are not IMSIs. Dont warn here.  We print a better warning just once in newCheckInvite.
 		// LOG(WARNING) << "INVITE with malformed username \"" << IMSI << "\"";
 		return "";
 	}
 	// Skip first 4 char "IMSI".
-	return IMSI+4;
+	return IMSI + 4;
 }
 
 string SipMessage::smGetPrecis() const
 {
-	const char *methodname = smGetMethodName();	// May be empty, but never NULL
+	const char *methodname = smGetMethodName(); // May be empty, but never NULL
 	if (*methodname) {
-		return format("method=%s to=%s",methodname,smGetToHeader().c_str());
+		return format("method=%s to=%s", methodname, smGetToHeader().c_str());
 	} else {
-		return format("response code=%d %s %s to=%s",smGetCode(),smGetReason().c_str(),smCSeqMethod().c_str(),smGetToHeader().c_str());
+		return format("response code=%d %s %s to=%s", smGetCode(), smGetReason().c_str(),
+			      smCSeqMethod().c_str(), smGetToHeader().c_str());
 	}
 }
-
 
 // Multipart SIP body looks like this:
 // --terminator
@@ -403,9 +441,9 @@ void SipMessage::smAddBody(string contentType, string body1)
 		msmBody = body1;
 	} else {
 		// TODO: TEST THIS!
-		string ctline = format("Content-Type: %s\r\n",contentType.c_str());
+		string ctline = format("Content-Type: %s\r\n", contentType.c_str());
 		string newbody;
-		if (msmContentType.substr(0,strlen("multipart")) != "multipart") {
+		if (msmContentType.substr(0, strlen("multipart")) != "multipart") {
 			// We are switching to multipart now.
 			// Move the original content-type/body into the multipart body.
 			newbody = separator + ctline + eol + msmBody + eol;
@@ -413,48 +451,45 @@ void SipMessage::smAddBody(string contentType, string body1)
 		} else {
 			newbody = msmBody;
 			// Chop off the previous terminator.
-			newbody = newbody.substr(0,newbody.size() - terminator.size());
+			newbody = newbody.substr(0, newbody.size() - terminator.size());
 		}
 		// Add the new contentType and body.
 		newbody.reserve(msmBody.size() + body1.size() + 100);
 		// This requires C++11:
 		// newbody.append(separator, ctline, eol, body1, eol, terminator);
-		newbody.append(separator + ctline + eol + body1 +  eol +  terminator);
+		newbody.append(separator + ctline + eol + body1 + eol + terminator);
 		msmBody = newbody;
 	}
 }
 
 string SipMessage::smGetMessageBody() const
 {
-	//if (msmBodies.size() != 1) {
+	// if (msmBodies.size() != 1) {
 	//	LOG(ERR) << "Message Body invalid "<<msmBodies.size();
 	//	return "";
 	//}
-	//return msmBodies.front().mBody;
+	// return msmBodies.front().mBody;
 	return msmBody;
 }
 
-string SipMessage::smGetMessageContentType() const
-{
-	return msmContentType;
-}
+string SipMessage::smGetMessageContentType() const { return msmContentType; }
 
 string SipMessage::smUriUsername()
 {
 	string result = SipUri(msmReqUri).uriUsername();
-	LOG(DEBUG) <<LOGVAR(msmReqUri) <<LOGVAR(msmTo.value()) <<LOGVAR(result);
+	LOG(DEBUG) << LOGVAR(msmReqUri) << LOGVAR(msmTo.value()) << LOGVAR(result);
 	return result;
-	//SipUri uri; uri.uriParse(msmReqUri);
-	//string username = uri.username();
-	//LOG(DEBUG) << LOGVAR(msmReqUri) <<LOGVAR(username);
-	//return username;
+	// SipUri uri; uri.uriParse(msmReqUri);
+	// string username = uri.username();
+	// LOG(DEBUG) << LOGVAR(msmReqUri) <<LOGVAR(username);
+	// return username;
 }
 
 string SipMessage::smGetInviteImsi()
 {
 	// Get request username (IMSI) from assuming this is the invite message.
 	string username = smUriUsername();
-	LOG(DEBUG) <<LOGVAR(username) <<LOGVAR(extractIMSI(sipSkipPrefix1(username.c_str())));
+	LOG(DEBUG) << LOGVAR(username) << LOGVAR(extractIMSI(sipSkipPrefix1(username.c_str())));
 	return string(extractIMSI(sipSkipPrefix1(username.c_str())));
 }
 
@@ -462,42 +497,43 @@ string SipMessage::smGetRand401()
 {
 	SipParamList params;
 	string authenticate = this->msmHeaders.paramFind("www-authenticate");
-	if (authenticate.size() == 0) return "";
+	if (authenticate.size() == 0)
+		return "";
 	parseAuthenticate(authenticate, params);
 	return params.paramFind("nonce");
 }
 
-
-
 // TODO: This could now be constructed from the dialog state instead of saving the INVITE.
-SipMessageAckOrCancel::SipMessageAckOrCancel(string method, SipMessage *other) {
+SipMessageAckOrCancel::SipMessageAckOrCancel(string method, SipMessage *other)
+{
 	this->smInit();
 	this->msmCallId = other->msmCallId;
 	this->msmReqMethod = method;
 	this->msmCSeqMethod = method;
-	//this->msmReqUri = format("sip:%s@%s",this->mRemoteUsername.c_str(),this->mRemoteDomain.c_str());	// dialed_number@remote_ip
+	// this->msmReqUri = format("sip:%s@%s",this->mRemoteUsername.c_str(),this->mRemoteDomain.c_str());	//
+	// dialed_number@remote_ip
 	this->msmReqUri = other->msmReqUri;
-	this->msmTo = other->msmTo;		// Has the tag already fixed.
-	this->msmFrom = other->msmFrom;	// Has the tag already fixed.
+	this->msmTo = other->msmTo;     // Has the tag already fixed.
+	this->msmFrom = other->msmFrom; // Has the tag already fixed.
 	// For ACK and CANCEL the CSeq equals the CSeq of the INVITE.
 	// Note: For others (BYE), they need their own CSeq.
 	this->msmCSeqNum = other->msmCSeqNum;
 	this->smCopyTopVia(other);
 }
 
-// (pat 5-2014) I dont think OpenBTS currently uses any of the below; it just sends all messages and replies to the single
-// proxy specified by config option for each of Registration, Speech, and SMS type messages.
-// RFC3261 section 4 page 16 describes routing as follows:
+// (pat 5-2014) I dont think OpenBTS currently uses any of the below; it just sends all messages and replies to the
+// single proxy specified by config option for each of Registration, Speech, and SMS type messages. RFC3261 section 4
+// page 16 describes routing as follows:
 // 1. The INVITE is necessarily sent via proxies, which add their own "via" headers.
 // 2.  The reply to the INVITE must include the "via" headers so it can get back.
 // 3. Subsequently, if there is a Contact field, all messages bypass the proxies and are sent directly to the Contact.
 // 4. But the proxies might want to see the messages too, so they can add a "required-route" parameter which trumps
-// the "contact" header and specifies that messages are sent there instead.  This is called "Loose Routing."  What a mess.
-// And I quote: "These procedures separate the destination of the request (present in the Request-URI) from
+// the "contact" header and specifies that messages are sent there instead.  This is called "Loose Routing."  What a
+// mess. And I quote: "These procedures separate the destination of the request (present in the Request-URI) from
 //			the set of proxies that need to be visited along the way (present in the Route header field)."
 // In contrast, A Strict Router "follows the Route processing rules of RFC 2543 and many prior work in
-//			progress versions of this RFC. That rule caused proxies to destroy the contents of the Request-URI
-//			when a Route header field was present."
+//			progress versions of this RFC. That rule caused proxies to destroy the contents of the
+// Request-URI 			when a Route header field was present."
 // 8.1.1.1: Normally the request-URI is equal to the To: field.  But if there is a configured proxy (our case)
 // this is called a "pre-existing route set" and we must follow 12.2.1.1 using the request-URI as the
 // remote target URI(???)
@@ -524,22 +560,26 @@ SipMessageAckOrCancel::SipMessageAckOrCancel(string method, SipMessage *other) {
 // 1. If there is a non-empty route-set and the first route-set URI contains "lr" param, request-URI = remote-target-URI
 //		and must include a Route Header field including all params.
 // 2. If there is a non-empty route-set and the first UR does not contain "lr" param,
-//		request-URI = first route-route URI with params stripped, and generate new route set with first route removed,
-//		andn then add the remote-target-URI at the end of the route header.
+//		request-URI = first route-route URI with params stripped, and generate new route set with first route
+// removed, 		andn then add the remote-target-URI at the end of the route header.
 // 3. If no route-set, request-URI = remote-target-URI
 // The remote-target-URI is set by the Contact header only from a INVITE or re-INVITE.
-SipMessageRequestWithinDialog::SipMessageRequestWithinDialog(string reqMethod, SipBase *dialog, string branch) {
+SipMessageRequestWithinDialog::SipMessageRequestWithinDialog(string reqMethod, SipBase *dialog, string branch)
+{
 	this->smInit();
 	this->msmCallId = dialog->callId();
 	this->msmReqMethod = reqMethod;
 	this->msmCSeqMethod = reqMethod;
-	//this->msmReqUri = dialog->mInvite->msmReqUri;		// TODO: WRONG! see comments above.
-	this->msmReqUri = dialog->dsInDialogRequestURI();		// TODO: WRONG! see comments above.
+	// this->msmReqUri = dialog->mInvite->msmReqUri;		// TODO: WRONG! see comments above.
+	this->msmReqUri = dialog->dsInDialogRequestURI(); // TODO: WRONG! see comments above.
 	this->msmTo = *dialog->dsRequestToHeader();
 	this->msmFrom = *dialog->dsRequestFromHeader();
-	this->msmCSeqNum = dialog->dsNextCSeq();	// The BYE seq number must be incremental within the enclosing INVITE dialog.
-	if (branch.empty()) { branch = make_branch(reqMethod.c_str()); }
-	this->smAddViaBranch(dialog,branch);
+	this->msmCSeqNum =
+		dialog->dsNextCSeq(); // The BYE seq number must be incremental within the enclosing INVITE dialog.
+	if (branch.empty()) {
+		branch = make_branch(reqMethod.c_str());
+	}
+	this->smAddViaBranch(dialog, branch);
 }
 
 // This message exists to encapsulate the Dialog State into a SIP message.
@@ -556,17 +596,17 @@ SipMessageHandoverRefer::SipMessageHandoverRefer(const SipBase *dialog, string p
 	// The request URI will be the BTS we are sending it to...
 	this->smInit();
 	this->msmReqMethod = string("REFER");
-	this->msmReqUri = makeUri("handover",peer);
+	this->msmReqUri = makeUri("handover", peer);
 	this->msmTo = *dialog->dsRequestToHeader();
 	this->msmFrom = *dialog->dsRequestFromHeader();
 	this->msmCallId = dialog->callId();
-	this->msmCSeqMethod = this->msmReqMethod;	// It is "INVITE".
+	this->msmCSeqMethod = this->msmReqMethod; // It is "INVITE".
 	// The CSeq num of the are-INVITE follows.
 	// RFC3261 14.1: The Cseq for re-INVITE follows same rules for in-dialog requests, namely, CSeq num must be
 	// incremented by exactly one.  We do not know if BTS-2 is going to send this this re-INVITE or not,
 	// so we send the current CSeqNum without incrementing it and let BTS-2 increment it.
 	this->msmCSeqNum = dialog->mLocalCSeq;
-	SipParam refer("Refer-To",dialog->dsRemoteURI());	// This is the proxy from the Contact or route header.
+	SipParam refer("Refer-To", dialog->dsRemoteURI()); // This is the proxy from the Contact or route header.
 	this->msmHeaders.push_back(refer);
 
 	// We need to send the SDP answer, which is the local SDP for MTC or the remote SDP for MOC,
@@ -574,25 +614,25 @@ SipMessageHandoverRefer::SipMessageHandoverRefer(const SipBase *dialog, string p
 	// For the re-invite, you can put nearly anything in here, but you must not just use
 	// the identical o= line of the original without at least incrementing the version number.
 	SdpInfo sdpRefer, sdpRemote;
-	//sdpRefer.sdpInitOffer(dialog);
+	// sdpRefer.sdpInitOffer(dialog);
 	sdpRemote.sdpParse(dialog->getSdpRemote());
 
 	// Put the remote SIP server port in the REFER message.  BTS-2 will grab it then substitute its own local port.
-	//sdpRefer.sdpRtpPort = sdpRemote.sdpRtpPort;
+	// sdpRefer.sdpRtpPort = sdpRemote.sdpRtpPort;
 
 	sdpRefer.sdpInitRefer(dialog, sdpRemote.sdpRtpPort);
 
 	// TODO: Put the remote session id and version, incrementing the version.  Paul at yate says these should be 0
 
-	//SdpInfo sdpRefer; sdpRefer.sdpParse(dialog->mSdpAnswer);
-	//sdpRefer.sdpUsername = dialog->sipLocalusername();
+	// SdpInfo sdpRefer; sdpRefer.sdpParse(dialog->mSdpAnswer);
+	// sdpRefer.sdpUsername = dialog->sipLocalusername();
 
 	// Update: This did not work for asterisk either.
-	//sdpRefer.sdpUsername = dialog->sipLocalUsername(); // This modification was recommended by Paul for Yate.
+	// sdpRefer.sdpUsername = dialog->sipLocalUsername(); // This modification was recommended by Paul for Yate.
 
-	//this->smAddBody(string("application/sdp"),sdpRefer.sdpValue());
+	// this->smAddBody(string("application/sdp"),sdpRefer.sdpValue());
 	// Try just using the sdpremote verbatim?  Gosh, that worked too.
-	this->smAddBody(string("application/sdp"),sdpRefer.sdpValue());
+	this->smAddBody(string("application/sdp"), sdpRefer.sdpValue());
 
 	// The via and contact will be filled in by BS2:
 	// this->smAddViaBranch(dialog);
@@ -605,7 +645,8 @@ SipMessageHandoverRefer::SipMessageHandoverRefer(const SipBase *dialog, string p
 // TODO: Preserve the route set.
 // If dialog is non-NULL this is a reply within a dialog.  Note that we create a SipDialog class
 // for REGISTER and MESSAGE, and those are not dialogs.
-SipMessageReply::SipMessageReply(SipMessage *request, int code, string reason, SipBase *dialog) {
+SipMessageReply::SipMessageReply(SipMessage *request, int code, string reason, SipBase *dialog)
+{
 	LOG(INFO) << "SIP term info SipMessageReply SIP code: " << code;
 	msmCode = code;
 	msmReason = reason;
@@ -627,7 +668,7 @@ SipMessageReply::SipMessageReply(SipMessage *request, int code, string reason, S
 	}
 	// These fields are not needed:
 	// string mReqMethod;			// It is a reply, not a request.
-	//string mContactValue;			// The request is non-target-refresh so contact is meaningless.
+	// string mContactValue;			// The request is non-target-refresh so contact is meaningless.
 }
 
 bool sameMsg(SipMessage *msg1, SipMessage *msg2)
@@ -640,10 +681,12 @@ bool SipMessage::smDecrementMaxFowards()
 {
 	if (msmMaxForwards.size()) {
 		assert(msmMaxForwards[0] != ' ');
-		int val = atoi(msmMaxForwards.c_str());	// If it is not numeric, it will return 0 silently.
+		int val = atoi(msmMaxForwards.c_str()); // If it is not numeric, it will return 0 silently.
 		val--;
-		if (val <= 0) { val = 0; }
-		msmMaxForwards = format("%d",val);
+		if (val <= 0) {
+			val = 0;
+		}
+		msmMaxForwards = format("%d", val);
 		return val > 0;
 	} else {
 		msmMaxForwards = string("70");
@@ -651,5 +694,4 @@ bool SipMessage::smDecrementMaxFowards()
 	}
 }
 
-
-};	// namespace SIP
+}; // namespace SIP

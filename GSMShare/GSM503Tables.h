@@ -1,7 +1,8 @@
 /*
 * Copyright 2012, 2014 Range Networks, Inc.
 *
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing information for this specific distribution.
+* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
+information for this specific distribution.
 *
 * This use of this software may be subject to additional restrictions.
 * See the LEGAL file in the main directory for details.
@@ -12,12 +13,8 @@
 
 */
 
-
-
 #ifndef GSM503TABLES_H
 #define GSM503TABLES_H
-
-
 
 namespace GSM {
 
@@ -25,7 +22,17 @@ namespace GSM {
 // (pat) The first 8 values are used as indicies into numerous tables.
 // (pat) Encoder/decoder mode includes 8 modes for AMR + TCH_FS makes 9.
 // TODO: Add AFS_SID type.  And why is it not type 8?
-enum AMRMode {TCH_AFS12_2, TCH_AFS10_2, TCH_AFS7_95, TCH_AFS7_4, TCH_AFS6_7, TCH_AFS5_9, TCH_AFS5_15, TCH_AFS4_75, TCH_FS};
+enum AMRMode {
+	TCH_AFS12_2,
+	TCH_AFS10_2,
+	TCH_AFS7_95,
+	TCH_AFS7_4,
+	TCH_AFS6_7,
+	TCH_AFS5_9,
+	TCH_AFS5_15,
+	TCH_AFS4_75,
+	TCH_FS
+};
 
 /** Tables #7-14 from GSM 05.03 */
 extern const unsigned int gAMRBitOrderTCH_AFS12_2[244];
@@ -65,7 +72,6 @@ extern const unsigned gAMRPunctureLth[8];
 /* GSM 05.03 3.9.4.4 */
 extern const unsigned *gAMRPuncture[8];
 
-}
-
+}; // namespace GSM
 
 #endif

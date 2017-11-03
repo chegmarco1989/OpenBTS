@@ -12,23 +12,25 @@
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 */
-#define LOG_GROUP LogGroup::GPRS		// Can set Log.Level.GPRS for debugging
+#define LOG_GROUP LogGroup::GPRS // Can set Log.Level.GPRS for debugging
+
+#define MAC_IMPLEMENTATION 1
 
 //#include <unistd.h>
-#include "GPRSInternal.h"
-#include "GSMCommon.h"
-#include "GSML3RRMessages.h"	// for L3RRMessage
-#include "GSML3RRElements.h"	// for L3RequestReference
-#define MAC_IMPLEMENTATION 1
+
 #include "MAC.h"
 #include "FEC.h"
-#include "TBF.h"
+#include "GPRSInternal.h"
+#include "GSMCommon.h"
+#include "GSML3RRElements.h" // for L3RequestReference
+#include "GSML3RRMessages.h" // for L3RRMessage
 #include "RLCEngine.h"
 #include "RLCMessages.h"
-#if INTERNAL_SGSN==0
+#include "TBF.h"
+#if INTERNAL_SGSN == 0
 #include "BSSG.h"
 #endif
-#include "Ggsn.h"	// For GgsnInit
+#include "Ggsn.h" // For GgsnInit
 
 #include <Globals.h>
 
@@ -37,7 +39,7 @@ extern bool gLogToConsole;
 namespace GPRS {
 
 struct TFIList *gTFIs;
-RLCBSN_t gBSNNext = 0;		// The next Block Sequence Number that will be sent on the downlink.
+RLCBSN_t gBSNNext = 0; // The next Block Sequence Number that will be sent on the downlink.
 RLCBSN_t gBSNPrev = 0;
 L2MAC gL2MAC;
 Stats_t Stats;
@@ -47,12 +49,12 @@ int ExtraClockDelay = 0;
 
 bool gFixTFIBug = 1; // Default bug fix on.
 bool gFixSyncUseClock = 0;
-int gFixIdleFrame = 0;	// Default bug fix off now
-int gFixDRX = 1;		// Assume DRX mode if MS does not respond after first try.
-bool gFixIAUsePoll = 1;// Default on.
+int gFixIdleFrame = 0;  // Default bug fix off now
+int gFixDRX = 1;	// Assume DRX mode if MS does not respond after first try.
+bool gFixIAUsePoll = 1; // Default on.
 // 6-28-2012: The ConvertForeignTLLI definitively does not work if done every time.
 // The multitech modem appears to need this conversion in a special case, fixed in sgsn.
-bool gFixConvertForeignTLLI = 0;	// Was only needed for external SGSN, which was sending bad TLLIs.
+bool gFixConvertForeignTLLI = 0; // Was only needed for external SGSN, which was sending bad TLLIs.
 
 // This is the downlink queue from the Sgsn.
 static InterthreadQueue2<SGSN::GprsSgsnDownlinkPdu> sgsnDownlinkQueue;
@@ -69,22 +71,20 @@ struct ExtDyn {
 	int sCurrentCN;
 	unsigned sReservedUplinkSlots;
 
-	bool isUplinkReserved(PDCHL1FEC *pdch) {
-		return sReservedUplinkSlots & (1<<pdch->TN());
-	}
+	bool isUplinkReserved(PDCHL1FEC *pdch) { return sReservedUplinkSlots & (1 << pdch->TN()); }
 
-	void reserveUplink(PDCHL1Uplink *up) {
-		sReservedUplinkSlots |= (1<<up->TN());
-	}
+	void reserveUplink(PDCHL1Uplink *up) { sReservedUplinkSlots |= (1 << up->TN()); }
 
-	void edReset() {
+	void edReset()
+	{
 		sReservedUplinkSlots = 0;
 		sCurrentCN = -1;
 	}
 
 	// We process one ARFCN at a time in order, so we only need 8 bits of memory.
 	// Reset it each time we start a new ARFCN.
-	void edSetCn(int cn) {
+	void edSetCn(int cn)
+	{
 		if (cn != sCurrentCN) {
 			sReservedUplinkSlots = 0;
 			sCurrentCN = cn;
@@ -92,15 +92,14 @@ struct ExtDyn {
 	}
 } extDyn;
 
-
 // Get the number quietly.
 // Use this for debug options we dont need the user to see.
 int configGetNumQ(const char *name, int defaultvalue)
 {
 	if (gConfig.defines(name)) {
-		//return gConfig.getNum(name,defaultvalue);
+		// return gConfig.getNum(name,defaultvalue);
 		const char *strval = gConfig.getStr(name).c_str();
-		return strtol(strval,NULL,0); // strtol allows hex
+		return strtol(strval, NULL, 0); // strtol allows hex
 	} else {
 		return defaultvalue;
 	}
@@ -112,13 +111,13 @@ int configGprsChannelsMinCn() { return gConfig.getNum("GPRS.Channels.Min.CN"); }
 int configGprsChannelsMinC0() { return gConfig.getNum("GPRS.Channels.Min.C0"); }
 int configGprsChannelsMin() { return configGprsChannelsMinC0() + configGprsChannelsMinCn(); }
 #if GPRS_CHANNELS_MAX_SUPPORTED
-	// We are currently doing only static assignment, so take this out for now.
+// We are currently doing only static assignment, so take this out for now.
 int configGprsChannelsMax() { return gConfig.getNum("GPRS.Channels.Max"); }
 #endif
 int configGprsMultislotMaxUplink() { return gConfig.getNum("GPRS.Multislot.Max.Uplink"); }
 int configGprsMultislotMaxDownlink() { return gConfig.getNum("GPRS.Multislot.Max.Downlink"); }
 
-//struct GPRSConfig GPRSConfig; not needed.
+// struct GPRSConfig GPRSConfig; not needed.
 unsigned GPRSDebug = 0;
 unsigned gGprsWatch = 0;
 
@@ -139,7 +138,7 @@ bool GPRSConfig::IsEnabled()
 	if (gConfig.getNum("GPRS.Enable") && GPRS::configGprsChannelsMin() > 0) {
 		return true;
 	}
-	return false;	// nope
+	return false; // nope
 }
 
 bool GPRSConfig::sgsnIsInternal()
@@ -148,10 +147,13 @@ bool GPRSConfig::sgsnIsInternal()
 	// external sgsn, in order to avoid people with existing sql from using it by accident.
 	const char *sql_sgsn_host = "GPRS.SGSN.Host";
 	const char *sql_sgsn_external = "GPRS.SGSN.External";
-	if (!gConfig.defines(sql_sgsn_host)) return true;
-	if (!gConfig.defines(sql_sgsn_external)) return true;
-	if (0 == gConfig.getNum(sql_sgsn_external)) return true;
-	return false;	// Use external SGSN.Host
+	if (!gConfig.defines(sql_sgsn_host))
+		return true;
+	if (!gConfig.defines(sql_sgsn_external))
+		return true;
+	if (0 == gConfig.getNum(sql_sgsn_external))
+		return true;
+	return false; // Use external SGSN.Host
 }
 
 // (mike) pretty sure this function is not used anywhere...
@@ -179,40 +181,43 @@ static unsigned T3192Codes[8] = {
 // 4-24-2012: I am testing NMO 1 to be used in UMTS, however we cannot use
 // it in GPRS until we support paging for CS calls on the GPRS data channel.
 // BEGINCONFIG
-// 'GPRS.CellOptions.T3168Code',5,1,0,'Timer 3168 in the MS controls the wait time after sending a Packet Resource Request to initiate a TBF before giving up or reattempting a Packet Access Procedure, which may imply sending a new RACH.  This code is broadcast to the MS in the C0T0 beacon in the GPRS Cell Options IE.  See GSM 04.60 12.24.  Range 0..7 to represent 0.5sec to 4sec in 0.5sec steps.'
-// 'GPRS.CellOptions.T3192Code',0,1,0,'Timer 3192 in the MS specifies the time MS continues to listen on PDCH after all downlink TBFs are finished, and is used to reduce unnecessary RACH traffic.  This code is broadcast to the MS in the C0T0 beacon in the GPRS Cell Options IE. The value must be one of the codes described in GSM 04.60 12.24.  Value 0 implies 500msec.'
-// ENDCONFIG
-// DRX_TIMER irrelevant since we dont use DRX mode at all.
-// ACCESS_BURST_TYPE 0 => use 8 bit format of Packet Channel Request Message,
+// 'GPRS.CellOptions.T3168Code',5,1,0,'Timer 3168 in the MS controls the wait time after sending a Packet Resource
+// Request to initiate a TBF before giving up or reattempting a Packet Access Procedure, which may imply sending a new
+// RACH.  This code is broadcast to the MS in the C0T0 beacon in the GPRS Cell Options IE.  See GSM 04.60 12.24.  Range
+// 0..7 to represent 0.5sec to 4sec in 0.5sec steps.' 'GPRS.CellOptions.T3192Code',0,1,0,'Timer 3192 in the MS specifies
+// the time MS continues to listen on PDCH after all downlink TBFs are finished, and is used to reduce unnecessary RACH
+// traffic.  This code is broadcast to the MS in the C0T0 beacon in the GPRS Cell Options IE. The value must be one of
+// the codes described in GSM 04.60 12.24.  Value 0 implies 500msec.' ENDCONFIG DRX_TIMER irrelevant since we dont use
+// DRX mode at all. ACCESS_BURST_TYPE 0 => use 8 bit format of Packet Channel Request Message,
 //		(that is, if we were using PRACH, which we are not.)
 // CONTROL_ACK_TYPE 1 >= default format for Packet Control Acknowledgement is RLC/MAC block,
 //		ie, not special.
 // BS_CV_MAX is the max number of RLC blocks used by any RLC message.
 // NW_EXT_UTBF is extended uplink TBF mode: 44.060 9.3.1b and 9.3.1.3
-GPRSCellOptions_t::GPRSCellOptions_t() :
-	mNMO(gConfig.getNum("GPRS.NMO")-1),	// IE value is spec NMO - 1.
-	//mNMO(1),		// Dont let customers change this.
-	mT3168Code(gConfig.getNum("GPRS.CellOptions.T3168Code")), // T3168Code 5 => 3000msec
-	mT3192Code(gConfig.getNum("GPRS.CellOptions.T3192Code")), // T3192Code 0 => 500msec.
-	// Took this out of the gConfig options.
-	// mDRX_TIMER_MAX(gConfig.getNum("GPRS.CellOptions.DRX_TIMER_MAX",0)),
-	mDRX_TIMER_MAX(7),	// It is actually non-drx timer max. 
-					// The MS uses the min of this and a param sent in gprs attach.
-	mACCESS_BURST_TYPE(0),
-	mCONTROL_ACK_TYPE(1),	// Packet Control Acknowledgement is an RLC/BLOCK, not a RACH burst.
-	mBS_CV_MAX(1),	// This is determined by the system, not the user.
-	mNW_EXT_UTBF(gConfig.getNum("GPRS.Uplink.Persist") > 0)
+GPRSCellOptions_t::GPRSCellOptions_t()
+	: mNMO(gConfig.getNum("GPRS.NMO") - 1),			    // IE value is spec NMO - 1.
+								    // mNMO(1),		// Dont let customers change this.
+	  mT3168Code(gConfig.getNum("GPRS.CellOptions.T3168Code")), // T3168Code 5 => 3000msec
+	  mT3192Code(gConfig.getNum("GPRS.CellOptions.T3192Code")), // T3192Code 0 => 500msec.
+	  // Took this out of the gConfig options.
+	  // mDRX_TIMER_MAX(gConfig.getNum("GPRS.CellOptions.DRX_TIMER_MAX",0)),
+	  mDRX_TIMER_MAX(7), // It is actually non-drx timer max.
+			     // The MS uses the min of this and a param sent in gprs attach.
+	  mACCESS_BURST_TYPE(0),
+	  mCONTROL_ACK_TYPE(1), // Packet Control Acknowledgement is an RLC/BLOCK, not a RACH burst.
+	  mBS_CV_MAX(1),	// This is determined by the system, not the user.
+	  mNW_EXT_UTBF(gConfig.getNum("GPRS.Uplink.Persist") > 0)
 {
 	// Sanity check some values.
-	if (RN_BOUND(mNMO,0,2) != mNMO) {
-		GLOG(ERR) << "NMO [Network Mode of Operation] must be 1,2,3";	// we subtracted 1
+	if (RN_BOUND(mNMO, 0, 2) != mNMO) {
+		GLOG(ERR) << "NMO [Network Mode of Operation] must be 1,2,3"; // we subtracted 1
 		mNMO = 1;
 	}
-	if (RN_BOUND(mT3168Code,0,7) != mT3168Code) {
+	if (RN_BOUND(mT3168Code, 0, 7) != mT3168Code) {
 		GLOG(ERR) << "mT3168 value " << mT3168Code << " must be in range 0..7";
 		mT3168Code = 1;
 	}
-	if (RN_BOUND(mT3192Code,0,7) != mT3192Code) {
+	if (RN_BOUND(mT3192Code, 0, 7) != mT3192Code) {
 		GLOG(ERR) << "mT3192 value " << mT3192Code << " must be in range 0..7";
 		mT3192Code = 0;
 	}
@@ -222,14 +227,17 @@ GPRSCellOptions_t::GPRSCellOptions_t() :
 GPRSCellOptions_t &GPRSGetCellOptions()
 {
 	static GPRSCellOptions_t *GPRSCellOptions = NULL;
-	if (!GPRSCellOptions) GPRSCellOptions = new GPRSCellOptions_t();
+	if (!GPRSCellOptions)
+		GPRSCellOptions = new GPRSCellOptions_t();
 	return *GPRSCellOptions;
 }
 
 USFList::USFList()
 {
-	//mRandomUSF=0;
-	for (int i=0;i<USFTotal;i++) { mlUSFs[i].muMS = NULL; }
+	// mRandomUSF=0;
+	for (int i = 0; i < USFTotal; i++) {
+		mlUSFs[i].muMS = NULL;
+	}
 }
 
 MSInfo *USFList::getUSFMS(int usf)
@@ -237,7 +245,7 @@ MSInfo *USFList::getUSFMS(int usf)
 	UsfInfo *info = &mlUSFs[usf];
 	if (info->muDeadTime.valid()) {
 		if (info->muDeadTime.expired()) {
-			info->muDeadTime.setInvalid();	// Can use the USF now.
+			info->muDeadTime.setInvalid(); // Can use the USF now.
 			info->muMS = 0;
 		}
 		return NULL;
@@ -253,16 +261,18 @@ int USFList::allocateUSF(MSInfo *ms)
 	for (usf = USFMIN; usf <= USFMAX; usf++) {
 		if (mlUSFs[usf].muMS == ms) {
 			// The MS can reuse its own USF.  The muDeadTime is how long other MS cannot use it.
-			mlUSFs[usf].muDeadTime.setInvalid();	// USF is back in use.
+			mlUSFs[usf].muDeadTime.setInvalid(); // USF is back in use.
 			return usf;
 		}
-		if (freeusf == -1 && getUSFMS(usf) == NULL) { freeusf = usf; }
+		if (freeusf == -1 && getUSFMS(usf) == NULL) {
+			freeusf = usf;
+		}
 	}
 	if (freeusf >= USFMIN) {
 		mlUSFs[freeusf].muMS = ms;
 		return freeusf;
 	}
-	return -1;	// All in use.
+	return -1; // All in use.
 }
 
 // Free the USFs assigned to this ms.
@@ -276,10 +286,10 @@ int USFList::freeUSF(MSInfo *ms, bool wReserve)
 		UsfInfo *info = &mlUSFs[usf];
 		if (info->muMS == ms) {
 			if (wReserve) {
-				info->muDeadTime.setFuture(5000);	// This is 5 seconds, not programmable.
+				info->muDeadTime.setFuture(5000); // This is 5 seconds, not programmable.
 			} else {
 				info->muMS = 0;
-				info->muDeadTime.setInvalid();		// Make sure usf is reusable.
+				info->muDeadTime.setInvalid(); // Make sure usf is reusable.
 			}
 			return usf;
 		}
@@ -292,7 +302,7 @@ int USFList::freeUSF(MSInfo *ms, bool wReserve)
 // Not really random, the MS are serviced round-robin.
 // We dont want to just give the USF to the MS with the oldest response time,
 // because it could be out of range, or whatever, and we may never hear from it.
-//int USFList::getRandomUSF()
+// int USFList::getRandomUSF()
 //{
 //	for (int i = USFMIN; i <= USFMAX; i++) {
 //		if (++mRandomUSF > USFMAX) { mRandomUSF = USFMIN; }
@@ -301,7 +311,7 @@ int USFList::freeUSF(MSInfo *ms, bool wReserve)
 //	return 0;	// There are none.
 //}
 
-void USFList::usfDump(std::ostream&os)
+void USFList::usfDump(std::ostream &os)
 {
 	int i;
 	os << "USFList=(";
@@ -311,56 +321,58 @@ void USFList::usfDump(std::ostream&os)
 		if (ms) {
 			os << ms;
 			long remaining = mlUSFs[i].muDeadTime.remaining();
-			if (remaining) { os << LOGVAR(remaining); }
+			if (remaining) {
+				os << LOGVAR(remaining);
+			}
 		} else {
 			os << "free";
 		}
 	}
-	//os << RN_PRETTY_TEXT1(mRandomUSF);
+	// os << RN_PRETTY_TEXT1(mRandomUSF);
 	os << ")\n";
 }
 
-int USFList::getUsf(unsigned upbsn)	// bsn from the uplink burst.
+int USFList::getUsf(unsigned upbsn) // bsn from the uplink burst.
 {
 	// GSM 05.02 6.3.2.2.1: The USF field in downlink block N signals
 	// that uplink block (N+1) is assigned to that MS.
 	// 7-6-2012 update: This is also used for extended uplink TBF mode now.
-	unsigned downbsn = upbsn-1;
-	return (sRememberUsfBsn[downbsn%32] == downbsn ? ((signed)sRememberUsf[downbsn%32]) : -1);
+	unsigned downbsn = upbsn - 1;
+	return (sRememberUsfBsn[downbsn % 32] == downbsn ? ((signed)sRememberUsf[downbsn % 32]) : -1);
 }
 
-void USFList::setUsf(unsigned downusf, unsigned downbsn)		// Save usf for current downlink burst.
+void USFList::setUsf(unsigned downusf, unsigned downbsn) // Save usf for current downlink burst.
 {
-	sRememberUsf[downbsn%32] = downusf;
-	sRememberUsfBsn[downbsn%32] = downbsn;
+	sRememberUsf[downbsn % 32] = downusf;
+	sRememberUsfBsn[downbsn % 32] = downbsn;
 }
-
 
 void L2MAC::macConfigInit()
 {
-	GPRSSetDebug(configGetNumQ("GPRS.Debug",0));
-	gGprsWatch = configGetNumQ("GPRS.WATCH",0);
-	gLogToConsole = configGetNumQ("Log.ToConsole",0);
+	GPRSSetDebug(configGetNumQ("GPRS.Debug", 0));
+	gGprsWatch = configGetNumQ("GPRS.WATCH", 0);
+	gLogToConsole = configGetNumQ("Log.ToConsole", 0);
 
-	GPRSCellOptions_t& gco = GPRSGetCellOptions();
+	GPRSCellOptions_t &gco = GPRSGetCellOptions();
 	// BEGINCONFIG
-	// 'GPRS.Counters.N3101',20,0,0,'Counts unused USF responses to detect nonresponsive MS.  Should be > 8.  See GSM04.60 sec 13.'
-	// 'GPRS.Counters.N3103',8,0,0,'Counts ACK/NACK attempts to detect nonresponsive MS.  See GSM04.60 sec 13.'
-	// 'GPRS.Counters.N3105',12,0,0,'Counts unused RRBP responses to detect nonresponsive MS. See GSM04.60 sec 13.'
-	// 'GPRS.Timers.T3169',5000,0,0,'Nonresponsive uplink tbf timer, in msecs. See GSM04.60 sec 13'
-	// 'GPRS.Timers.T3191',5000,0,0,'Nonresponsive downlink tbf timer, in msecs. See GSM04.60 sec 13'
-	// 'GPRS.Timers.T3193',0,0,0,'Timer T3193 (in msecs) in the base station corresponds to T3192 in the MS, which is set by GPRS.CellOptions.T3192Code.  The T3193 value should be slightly longer than that specified by the T3192Code.  If 0, the BTS will fill in a default value based on T3192Code.'
-	// 'GPRS.Timers.T3195',5000,0,0, 'Nonresponsive MS timer, in msecs. See GSM04.60 sec 13'
-	// ENDCONFIG
+	// 'GPRS.Counters.N3101',20,0,0,'Counts unused USF responses to detect nonresponsive MS.  Should be > 8.  See
+	// GSM04.60 sec 13.' 'GPRS.Counters.N3103',8,0,0,'Counts ACK/NACK attempts to detect nonresponsive MS.  See
+	// GSM04.60 sec 13.' 'GPRS.Counters.N3105',12,0,0,'Counts unused RRBP responses to detect nonresponsive MS. See
+	// GSM04.60 sec 13.' 'GPRS.Timers.T3169',5000,0,0,'Nonresponsive uplink tbf timer, in msecs. See GSM04.60 sec
+	// 13' 'GPRS.Timers.T3191',5000,0,0,'Nonresponsive downlink tbf timer, in msecs. See GSM04.60 sec 13'
+	// 'GPRS.Timers.T3193',0,0,0,'Timer T3193 (in msecs) in the base station corresponds to T3192 in the MS, which
+	// is set by GPRS.CellOptions.T3192Code.  The T3193 value should be slightly longer than that specified by the
+	// T3192Code.  If 0, the BTS will fill in a default value based on T3192Code.' 'GPRS.Timers.T3195',5000,0,0,
+	// 'Nonresponsive MS timer, in msecs. See GSM04.60 sec 13' ENDCONFIG
 	macN3101Max = gConfig.getNum("GPRS.Counters.N3101");
 	macN3103Max = gConfig.getNum("GPRS.Counters.N3103");
 	macN3105Max = gConfig.getNum("GPRS.Counters.N3105");
-	macT3169Value = gConfig.getNum("GPRS.Timers.T3169");	// in msecs.
-	macT3191Value = gConfig.getNum("GPRS.Timers.T3191");	// in msecs.
-	macT3193Value = gConfig.getNum("GPRS.Timers.T3193");	// fixed below.
-	macT3195Value = gConfig.getNum("GPRS.Timers.T3195");	// in msecs.
-	macT3168Value = (gco.mT3168Code + 1) * 500;			// in msecs
-	//macTNonResponsive = gConfig.getNUM("GPRS.Timers.MS.NonResponsive")	// in msecs
+	macT3169Value = gConfig.getNum("GPRS.Timers.T3169"); // in msecs.
+	macT3191Value = gConfig.getNum("GPRS.Timers.T3191"); // in msecs.
+	macT3193Value = gConfig.getNum("GPRS.Timers.T3193"); // fixed below.
+	macT3195Value = gConfig.getNum("GPRS.Timers.T3195"); // in msecs.
+	macT3168Value = (gco.mT3168Code + 1) * 500;	  // in msecs
+	// macTNonResponsive = gConfig.getNUM("GPRS.Timers.MS.NonResponsive")	// in msecs
 
 	// Spec says T3193 (in network) should be longer than T3192 (in MS).
 	// If unspecified, add 50 msecs to T3192.
@@ -369,14 +381,15 @@ void L2MAC::macConfigInit()
 	// just wastes airwaves trying to contact the MS in the wrong mode.
 	unsigned T3192Value = T3192Codes[gco.mT3192Code];
 	if (macT3193Value == 0) {
-		macT3193Value = T3192Value + 50;	// Add some extra msecs.
+		macT3193Value = T3192Value + 50; // Add some extra msecs.
 	}
 	if (macT3193Value < T3192Value) {
 		static unsigned lastT3193Value = 0, lastT3192Value = 0;
 		if (lastT3193Value != macT3193Value || lastT3192Value != T3192Value) {
-			GLOG(ERR) << "T3193 value " << macT3193Value << " should be longer than"
-				" T3192 value " << T3192Value << 
-				" (T3192code=" << gco.mT3192Code << ")";
+			GLOG(ERR) << "T3193 value " << macT3193Value
+				  << " should be longer than"
+				     " T3192 value "
+				  << T3192Value << " (T3192code=" << gco.mT3192Code << ")";
 			lastT3193Value = macT3193Value;
 			lastT3192Value = T3192Value;
 		}
@@ -397,16 +410,18 @@ void L2MAC::macConfigInit()
 	// for future TBFs.
 	// BEGINCONFIG
 	// 'GPRS.Timers.MS.Idle',600,0,0,'How long an MS is idle before the BTS forgets about it.'
-	// 'GPRS.Timers.Channels.Idle',6000,0,0,'How long a GPRS channel is idle before being returned to the pool of channels.  Also depends on Channels.Min.  Currently the channel cannot be returned to the pool while there is any GPRS activity on any channel.'
-	// 'GPRS.Channels.Congestion.Timer',60,0,0,'How long GPRS congestion exceeds the Congestion.Threshold before we attempt to allocate another channel for GPRS'
-	// 'GPRS.Channels.Congestion.Threshold',200,0,0,'The GPRS channel is considered congested if the desired bandwidth exceeds available bandwidth by this amount, specified in percent.'
-	// ENDCONFIG
+	// 'GPRS.Timers.Channels.Idle',6000,0,0,'How long a GPRS channel is idle before being returned to the pool of
+	// channels.  Also depends on Channels.Min.  Currently the channel cannot be returned to the pool while there is
+	// any GPRS activity on any channel.' 'GPRS.Channels.Congestion.Timer',60,0,0,'How long GPRS congestion exceeds
+	// the Congestion.Threshold before we attempt to allocate another channel for GPRS'
+	// 'GPRS.Channels.Congestion.Threshold',200,0,0,'The GPRS channel is considered congested if the desired
+	// bandwidth exceeds available bandwidth by this amount, specified in percent.' ENDCONFIG
 	macMSIdleMax = gConfig.getNum("GPRS.Timers.MS.Idle") * RLCBlocksPerSecond;
 	macChIdleMax = gConfig.getNum("GPRS.Timers.Channels.Idle") * RLCBlocksPerSecond;
 	macChCongestionMax = gConfig.getNum("GPRS.Channels.Congestion.Timer") * RLCBlocksPerSecond;
 	// database number specified in percent:
 	macChCongestionThreshold = gConfig.getNum("GPRS.Channels.Congestion.Threshold") / 100.0;
-	macDownlinkPersist = gConfig.getNum("GPRS.Downlink.Persist");	// (pat) We dont use this.
+	macDownlinkPersist = gConfig.getNum("GPRS.Downlink.Persist"); // (pat) We dont use this.
 	static bool thisMessageHasBeenPrinted = false;
 	if (macDownlinkPersist && !thisMessageHasBeenPrinted) {
 		thisMessageHasBeenPrinted = true;
@@ -419,32 +434,33 @@ void L2MAC::macConfigInit()
 	if (macSingleStepMode) {
 		// Set these to maximum values so we can single step the service loop
 		// without these timers going off.
-		macMSIdleMax = macChIdleMax = 0x7fffffff; // For single step mode
-		macT3191Value = macT3193Value  =  0x7fffffff; // For single step mode
+		macMSIdleMax = macChIdleMax = 0x7fffffff;   // For single step mode
+		macT3191Value = macT3193Value = 0x7fffffff; // For single step mode
 	}
 
-	gFixIdleFrame = configGetNumQ("GPRS.FixIdleFrame",gFixIdleFrame);
-	gFixTFIBug = configGetNumQ("GPRS.FixTFIBug",gFixTFIBug); // Default bug fix on.
-	gFixDRX = configGetNumQ("GPRS.FixDRX",(int)gFixDRX); // Default to 4 sendAssignment tries.
-	gFixIAUsePoll = configGetNumQ("GPRS.FixIAUsePoll",gFixIAUsePoll);
-	gFixConvertForeignTLLI = configGetNumQ("GPRS.FixForeignTlli",gFixConvertForeignTLLI);
+	gFixIdleFrame = configGetNumQ("GPRS.FixIdleFrame", gFixIdleFrame);
+	gFixTFIBug = configGetNumQ("GPRS.FixTFIBug", gFixTFIBug); // Default bug fix on.
+	gFixDRX = configGetNumQ("GPRS.FixDRX", (int)gFixDRX);     // Default to 4 sendAssignment tries.
+	gFixIAUsePoll = configGetNumQ("GPRS.FixIAUsePoll", gFixIAUsePoll);
+	gFixConvertForeignTLLI = configGetNumQ("GPRS.FixForeignTlli", gFixConvertForeignTLLI);
 }
 
-void L2MAC::macAddTBF(TBF *tbf) {
+void L2MAC::macAddTBF(TBF *tbf)
+{
 	macTBFs.push_back(tbf); // Usually already locked, so lock is recursive
-	//macTBFs.push_back_safely(tbf); // Usually already locked, so lock is recursive
+				// macTBFs.push_back_safely(tbf); // Usually already locked, so lock is recursive
 }
 
 void L2MAC::macForgetTBF(TBF *tbf, bool forever)
 {
-	GPRSLOG(2) << "forget "<<tbf->tbfid(0);
+	GPRSLOG(2) << "forget " << tbf->tbfid(0);
 	macTBFs.remove(tbf);
 	// lock unnecessary, using macLock now:
-	//macTBFs.remove_safely(tbf); // Usually already locked, so lock is recursive
-	//ScopedLock lock2(macExpiredTBFs.mListLock);
+	// macTBFs.remove_safely(tbf); // Usually already locked, so lock is recursive
+	// ScopedLock lock2(macExpiredTBFs.mListLock);
 	if (forever) {
-		macExpiredTBFs.remove(tbf);	// Just in case it was on this list.
-		GPRSLOG(2) << "delete ",tbf->tbfid(0);
+		macExpiredTBFs.remove(tbf); // Just in case it was on this list.
+		GPRSLOG(2) << "delete ", tbf->tbfid(0);
 		delete tbf;
 		return;
 	}
@@ -452,8 +468,8 @@ void L2MAC::macForgetTBF(TBF *tbf, bool forever)
 	unsigned keepExpired = gConfig.getNum("GPRS.TBF.KeepExpiredCount");
 	while (macExpiredTBFs.size() > keepExpired) {
 		TBF *tbf2 = macExpiredTBFs.back();
-		macExpiredTBFs.pop_back();	// returns void, the nitwits.
-		GPRSLOG(2) << "delete ",tbf2->tbfid(0);
+		macExpiredTBFs.pop_back(); // returns void, the nitwits.
+		GPRSLOG(2) << "delete ", tbf2->tbfid(0);
 		delete tbf2;
 	}
 }
@@ -464,10 +480,10 @@ void L2MAC::macForgetMS(MSInfo *ms, bool forever)
 {
 	macMSs.remove(ms);
 	// lock unnecessary, using macLock now:
-	//macMSs.remove_safely(ms); // Usually already locked, so lock is recursive
-	//ScopedLock lock2(macExpiredMSs.mListLock);
+	// macMSs.remove_safely(ms); // Usually already locked, so lock is recursive
+	// ScopedLock lock2(macExpiredMSs.mListLock);
 	if (forever) {
-		macExpiredMSs.remove(ms);	// Just in case it was on this list.
+		macExpiredMSs.remove(ms); // Just in case it was on this list.
 		delete ms;
 		return;
 	}
@@ -484,11 +500,12 @@ void L2MAC::macForgetMS(MSInfo *ms, bool forever)
 MSInfo *L2MAC::macFindMSByTlli(uint32_t tlli, int create /*=0*/)
 {
 	MSInfo *ms;
-	RN_MAC_FOR_ALL_MS(ms) {
+	RN_MAC_FOR_ALL_MS(ms)
+	{
 		// When the MS performs a Detach procedure, it will change its existing tlli
 		// from a local tlli to a foreign tlli.  Instead of having the SGSN inform us
 		// of these events, just ignore whether the tlli is local or foreign.
-		if (tlliEq(ms->msTlli, tlli) || tlliEq(ms->msOldTlli,tlli)) {
+		if (tlliEq(ms->msTlli, tlli) || tlliEq(ms->msOldTlli, tlli)) {
 			// This is very important.
 			// If the SGSN looks up an MS by TLLI it is because it is about to use it,
 			// and we dont want it to disappear before it does.
@@ -496,9 +513,11 @@ MSInfo *L2MAC::macFindMSByTlli(uint32_t tlli, int create /*=0*/)
 			return ms;
 		}
 	}
-	if (! create) { return NULL; }
+	if (!create) {
+		return NULL;
+	}
 	ms = new MSInfo(tlli);
-	GPRSLOG(1) << "New MS:"<<ms<<LOGHEX(tlli);
+	GPRSLOG(1) << "New MS:" << ms << LOGHEX(tlli);
 	return ms;
 }
 
@@ -507,17 +526,20 @@ MSInfo *L2MAC::macFindMSByTlli(uint32_t tlli, int create /*=0*/)
 // if no channels are currently active.
 int L2MAC::macActiveChannels()
 {
-	ScopedLock lock(macLock);	// Probably overkill, but this function called from CLI.
+	ScopedLock lock(macLock); // Probably overkill, but this function called from CLI.
 	return macPDCHs.size();
 }
 
 int L2MAC::macActiveChannelsC(unsigned cn)
 {
-	ScopedLock lock(macLock);	// This function may be called from CLI.
+	ScopedLock lock(macLock); // This function may be called from CLI.
 	int cnt = 0;
 	PDCHL1FEC *ch;
-	RN_MAC_FOR_ALL_PDCH(ch) {
-		if (ch->CN() == 0) { cnt++; }
+	RN_MAC_FOR_ALL_PDCH(ch)
+	{
+		if (ch->CN() == 0) {
+			cnt++;
+		}
 	}
 	return cnt;
 }
@@ -526,10 +548,9 @@ static void macAddOneChannel(TCHFACCHLogicalChannel *lchan)
 {
 	PDCHL1FEC *pch = new PDCHL1FEC(lchan);
 	gL2MAC.macPDCHs.push_back(pch);
-	gL2MAC.macPacchs.clear();	// Must rebuild the pacch list.
+	gL2MAC.macPacchs.clear(); // Must rebuild the pacch list.
 	pch->mchStart();
-	GLOG(INFO) << "GPRS AddChannel " << pch << " total active="
-		<<gL2MAC.macActiveChannels()<<"\n";
+	GLOG(INFO) << "GPRS AddChannel " << pch << " total active=" << gL2MAC.macActiveChannels() << "\n";
 }
 
 // Channel allocation for GPRS.
@@ -565,15 +586,20 @@ bool L2MAC::macAddChannel()
 	}
 #endif
 
-	if (! macActiveChannels()) {
+	if (!macActiveChannels()) {
 		// When you first start the BTS you will not be able to allocate until some
 		// timer expires, which I measured as 4 seconds.
 		// So dont bother reporting until after 5 seconds.
-		time_t now; time(&now);
-		if (now - macStartTime < 5) { return false; }
+		time_t now;
+		time(&now);
+		if (now - macStartTime < 5) {
+			return false;
+		}
 		// And dont print this message any more often than 10 seconds.
 		static time_t lastMessageTime = 0;
-		if (now - lastMessageTime < 10) { return false; }
+		if (now - lastMessageTime < 10) {
+			return false;
+		}
 		GLOG(INFO) << "GPRS: Unable to allocate channel, all are busy";
 		time(&lastMessageTime);
 		return false;
@@ -587,49 +613,54 @@ bool L2MAC::macAddChannel()
 bool L2MAC::macFreeChannel()
 {
 	ChIdleCounter = ChCongestionCounter = 0;
-	if (macActiveChannels() <= configGprsChannelsMin()) { return false; }
+	if (macActiveChannels() <= configGprsChannelsMin()) {
+		return false;
+	}
 
-	//PDCHL1FEC *pdch = gL2MAC.macPickChannel();	// pick the least busy channel;
+	// PDCHL1FEC *pdch = gL2MAC.macPickChannel();	// pick the least busy channel;
 	PDCHL1FEC *pdch = gL2MAC.macPDCHs.back();
 	GLOG(INFO) << "GPRS freeing channel" << pdch;
 	GPRSLOG(1) << "GPRS freeing channel " << pdch;
-	delete pdch;	// Among other things, removes from macPDCHs before freeing it.
-	macPacchs.clear();	// Must rebuild the pacch list.
+	delete pdch;       // Among other things, removes from macPDCHs before freeing it.
+	macPacchs.clear(); // Must rebuild the pacch list.
 	return true;
 }
-
 
 // This is called during channel destruction to clean up any references to the channel.
 // The channel better not be in use.
 // Delete any tbfs using the channel.  Detach any MSs using the channel.
 // Remove the channel from the list in use by GPRS.
 // SVGDBG  What about existing data
-void L2MAC::macForgetCh(PDCHL1FEC*pch)
+void L2MAC::macForgetCh(PDCHL1FEC *pch)
 {
-	pch->mchStop();	// TODO: This should set a timer before the channel goes back to RR use.
+	pch->mchStop(); // TODO: This should set a timer before the channel goes back to RR use.
 
 	// Delete any tbfs that used this channel.
 	// Warning: delete tbf removes the tbf from the list we are traversing, so be careful.
 	TBF *tbf;
-	RN_MAC_FOR_ALL_TBF(tbf) {
+	RN_MAC_FOR_ALL_TBF(tbf)
+	{
 		if (tbf->canUseDownlink(pch->downlink()) || tbf->canUseUplink(pch->uplink())) {
-			tbf->mtCancel(MSStopCause::ShutDown,TbfNoRetry);	// Deletes tbf.
+			tbf->mtCancel(MSStopCause::ShutDown, TbfNoRetry); // Deletes tbf.
 		}
 	}
 	// Detach any ms that might be using this channel.
 	// FIXME: This needs work.  We need to send the MS new channel assignments which
 	// is a long procedure and may need a new state.
 	MSInfo *ms;
-	RN_MAC_FOR_ALL_MS(ms) {
+	RN_MAC_FOR_ALL_MS(ms)
+	{
 		if (ms->canUseDownlink(pch->downlink()) || ms->canUseUplink(pch->uplink())) {
 			ms->msReassignChannels();
 		}
 		// TODO: Without its PACCH the MSInfo is useless, should kill it off?
-		if (ms->msPacch == pch) { ms->msPacch = NULL; }
+		if (ms->msPacch == pch) {
+			ms->msPacch = NULL;
+		}
 	}
 	macPDCHs.remove(pch);
-	macPacchs.clear();	// Must rebuild the pacch list.
-	GPRSLOG(1) << "macForgetChannel, remaining="<<macPDCHs.size();
+	macPacchs.clear(); // Must rebuild the pacch list.
+	GPRSLOG(1) << "macForgetChannel, remaining=" << macPDCHs.size();
 }
 
 // Return a mask of the channels available on this arfcn.
@@ -637,7 +668,8 @@ unsigned L2MAC::macFindChannels(unsigned arfcn)
 {
 	int resultmask = 0;
 	PDCHL1FEC *ch;
-	RN_MAC_FOR_ALL_PDCH(ch) {
+	RN_MAC_FOR_ALL_PDCH(ch)
+	{
 		if (arfcn == ch->ARFCN()) {
 			resultmask |= 1 << ch->TN();
 		}
@@ -648,8 +680,11 @@ unsigned L2MAC::macFindChannels(unsigned arfcn)
 PDCHL1FEC *L2MAC::macFindChannel(unsigned arfcn, unsigned tn)
 {
 	PDCHL1FEC *ch;
-	RN_MAC_FOR_ALL_PDCH(ch) {
-		if (arfcn == ch->ARFCN() && tn == ch->TN()) { return ch; }
+	RN_MAC_FOR_ALL_PDCH(ch)
+	{
+		if (arfcn == ch->ARFCN() && tn == ch->TN()) {
+			return ch;
+		}
 	}
 	return NULL;
 }
@@ -658,33 +693,34 @@ static void dumpPdch()
 {
 
 	PDCHL1FEC *ch;
-	printf("PDCHs=%zu:",gL2MAC.macPDCHs.size());
-	RN_MAC_FOR_ALL_PDCH(ch) { printf(" %s",ch->shortId()); }
+	printf("PDCHs=%zu:", gL2MAC.macPDCHs.size());
+	RN_MAC_FOR_ALL_PDCH(ch) { printf(" %s", ch->shortId()); }
 	printf("\n");
-	printf("PACCHs=%zu",gL2MAC.macPacchs.size());
-	RN_MAC_FOR_ALL_PACCH(ch) { printf(" %s",ch->shortId()); }
+	printf("PACCHs=%zu", gL2MAC.macPacchs.size());
+	RN_MAC_FOR_ALL_PACCH(ch) { printf(" %s", ch->shortId()); }
 	printf("\n");
 }
 
 // Given an list of adjacent channels, try to derive optimal PACCH
 // and stick them in the macPacchs list.
-static void macPacchAddAdjCh(PDCHL1FEC**alist,int asize)
+static void macPacchAddAdjCh(PDCHL1FEC **alist, int asize)
 {
-	int downslots = configGprsMultislotMaxDownlink();	// TODO: add a separate chunk size.
+	int downslots = configGprsMultislotMaxDownlink(); // TODO: add a separate chunk size.
 	int upslots = configGprsMultislotMaxUplink();
-	int chunk = upslots>downslots ? upslots : downslots;
-	//printf("first chunk=%d\n",chunk);
-	chunk = RN_BOUND(chunk,1,4);
+	int chunk = upslots > downslots ? upslots : downslots;
+	// printf("first chunk=%d\n",chunk);
+	chunk = RN_BOUND(chunk, 1, 4);
 
 	if (asize < chunk) {
 		// We cannot optimize this adjacency set.
 		if (asize == 1) {
-			GLOG(WARNING) << "GPRS: single channel cannot be used multislot: "<<alist[0];
+			GLOG(WARNING) << "GPRS: single channel cannot be used multislot: " << alist[0];
 			return;
 		} else {
 			// This is not a full-bandwidth multislot channel.
-			GLOG(WARNING) << "GPRS: channels cannot be used in optimum multislot configuration: "<<alist[0];
-			GLOG(INFO) <<format("a:adding PACCH=%d asize=%d chunk=%d\n",1,asize,chunk);//dumpPdch();
+			GLOG(WARNING) << "GPRS: channels cannot be used in optimum multislot configuration: "
+				      << alist[0];
+			GLOG(INFO) << format("a:adding PACCH=%d asize=%d chunk=%d\n", 1, asize, chunk); // dumpPdch();
 			gL2MAC.macPacchs.push_back(alist[1]);
 		}
 		return;
@@ -699,42 +735,42 @@ static void macPacchAddAdjCh(PDCHL1FEC**alist,int asize)
 	// the first one is the PACCH.  Then:
 	// for 4-down/1-up DDPD we also utilize the pair on the left,
 	// for 1-down/4-up PUUU we also utilize the pair on the right.
-	int offset = 0;	// For chunk == 1 or 2.
+	int offset = 0; // For chunk == 1 or 2.
 	if (downslots < upslots) {
-		offset = 0;		// Only first channel can be PACCH.
+		offset = 0; // Only first channel can be PACCH.
 	} else {
 		if (chunk == 3) {
-			offset = 1;		// PACCH on the middle channel.
+			offset = 1; // PACCH on the middle channel.
 		} else if (chunk == 4) {
 			offset = (downslots >= upslots) ? 2 : 0;
 		}
 	}
-	int full = asize/chunk;		// How many full bandwidth pacch.
+	int full = asize / chunk; // How many full bandwidth pacch.
 	for (int i = 0; i < full; i++) {
-		int n = i*chunk+offset;
+		int n = i * chunk + offset;
 		devassert(n < asize);
 		if (n < asize) {
-			GLOG(INFO)<<format("b:adding PACCH=%d asize=%d chunk=%d\n",n,asize,chunk);//dumpPdch();
+			GLOG(INFO) << format("b:adding PACCH=%d asize=%d chunk=%d\n", n, asize, chunk); // dumpPdch();
 			gL2MAC.macPacchs.push_back(alist[n]);
 		}
 	}
 
 	// Do something with the leftover.
-	int leftover = asize - full*chunk;
+	int leftover = asize - full * chunk;
 	if (leftover == 1) {
-		// FIXME: do something about this, like maybe a separate chunk size option,
-		// or maybe how many channels to allocate on each arfcn.
-		// For now, just drop the channels.
-		forgetit:
-		GLOG(WARNING) << "GPRS: "<<leftover<<" channels cannot be used in multislot configuration";
+	// FIXME: do something about this, like maybe a separate chunk size option,
+	// or maybe how many channels to allocate on each arfcn.
+	// For now, just drop the channels.
+	forgetit:
+		GLOG(WARNING) << "GPRS: " << leftover << " channels cannot be used in multislot configuration";
 		return;
 	}
-	if (leftover>1) {
+	if (leftover > 1) {
 		// If asize == 8 then we can only get here if chunk == 3, but check anyway:
 		if (asize == 8 && chunk == 3) {
 			// In this case we will have have 3 pacchs of size 3,3,2 where
 			// the top pacch shares one tn with the one below.
-			//printf("c:adding %d asize=%d\n",6,asize);dumpPdch();
+			// printf("c:adding %d asize=%d\n",6,asize);dumpPdch();
 			gL2MAC.macPacchs.push_back(alist[6]);
 		} else if (asize > chunk) {
 			// Go ahead and make a pacch that shares with adjacent ch below.
@@ -744,16 +780,17 @@ static void macPacchAddAdjCh(PDCHL1FEC**alist,int asize)
 			// So the only sharing opportunity is with the channels below.
 			int lastpacch = asize - leftover + offset;
 			if (lastpacch < 0 || lastpacch >= asize) {
-				GLOG(ERR) << "logic error in leftover PACCH calculation";	// Dont crash.
+				GLOG(ERR) << "logic error in leftover PACCH calculation"; // Dont crash.
 			} else {
 				gL2MAC.macPacchs.push_back(alist[lastpacch]);
-				GLOG(INFO)<<format("c:adding PACCH=%d asize=%d chunk=%d leftover=%d\n",lastpacch,asize,chunk,leftover);//dumpPdch();
+				GLOG(INFO) << format("c:adding PACCH=%d asize=%d chunk=%d leftover=%d\n", lastpacch,
+						     asize, chunk, leftover); // dumpPdch();
 			}
 		} else {
 			// This is a lonely set of timeslots smaller than the chunk size.
 			// This PACCH can never be the full speed requested.
 			// TODO: When we support multiple QoS, these channels will become useful.
-			goto forgetit;	// But for now, dump them.
+			goto forgetit; // But for now, dump them.
 		}
 	}
 }
@@ -763,7 +800,7 @@ static void macPacchRebuild()
 	int size = gL2MAC.macPDCHs.size();
 	PDCHL1FEC *ch;
 
-	//printf("macPacchRebuild:"); dumpPdch();
+	// printf("macPacchRebuild:"); dumpPdch();
 
 	// The chunk size is how far apart the pacchs will be.
 	// If it is 3, and we have a whole arfcn, 8/3 doesnt work,
@@ -778,26 +815,32 @@ static void macPacchRebuild()
 	}
 
 	// Look for adjacent channels and process each such set.
-	PDCHL1FEC *alist[8];	// List of adjacent channels, max of 8 TNs per arfcn.
-	int asize = 0;			// Number of channels in alist.
+	PDCHL1FEC *alist[8]; // List of adjacent channels, max of 8 TNs per arfcn.
+	int asize = 0;       // Number of channels in alist.
 
 	int cn = -1, tn = -1;
-	RN_MAC_FOR_ALL_PDCH(ch) {
+	RN_MAC_FOR_ALL_PDCH(ch)
+	{
 		if (asize == 0) {
 			alist[asize++] = ch;
-		} else if (cn == (int)ch->CN() && tn+1 == (int)ch->TN()) {
-			alist[asize++] = ch;		// This is an adjacent channel.
-		} else {						// This is not an adjacent ch
+		} else if (cn == (int)ch->CN() && tn + 1 == (int)ch->TN()) {
+			alist[asize++] = ch; // This is an adjacent channel.
+		} else {		     // This is not an adjacent ch
 			// Process a list of adjacent channels.
-			macPacchAddAdjCh(alist,asize);
-			asize = 0;	// Start a new adjacency list.
+			macPacchAddAdjCh(alist, asize);
+			asize = 0; // Start a new adjacency list.
 		}
 		cn = ch->CN();
 		tn = ch->TN();
 	}
-	if (asize) { macPacchAddAdjCh(alist,asize); }
+	if (asize) {
+		macPacchAddAdjCh(alist, asize);
+	}
 
-	if (GPRSDebug) { printf("after macPacchRebuild:"); dumpPdch(); }
+	if (GPRSDebug) {
+		printf("after macPacchRebuild:");
+		dumpPdch();
+	}
 
 	// Check for disaster.  This would happen if all the channels were singletons.
 	if (gL2MAC.macPacchs.size() == 0) {
@@ -813,14 +856,18 @@ static void macPacchRebuild()
 PDCHL1FEC *L2MAC::macPickChannel()
 {
 	int size = macPDCHs.size();
-	if (size == 0) { return NULL; }	// Dont think this can happen.
+	if (size == 0) {
+		return NULL;
+	} // Dont think this can happen.
 	if (0) {
 		// Phase 1: Original code:
 		static int roundrobin = 0;
-		if (++roundrobin >= size) { roundrobin = 0; }
+		if (++roundrobin >= size) {
+			roundrobin = 0;
+		}
 		return macPDCHs[roundrobin];
 	}
-	//printf("macPickChannel:"); dumpPdch();
+	// printf("macPickChannel:"); dumpPdch();
 
 	// To give the phones better bandwidth, only return channels that can be
 	// used in an optimum (or close to optimum) multislot config.
@@ -828,19 +875,22 @@ PDCHL1FEC *L2MAC::macPickChannel()
 
 	// Rebuild the pacch list if necessary.
 	// The list is cleared whenever we add/remove from macPDCHs.
-	if (macPacchs.size() == 0) { macPacchRebuild(); }
+	if (macPacchs.size() == 0) {
+		macPacchRebuild();
+	}
 
-	//printf("macPickChannel after rebuild:"); dumpPdch();
+	// printf("macPickChannel after rebuild:"); dumpPdch();
 
 	// Determine the approximate load on each pacch and pick the least busy.
 	int npacch = macPacchs.size();
 	devassert(npacch);
 	PDCHL1FEC *ch, *bestch = NULL;
-	int bestload = 0;			// unneeded init to make gcc happy.
-	for (RListIterator<typeof(ch)> itr(macPacchs); itr.next(ch); ) {
+	int bestload = 0; // unneeded init to make gcc happy.
+	for (RListIterator<typeof(ch)> itr(macPacchs); itr.next(ch);) {
 		int load = 0;
 		MSInfo *ms;
-		RN_MAC_FOR_ALL_MS(ms) {
+		RN_MAC_FOR_ALL_MS(ms)
+		{
 			// TODO: Use totalsize instead of size, which requires changing the q type
 			// TODO: Add in the uplink load too.
 			// TODO: The PACCH for assignments that favor uplink over downlink
@@ -848,38 +898,39 @@ PDCHL1FEC *L2MAC::macPickChannel()
 			// the load on all the assigned channels, not just PACCH.
 			// Add 1 so an unallocated pacch wins over an allocated one, even if not loaded.
 			if (ms->msPacch == ch) {
-				// The msTrafficMetric measures the relative past utilization of the channel in blocks sent,
-				// while downlinkqueuesize is in bytes.  Multiply to kind of even out their influence.
-				// Add 1 in case nobody is sending anything we will still differentiate empty channels.
+				// The msTrafficMetric measures the relative past utilization of the channel in blocks
+				// sent, while downlinkqueuesize is in bytes.  Multiply to kind of even out their
+				// influence. Add 1 in case nobody is sending anything we will still differentiate empty
+				// channels.
 				int msload = ms->msDownlinkQueue.size() + ms->msTrafficMetric * 30;
 				load += 1 + msload;
-				GPRSLOG(2) << "macPickChannel loop"<<LOGVAR(ch)<<ms<<LOGVAR(msload) << LOGVAR(load);
+				GPRSLOG(2)
+					<< "macPickChannel loop" << LOGVAR(ch) << ms << LOGVAR(msload) << LOGVAR(load);
 			}
 		}
 		if (bestch == NULL || load < bestload) {
-			bestch = ch; bestload = load;
+			bestch = ch;
+			bestload = load;
 		}
-		GPRSLOG(2) << "macPickChannel intermediate"<<LOGVAR(bestch) << LOGVAR(ch) << LOGVAR(load);
+		GPRSLOG(2) << "macPickChannel intermediate" << LOGVAR(bestch) << LOGVAR(ch) << LOGVAR(load);
 	}
-	GPRSLOG(2) << "macPickChannel result "<<LOGVAR(bestch);
+	GPRSLOG(2) << "macPickChannel result " << LOGVAR(bestch);
 
 	// And there you have it.
 	return bestch;
 }
 
-
-
 // NOTE: This function runs asynchronously.
 // Start up GPRS if it is not started already.
 // We return success only if we have allocated at least one GSM channel
 // for GPRS service and started all the service threads.
-static void *macThreadFunc(void *arg);	// forward decl
-
+static void *macThreadFunc(void *arg); // forward decl
 
 // Starts macThreadFunc
 bool L2MAC::macStart()
 {
-	if (! GPRSConfig::IsEnabled()) return false;
+	if (!GPRSConfig::IsEnabled())
+		return false;
 	macStopFlag = 0;
 	time(&macStartTime);
 
@@ -887,7 +938,9 @@ bool L2MAC::macStart()
 	// In other words, we dont want a second RACH to reenter macStart() while it is working.
 	ScopedLock lock(macLock);
 
-	if (macRunning) { return true; }
+	if (macRunning) {
+		return true;
+	}
 
 	if (GPRSConfig::sgsnIsInternal()) {
 		if (!SGSN::Ggsn::start()) {
@@ -895,21 +948,26 @@ bool L2MAC::macStart()
 			return false;
 		}
 	} else {
-#if INTERNAL_SGSN==0
-		if (! BSSG::gBSSG.BSSGOpen()) { return false; }
+#if INTERNAL_SGSN == 0
+		if (!BSSG::gBSSG.BSSGOpen()) {
+			return false;
+		}
 #endif
 	}
 
 	// Sanity test and print warnings.
 	if (configGprsMultislotMaxDownlink() > 1 || configGprsMultislotMaxUplink() > 1) {
-		const char *multislotmsg = "A multislot configuration, required for high-speed GPRS service, is suggested by the config options GPRS.Multislot.Max.Downlink or GPRS.Multislot.Max.Uplink";
+		const char *multislotmsg =
+			"A multislot configuration, required for high-speed GPRS service, is suggested by the config "
+			"options GPRS.Multislot.Max.Downlink or GPRS.Multislot.Max.Uplink";
 #if GPRS_CHANNELS_MAX_SUPPORTED
 		if (configGprsChannelsMax() <= 1) {
 			GLOG(WARNING) << multislotmsg << " but is not possible because GPRS.Channels.Max <= 1";
 		} else
 #endif
-		if (configGprsChannelsMin() <= 1) {
-			GLOG(WARNING) << multislotmsg << " but is unlikely to be achieved because GPRS.Channels.Min <= 1";
+			if (configGprsChannelsMin() <= 1) {
+			GLOG(WARNING) << multislotmsg
+				      << " but is unlikely to be achieved because GPRS.Channels.Min <= 1";
 		}
 	}
 
@@ -918,17 +976,17 @@ bool L2MAC::macStart()
 	// running a few seconds.  I suspect the channels are created with
 	// their recyclable timers running and we cannot allocate them until
 	// they expire.  So dont even try.  The mac service loop will try again later.
-	//int minchans = gConfig.getNum("GPRS.Channels.Min",0);
-	//if (minchans > 0) {
+	// int minchans = gConfig.getNum("GPRS.Channels.Min",0);
+	// if (minchans > 0) {
 	//	for (int i = 0; i < minchans && i < 8; i++) {
 	//		if (!macAddChannel()) break;
 	//	}
 	//}
 
-	if (! macSingleStepMode) {
-		macRunning = true;		// set this first to avoid an unlikely race condition since
-								// the lock above is released before thread starts.
-		macThread.start(macThreadFunc,this);  // macThreadFunc started here
+	if (!macSingleStepMode) {
+		macRunning = true;		      // set this first to avoid an unlikely race condition since
+						      // the lock above is released before thread starts.
+		macThread.start(macThreadFunc, this); // macThreadFunc started here
 	}
 	GLOG(INFO) << "GPRS service thread started";
 	return true;
@@ -942,7 +1000,7 @@ void gprsStart() { gL2MAC.macStart(); }
 void L2MAC::macStop(bool channelstoo)
 {
 	// (pat) We must not set the lock or the serviceloop thread may not complete, creating deadlock.
-	//ScopedLock lock(macLock);	// prevents a RACH from interrupting us.
+	// ScopedLock lock(macLock);	// prevents a RACH from interrupting us.
 	if (macRunning) {
 		macStopFlag = true;
 		macThread.join();
@@ -951,7 +1009,8 @@ void L2MAC::macStop(bool channelstoo)
 	// Cant just delete the channels while the serviceloop is running or we crash.
 	if (channelstoo) {
 		for (int sanitychk = 0; sanitychk < 20 && macActiveChannels(); sanitychk++) {
-			if (! macFreeChannel()) break;
+			if (!macFreeChannel())
+				break;
 		}
 	}
 	GPRSLOG(1) << "macStop successful\n";
@@ -960,23 +1019,22 @@ void L2MAC::macStop(bool channelstoo)
 // External entry point.
 void gprsStop() { gL2MAC.macStop(false); }
 
-
 L1UplinkReservation::L1UplinkReservation()
 {
-	ScopedLock lock(mLock);	// Overkill.  We dont need to lock this, no one is using it yet.
+	ScopedLock lock(mLock); // Overkill.  We dont need to lock this, no one is using it yet.
 	RLCBlockReservation *rp = &mReservations[0];
-	for (int i = mReservationSize-1; i >= 0; i--,rp++) { rp->mrBSN = -1; }
+	for (int i = mReservationSize - 1; i >= 0; i--, rp++) {
+		rp->mrBSN = -1;
+	}
 }
 
 void mac_debug()
 {
-	//PDCHL1FEC *pdch;
-	//RN_MAC_FOR_ALL_PDCH(pdch) {
+	// PDCHL1FEC *pdch;
+	// RN_MAC_FOR_ALL_PDCH(pdch) {
 	//	pdch->debug_test();
 	//}
 }
-
-
 
 // Find an available RadioBlock on this uplink.
 // If restype indicates RRBP, also return the RRBP
@@ -985,11 +1043,10 @@ void mac_debug()
 // rrbp: -1: invalid; 0: 3 BSN; 1: 4 BSN; 2: 5 BSN; 3: 6 BSN.
 // Otherwise, make a reservation after afterBSN and return the reserved absolute BSN
 // as an integer, or -1 on failure.
-RLCBSN_t L1UplinkReservation::makeReservationInt(
-	RLCBlockReservation::type restype, RLCBSN_t afterBSN, TBF *tbf,
-	RadData *rd,
-	int *prrbp,		// RRBP 0..3 returned here.
-	MsgTransactionType mttype)
+RLCBSN_t L1UplinkReservation::makeReservationInt(RLCBlockReservation::type restype, RLCBSN_t afterBSN, TBF *tbf,
+						 RadData *rd,
+						 int *prrbp, // RRBP 0..3 returned here.
+						 MsgTransactionType mttype)
 {
 	ScopedLock lock(mLock);
 	RLCBSN_t bsn, first, lastplus1;
@@ -1002,45 +1059,52 @@ RLCBSN_t L1UplinkReservation::makeReservationInt(
 	if (tbf) {
 		// Count the reservations for reporting purposes.
 		switch (restype) {
-		case RLCBlockReservation::ForPoll: tbf->mtMS->msCountCcchReservations.addTotal(); break;
-		case RLCBlockReservation::ForRRBP: tbf->mtMS->msCountRbbpReservations.addTotal(); break;
-		default: break;
+		case RLCBlockReservation::ForPoll:
+			tbf->mtMS->msCountCcchReservations.addTotal();
+			break;
+		case RLCBlockReservation::ForRRBP:
+			tbf->mtMS->msCountRbbpReservations.addTotal();
+			break;
+		default:
+			break;
 		}
 		// This I/O is so stupid...
 		if (rd) {
-			GPRSLOG(1) << "makeReservation"<<tbf<<tbf->mtMS <<LOGVAR(restype)<<LOGVAR(afterBSN)
-				<<",fn="<<(afterBSN.valid() ? afterBSN.FN() : 0) << LOGVAR(mttype)
-				<< LOGVAR(rd->mRSSI) << LOGVAR(rd->mTimingError);
+			GPRSLOG(1) << "makeReservation" << tbf << tbf->mtMS << LOGVAR(restype) << LOGVAR(afterBSN)
+				   << ",fn=" << (afterBSN.valid() ? afterBSN.FN() : 0) << LOGVAR(mttype)
+				   << LOGVAR(rd->mRSSI) << LOGVAR(rd->mTimingError);
 		} else {
-			GPRSLOG(1) << "makeReservation"<<tbf<<tbf->mtMS <<LOGVAR(restype)<<LOGVAR(afterBSN)
-				<<",fn="<<(afterBSN.valid() ? afterBSN.FN() : 0) << LOGVAR(mttype);
+			GPRSLOG(1) << "makeReservation" << tbf << tbf->mtMS << LOGVAR(restype) << LOGVAR(afterBSN)
+				   << ",fn=" << (afterBSN.valid() ? afterBSN.FN() : 0) << LOGVAR(mttype);
 		}
 	} else {
 		if (rd) {
-			GPRSLOG(1) << "makeReservation" <<LOGVAR(restype)<<LOGVAR(afterBSN)
-				<<",fn="<<(afterBSN.valid() ? afterBSN.FN() : 0) << LOGVAR(mttype)
-				<< LOGVAR(rd->mRSSI) << LOGVAR(rd->mTimingError);
+			GPRSLOG(1) << "makeReservation" << LOGVAR(restype) << LOGVAR(afterBSN)
+				   << ",fn=" << (afterBSN.valid() ? afterBSN.FN() : 0) << LOGVAR(mttype)
+				   << LOGVAR(rd->mRSSI) << LOGVAR(rd->mTimingError);
 		} else {
-			GPRSLOG(1) << "makeReservation" <<LOGVAR(restype)<<LOGVAR(afterBSN)
-				<<",fn="<<(afterBSN.valid() ? afterBSN.FN() : 0) << LOGVAR(mttype);
+			GPRSLOG(1) << "makeReservation" << LOGVAR(restype) << LOGVAR(afterBSN)
+				   << ",fn=" << (afterBSN.valid() ? afterBSN.FN() : 0) << LOGVAR(mttype);
 		}
 	}
 
 	if (restype == RLCBlockReservation::ForRRBP) {
 		first = gBSNNext + (3 + minrrbp);
-		lastplus1 = gBSNNext + (3 + 4);	// one past the last.
+		lastplus1 = gBSNNext + (3 + 4); // one past the last.
 	} else {
 		first = (afterBSN.valid() ? afterBSN : gBSNNext);
 		lastplus1 = (gBSNNext + mReservationSize - 1);
 	}
-	first.normalize();	// Be sure.
-	lastplus1.normalize();	// Be sure.
+	first.normalize();     // Be sure.
+	lastplus1.normalize(); // Be sure.
 	int rrbp = minrrbp;
-	for (bsn = first; bsn != lastplus1; bsn=bsn+1, ++rrbp) {
+	for (bsn = first; bsn != lastplus1; bsn = bsn + 1, ++rrbp) {
 		// DEBUG: The RRBP is not being answered, so try increasing the time advance:
-		//if (GPRSDebug) { if (rrbp < 2) continue; }
+		// if (GPRSDebug) { if (rrbp < 2) continue; }
 		RLCBlockReservation *rp = &mReservations[bsn % mReservationSize];
-		if (rp->mrBSN == bsn) { continue; } // This block is already reserved.
+		if (rp->mrBSN == bsn) {
+			continue;
+		} // This block is already reserved.
 		if (gFixIdleFrame && (bsn & 1)) {
 			// The FEC is going to send USF only on the even frames,
 			// which means uplink data blocks arrive only on odd frames,
@@ -1052,23 +1116,28 @@ RLCBSN_t L1UplinkReservation::makeReservationInt(
 		rp->mrSubType = mttype;
 		rp->mrBSN = bsn;
 		rp->mrTBF = tbf;
-		if (rd) { rp->mrRadData = *rd; }
-		GPRSLOG(1) << "    reservation result:"<<LOGVAR(bsn)<<LOGVAR(bsn.FN())<<LOGVAR(rrbp)<<"\n";
-		if (prrbp) { *prrbp = rrbp; }
+		if (rd) {
+			rp->mrRadData = *rd;
+		}
+		GPRSLOG(1) << "    reservation result:" << LOGVAR(bsn) << LOGVAR(bsn.FN()) << LOGVAR(rrbp) << "\n";
+		if (prrbp) {
+			*prrbp = rrbp;
+		}
 		mac_debug();
 		return bsn;
 	}
-	GPRSLOG(1) << "   reservation failure"<<LOGVAR(first)<<LOGVAR(lastplus1)<<"\n";
+	GPRSLOG(1) << "   reservation failure" << LOGVAR(first) << LOGVAR(lastplus1) << "\n";
 	mac_debug();
-	return -1;	// Abject failure.
+	return -1; // Abject failure.
 }
 
 // Make an RRBP reservation if possible.  Return the rrbp (range 0 to 3), or -1 if failed.
-RLCBSN_t L1UplinkReservation::makeRRBPReservation(TBF *tbf,
-	int *prrbp,		// The RRBP result, 0..3
-	MsgTransactionType mttype)	// The sub-state that this reservation is for.
+RLCBSN_t
+L1UplinkReservation::makeRRBPReservation(TBF *tbf,
+					 int *prrbp,		    // The RRBP result, 0..3
+					 MsgTransactionType mttype) // The sub-state that this reservation is for.
 {
-	return makeReservationInt(RLCBlockReservation::ForRRBP,-1,tbf,NULL,prrbp,mttype);
+	return makeReservationInt(RLCBlockReservation::ForRRBP, -1, tbf, NULL, prrbp, mttype);
 }
 
 // Return the reservation for the specified block timeslot, or NULL if none.
@@ -1078,59 +1147,70 @@ RLCBlockReservation *L1UplinkReservation::getReservation(RLCBSN_t bsn)
 {
 	ScopedLock lock(mLock);
 	RLCBlockReservation *rp = &mReservations[bsn % mReservationSize];
-	if (rp->mrBSN == bsn) { return rp;}
+	if (rp->mrBSN == bsn) {
+		return rp;
+	}
 	return NULL;
 }
-	
+
 // If TBF is NULL, clear the reservation.
 // If a TBF is specified, only clear the res if it is for that TBF.
 void L1UplinkReservation::clearReservation(RLCBSN_t bsn, TBF *tbf)
 {
 	ScopedLock lock(mLock);
 	RLCBlockReservation *rp = &mReservations[bsn % mReservationSize];
-	if (tbf && rp->mrTBF != tbf) { return; }
+	if (tbf && rp->mrTBF != tbf) {
+		return;
+	}
 	rp->mrBSN = -1;
-	rp->mrTBF = NULL;	// not necessary, but lets be neat.
+	rp->mrTBF = NULL; // not necessary, but lets be neat.
 }
 
 // See if this block the MS sent to us corresponds to a reservation,
 // and if so, update the counters in the corresponding TBF.
-RLCBlockReservation::type L1UplinkReservation::recvReservation(
-	RLCBSN_t bsn,	// The BSN of a received block.
-	TBF**restbf,		// Return tbf specified by reservation here, just for debugging.
-	RadData *prd,	// Return radio data here.
-	PDCHL1FEC *ch)	// Implicit in this pointer, but easier to pass it.
+RLCBlockReservation::type
+L1UplinkReservation::recvReservation(RLCBSN_t bsn,  // The BSN of a received block.
+				     TBF **restbf,  // Return tbf specified by reservation here, just for debugging.
+				     RadData *prd,  // Return radio data here.
+				     PDCHL1FEC *ch) // Implicit in this pointer, but easier to pass it.
 {
-	ScopedLock lock(mLock);	// This lock is probably no longer necessary.
+	ScopedLock lock(mLock); // This lock is probably no longer necessary.
 	RLCBlockReservation::type result = RLCBlockReservation::None;
 	RLCBlockReservation *rp = &mReservations[bsn % mReservationSize];
 	*restbf = 0;
 	if (rp->mrBSN == bsn) {
 		result = rp->mrType;
-		if (prd) { *prd = rp->mrRadData; }
+		if (prd) {
+			*prd = rp->mrRadData;
+		}
 		if (rp->mrTBF) {
 			devassert(rp->mrType != RLCBlockReservation::ForRACH);
 			TBF *rtbf = rp->mrTBF;
-			GPRSLOG(1) << "recvReservation " <<rp->mrType <<LOGVAR2("ttype",rp->mrSubType)
-				<<rtbf <<rtbf->mtMS <<LOGVAR(bsn) <<" "<<ch;
+			GPRSLOG(1) << "recvReservation " << rp->mrType << LOGVAR2("ttype", rp->mrSubType) << rtbf
+				   << rtbf->mtMS << LOGVAR(bsn) << " " << ch;
 			*restbf = rtbf;
 			rtbf->mtRecvAck(rp->mrSubType);
 			switch (rp->mrType) {
-			case RLCBlockReservation::ForPoll: rtbf->mtMS->msCountCcchReservations.addGood(); break;
-			case RLCBlockReservation::ForRRBP: rtbf->mtMS->msCountRbbpReservations.addGood(); break;
-			default: break;
+			case RLCBlockReservation::ForPoll:
+				rtbf->mtMS->msCountCcchReservations.addGood();
+				break;
+			case RLCBlockReservation::ForRRBP:
+				rtbf->mtMS->msCountRbbpReservations.addGood();
+				break;
+			default:
+				break;
 			}
 		} else {
-			GPRSLOG(1) << "recvReservation"<<rp->mrType<<" tbf=null" <<LOGVAR(bsn)<<" "<<ch;
+			GPRSLOG(1) << "recvReservation" << rp->mrType << " tbf=null" << LOGVAR(bsn) << " " << ch;
 		}
 	} else {
-		//GPRSLOG(1) << "recvReservation unrecognized"<<LOGVAR(bsn)<<"\n";
+		// GPRSLOG(1) << "recvReservation unrecognized"<<LOGVAR(bsn)<<"\n";
 	}
-	clearReservation(bsn,NULL); // Be tidy.
+	clearReservation(bsn, NULL); // Be tidy.
 	return result;
 }
 
-void L1UplinkReservation::dumpReservations(std::ostream&os)
+void L1UplinkReservation::dumpReservations(std::ostream &os)
 {
 	os << "Reservations=(";
 	RLCBlockReservation *res = &mReservations[0];
@@ -1143,25 +1223,23 @@ void L1UplinkReservation::dumpReservations(std::ostream&os)
 	os << ")\n";
 }
 
-
 // Return the USF of an MS that might want to use the uplink.
 // TODO: Fix this not to worry about RRBP since I added makeReservation.
-static
-int findNeedyUSF(PDCHL1FEC *pdch)
+static int findNeedyUSF(PDCHL1FEC *pdch)
 {
 	int usf;
-	GPRSLOG(512) << "findNeedyUSF start for "<<pdch;  // SVGDBG
+	GPRSLOG(512) << "findNeedyUSF start for " << pdch; // SVGDBG
 
 	if (extDyn.isUplinkReserved(pdch)) {
-		GPRSLOG(512) << "findNeedyUSF extDyn.isUplinkReserved "<<pdch;
+		GPRSLOG(512) << "findNeedyUSF extDyn.isUplinkReserved " << pdch;
 		return 0;
 	}
 
 	// In order to be fair to multiple MS on the same channel
 	// we will look at all the USFs on this channel and pick the best one.
 	TBF *besttbf = NULL;
-	int bestusf=0;	// unused init to shut up gcc
-	int bestage=0;	// how long since the tbf was issued a USF.
+	int bestusf = 0; // unused init to shut up gcc
+	int bestage = 0; // how long since the tbf was issued a USF.
 
 	// This is an unused uplink block.
 	// Look around for an uplink TBF on this channel with data to send.
@@ -1171,17 +1249,19 @@ int findNeedyUSF(PDCHL1FEC *pdch)
 			// This USF on this channel is in use by this MS.
 			// Lets see if the MS wants to send something to us.
 			TBF *tbf;
-			RN_MS_FOR_ALL_TBF(ms,tbf) {
-				GPRSLOG(512) << "findNeedyUSF "<<ms <<" testing" <<tbf;
-				if (tbf->mtDir != RLCDir::Up) continue;
+			RN_MS_FOR_ALL_TBF(ms, tbf)
+			{
+				GPRSLOG(512) << "findNeedyUSF " << ms << " testing" << tbf;
+				if (tbf->mtDir != RLCDir::Up)
+					continue;
 				// We dont include state DataFinal, because then we have already
 				// received all the blocks and are waiting for an RRBP reservation,
 				// which does not need a USF.
 				// We will include DataReassign to let an uplink proceed
 				// during the reassignment process.
 				TBFState::type tstate = tbf->mtGetState();
-				if (tstate != TBFState::DataTransmit &&
-				    tstate != TBFState::DataReassign) continue;
+				if (tstate != TBFState::DataTransmit && tstate != TBFState::DataReassign)
+					continue;
 
 				// At this point, we know the TBF wants to use this uplink slot.
 
@@ -1197,9 +1277,12 @@ int findNeedyUSF(PDCHL1FEC *pdch)
 					// (This is only necessary if there are multiple down channels,
 					//  which only occurs for a 2-down/3-up config.)
 					// We keep the lists sorted to facilitate this test.
-					if (tn != ms->msPCHUps.front()->TN()) {goto nextusf;}
+					if (tn != ms->msPCHUps.front()->TN()) {
+						goto nextusf;
+					}
 					PDCHL1Uplink *up2;
-					RN_FOR_ALL(PDCHL1UplinkList_t,ms->msPCHUps,up2) {
+					RN_FOR_ALL(PDCHL1UplinkList_t, ms->msPCHUps, up2)
+					{
 						// The USF in downlink block N reserves uplink block N+1
 						if (up2->parent()->getReservation(gBSNNext + 1)) {
 							// The extended dynamic TBF cannot use the uplink
@@ -1218,12 +1301,9 @@ int findNeedyUSF(PDCHL1FEC *pdch)
 					// So all we have to is reserve the channels, we dont need
 					// to save the usf.  Doesnt matter if we reserve the current
 					// timeslot since we are already past the test, so just do all.
-					RN_FOR_ALL(PDCHL1UplinkList_t,ms->msPCHUps,up2) {
-						extDyn.reserveUplink(up2);
-					}
+					RN_FOR_ALL(PDCHL1UplinkList_t, ms->msPCHUps, up2) { extDyn.reserveUplink(up2); }
 					// Fall through to return the usf for this tbf.
 				}
-
 
 				// If an uplink tbf is stalled, the MS is waiting for an acknak
 				// from the network, so there is not much point in giving it an uplink USF.
@@ -1232,13 +1312,14 @@ int findNeedyUSF(PDCHL1FEC *pdch)
 				// give it a usf anyway, but I didnt.  It might get the usf below, anyway.
 				// 6-7-2012: Above is WRONG.  The MS will continue sending the old
 				// blocks and it needs USF to do so; without them it will hang forever.
-				//if (tbf->stalled()) continue;
+				// if (tbf->stalled()) continue;
 
 				int thisage = gBSNNext - ms->msLastUsfGrant;
-				GPRSLOG(512) << "findNeedyUSF for "<<ms <<LOGVAR(usf)<<LOGVAR(thisage)<<tbf;
+				GPRSLOG(512) << "findNeedyUSF for " << ms << LOGVAR(usf) << LOGVAR(thisage) << tbf;
 				if (besttbf) {
 					// We want to keep the TBF with the longest age.
-					if (thisage < bestage) continue;
+					if (thisage < bestage)
+						continue;
 				}
 				// This is the most needy TBF encountered so far.
 				besttbf = tbf;
@@ -1246,14 +1327,14 @@ int findNeedyUSF(PDCHL1FEC *pdch)
 				bestage = thisage;
 			}
 		}
-		nextusf:;
+	nextusf:;
 	}
 
 	if (besttbf) {
 		// In state DataReassign, dont penalize the MS for not listening,
 		// because we dont know if it is still on this chan or not.
 		besttbf->mtMS->msCountUSFGrant(besttbf->mtGetState() == TBFState::DataTransmit);
-		GPRSLOG(4)<<LOGVAR(bestusf)<<LOGVAR(besttbf)<<"\n";
+		GPRSLOG(4) << LOGVAR(bestusf) << LOGVAR(besttbf) << "\n";
 		return bestusf;
 	}
 
@@ -1267,29 +1348,36 @@ int findNeedyUSF(PDCHL1FEC *pdch)
 
 static bool disabledByDutyFactor()
 {
-		// 4-23-2012: For testing, try throttling down the uplink to
-		// leave empty USFs.  The downlink is failing sometimes,
-		// so the point of this to see if this helps.
-		// Update: This made no difference, and if you
-		// set the duty factor less than 50%, the Blackberry says
-		// unable to connect to internet.
-		//block->mUSF = findNeedyUSF(pdch);
-		int dutyfactor = configGetNumQ("GPRS.UplinkDutyFactor",100);
-		int nope = false;
-		if (dutyfactor < 0) { 		// If it is zero, it is probably just an sql goof.
-			GLOG(ERR) << "Invalid GPRS.UplinkDutyFactor:"<<dutyfactor;
-		} else if (dutyfactor <= 25) { 		// 1 in 4
-			if (4*((int)gBSNNext/4) != gBSNNext) {nope = true;}
-		} else if (dutyfactor <= 34) {	// 1 in 3
-			if ((3*((int)gBSNNext/3)) != gBSNNext) {nope = true;}
-		} else if (dutyfactor <= 50) {	// 1 in 2
-			if (gBSNNext & 1) {nope = true;}
-		} else if (dutyfactor <= 75) {	// 3 in 4
-			if (4*((int)gBSNNext/4) == gBSNNext) {nope = true;}
+	// 4-23-2012: For testing, try throttling down the uplink to
+	// leave empty USFs.  The downlink is failing sometimes,
+	// so the point of this to see if this helps.
+	// Update: This made no difference, and if you
+	// set the duty factor less than 50%, the Blackberry says
+	// unable to connect to internet.
+	// block->mUSF = findNeedyUSF(pdch);
+	int dutyfactor = configGetNumQ("GPRS.UplinkDutyFactor", 100);
+	int nope = false;
+	if (dutyfactor < 0) { // If it is zero, it is probably just an sql goof.
+		GLOG(ERR) << "Invalid GPRS.UplinkDutyFactor:" << dutyfactor;
+	} else if (dutyfactor <= 25) { // 1 in 4
+		if (4 * ((int)gBSNNext / 4) != gBSNNext) {
+			nope = true;
 		}
-		return nope;
+	} else if (dutyfactor <= 34) { // 1 in 3
+		if ((3 * ((int)gBSNNext / 3)) != gBSNNext) {
+			nope = true;
+		}
+	} else if (dutyfactor <= 50) { // 1 in 2
+		if (gBSNNext & 1) {
+			nope = true;
+		}
+	} else if (dutyfactor <= 75) { // 3 in 4
+		if (4 * ((int)gBSNNext / 4) == gBSNNext) {
+			nope = true;
+		}
+	}
+	return nope;
 }
-
 
 // Set the RRBP and USF fields for a downlink block, either data or message.
 // If tbf is non-NULL, notify it if block is passed, which means it will be sent.
@@ -1299,9 +1387,9 @@ static bool disabledByDutyFactor()
 // which will actually be sent 2 blocks after this one goes out, due to the staggering
 // of incoming and outgoing block numbers.
 bool setMACFields(MACDownlinkHeader *block, PDCHL1FEC *pdch, TBF *tbf,
-	int makeres,				// 0 = no res, 1 = optional res, 2 = required res.
-	MsgTransactionType mttype,	// Type of reservation
-	unsigned *pcounter)			// If non-NULL, incremented if a reservation is made.
+		  int makeres,		     // 0 = no res, 1 = optional res, 2 = required res.
+		  MsgTransactionType mttype, // Type of reservation
+		  unsigned *pcounter)	// If non-NULL, incremented if a reservation is made.
 {
 	int rrbp = -1;
 	// Update: This block may be sent multiple times if an RLC data block is resent.
@@ -1310,34 +1398,36 @@ bool setMACFields(MACDownlinkHeader *block, PDCHL1FEC *pdch, TBF *tbf,
 	block->mUSF = 0;
 	if (makeres) {
 		mac_debug();
-		RLCBSN_t bsn = pdch->makeRRBPReservation(tbf,&rrbp,mttype);
+		RLCBSN_t bsn = pdch->makeRRBPReservation(tbf, &rrbp, mttype);
 		if (bsn.valid()) {
-			if (tbf) { tbf->mtSetAckExpected(bsn,mttype); }
+			if (tbf) {
+				tbf->mtSetAckExpected(bsn, mttype);
+			}
 		} else {
 			devassert(rrbp == -1);
-			if (makeres == 2) { return false; } // Caller will try again later.
+			if (makeres == 2) {
+				return false;
+			} // Caller will try again later.
 		}
 	}
 	if (rrbp != -1) {
 		block->setRRBP(rrbp);
-		if (pcounter) (*pcounter)++;
+		if (pcounter)
+			(*pcounter)++;
 	}
 
 	// GSM 05.02 6.3.2.2.1: The USF field in downlink block N signals
 	// that uplink block (N+1) is assigned to that MS.
 
-	if (! pdch->getReservation(gBSNNext + 1) &&
-		! disabledByDutyFactor() &&
-		! extDyn.isUplinkReserved(pdch)) {
+	if (!pdch->getReservation(gBSNNext + 1) && !disabledByDutyFactor() && !extDyn.isUplinkReserved(pdch)) {
 		block->mUSF = findNeedyUSF(pdch);
 		// Remember the usf sent on this channel at time gBSNNext
-		pdch->setUsf(block->mUSF,gBSNNext);	// ok to be 0.
+		pdch->setUsf(block->mUSF, gBSNNext); // ok to be 0.
 	} else {
-		pdch->setUsf(0,gBSNNext);	// ok to be 0.
+		pdch->setUsf(0, gBSNNext); // ok to be 0.
 	}
 	return true;
 }
-
 
 // GSM 4.08 sec3.5.2
 // Return an L3RRMessage to be sent on the AGCH or NULL.
@@ -1356,45 +1446,46 @@ bool setMACFields(MACDownlinkHeader *block, PDCHL1FEC *pdch, TBF *tbf,
 // when it expires.
 // Power control in GSM03.64 sec6.5.8
 
-// 2-2014: No longer uses makeCCCHReservation because we are called on demand and we know exactly when the CCCH is going out.
-// WARNING: This runs in a different thread than the rest of GPRS.  That means that makeReservationInt must be mutex protected.
+// 2-2014: No longer uses makeCCCHReservation because we are called on demand and we know exactly when the CCCH is going
+// out. WARNING: This runs in a different thread than the rest of GPRS.  That means that makeReservationInt must be
+// mutex protected.
 L3ImmediateAssignment *makeSingleBlockImmediateAssign(RachInfo *rip, unsigned afterFrame)
 {
-	if (! GPRSConfig::IsEnabled()) { return NULL; }
-	LOG(DEBUG) <<LOGVAR(rip) <<LOGVAR(afterFrame);
-	RLCBSN_t afterBSN = FrameNumber2BSN(afterFrame+8);	// Add 8 frames to give the MS time to prepare.
-	PDCHL1FEC *chan = gL2MAC.macPickChannel();	// pick the least busy channel;
+	if (!GPRSConfig::IsEnabled()) {
+		return NULL;
+	}
+	LOG(DEBUG) << LOGVAR(rip) << LOGVAR(afterFrame);
+	RLCBSN_t afterBSN = FrameNumber2BSN(afterFrame + 8); // Add 8 frames to give the MS time to prepare.
+	PDCHL1FEC *chan = gL2MAC.macPickChannel();	   // pick the least busy channel;
 	if (!chan) {
 		LOG(NOTICE) << "GPRS RACH attempt discarded. GPRS is enabled, but no GPRS channels are allocated.";
 		return NULL;
 	}
 	RLCBSN_t RBN = chan->makeReservationInt(RLCBlockReservation::ForRACH,
-		afterBSN,	// Reservation must be after this time.
-		NULL,	// No TBF for this
-		&rip->mRadData,	// We remember the timing advance.
-		NULL,	// No RRBP
-		MsgTransNone);	// Dont inform anyone else.
+						afterBSN,       // Reservation must be after this time.
+						NULL,		// No TBF for this
+						&rip->mRadData, // We remember the timing advance.
+						NULL,		// No RRBP
+						MsgTransNone);  // Dont inform anyone else.
 
-	if (! RBN.valid()) {
+	if (!RBN.valid()) {
 		// Abject failure.  This should never happen because the reservation controller can make
 		// reservations as far in advance as necessary.
-		GPRSLOG(1) << "serviceRACH failed to make a reservation at" <<LOGVAR(gBSNNext);
+		GPRSLOG(1) << "serviceRACH failed to make a reservation at" << LOGVAR(gBSNNext);
 		// The MS may try another RACH for us again later,
 		// or give up and try some other cell that it can also hear.
 		return NULL;
 	}
-	GPRSLOG(1) << "serviceRACH at "<<LOGVAR(gBSNNext) <<" with reservation at "<<LOGVAR(RBN) <<"=" <<RBN.FN() << " frames.";
+	GPRSLOG(1) << "serviceRACH at " << LOGVAR(gBSNNext) << " with reservation at " << LOGVAR(RBN) << "=" << RBN.FN()
+		   << " frames.";
 
 	// GSM 4.08 3.5.2.1.3.1: The immediate assignment message includes
 	// the frame when the RACH was received (in reqref)
 	// 11-22 NOTE!  The downlink must be true.  If you set it to false,
 	// the multitech modem simply fails to respond.
 	GSM::L3ImmediateAssignment *result = new L3ImmediateAssignment(
-				GSM::L3RequestReference(rip->mRA,rip->mWhen),
-				chan->packetChannelDescription(),
-				GSM::L3TimingAdvance(GetTimingAdvance(rip->mRadData.mTimingError)),
-				true,false);	// tbf, downlink
-
+		GSM::L3RequestReference(rip->mRA, rip->mWhen), chan->packetChannelDescription(),
+		GSM::L3TimingAdvance(GetTimingAdvance(rip->mRadData.mTimingError)), true, false); // tbf, downlink
 
 	// The immediate assignment has a TFI, but we do not set it for a single block assignment.
 	L3IAPacketAssignment *pa = result->packetAssign();
@@ -1403,30 +1494,30 @@ L3ImmediateAssignment *makeSingleBlockImmediateAssign(RachInfo *rip, unsigned af
 	// We dont know what MS we are talking to, so set the power params to global defaults.
 	// We could fiddle with the power gamma based on RSSI, but not implemented,
 	// and probably unnecessary.  It is not really necessary to change these at all here.
-	pa->setPacketPowerOptions(GetPowerAlpha(),GetPowerGamma());
+	pa->setPacketPowerOptions(GetPowerAlpha(), GetPowerGamma());
 	GPRSLOG(1) << "GPRS serviceRACH sending L3ImmediateAssignment:" << *result;
 	return result;
 }
 
 // The RLC block just arrived on pdch.  Figure out to which TBF it belongs and
 // pass it on to the RLCEngine for assembly into a PDU.
-static void processRLCUplinkDataBlock(PDCHL1FEC *pdch, RLCRawBlock *src,TBF *restbf)
+static void processRLCUplinkDataBlock(PDCHL1FEC *pdch, RLCRawBlock *src, TBF *restbf)
 {
 	RLCUplinkDataBlock *rb = new RLCUplinkDataBlock(src);
 
 	// If this flag is set, data blocks are supposed to arrive
 	// only on odd numbered blocks
-	if (gFixIdleFrame && (0==(src->mBSN&1))) {
-		GPRSLOG(1) << "@@@OOPS: Even numbered uplink data block:"<<src->mBSN;
+	if (gFixIdleFrame && (0 == (src->mBSN & 1))) {
+		GPRSLOG(1) << "@@@OOPS: Even numbered uplink data block:" << src->mBSN;
 	}
 
 	// Reassociate the block with the TBF to which it belongs:
-	//GPRSLOG(1) << "### Uplink Data Block tfi="<<rb->mTFI<< " bsn="<<src->mBSN;
-	TBF *tbf = pdch->getTFITBF(rb->mTFI,RLCDir::Up);
+	// GPRSLOG(1) << "### Uplink Data Block tfi="<<rb->mTFI<< " bsn="<<src->mBSN;
+	TBF *tbf = pdch->getTFITBF(rb->mTFI, RLCDir::Up);
 	if (tbf) {
 		// The rd data is from the RACH, and is pretty old;
 		// Use the new RSSI from RLCRawBlock.
-		//if (rd.mValid) {
+		// if (rd.mValid) {
 		//	tbf->mtMS->setRadData(rd);
 		//	tbf->setRadData(rd);
 		//}
@@ -1435,28 +1526,27 @@ static void processRLCUplinkDataBlock(PDCHL1FEC *pdch, RLCRawBlock *src,TBF *res
 		// I am leaving in both calls in case there is a problem, but we wont
 		// double count the block for reporting purposes.
 		tbf->mtMS->setRadData(src->mRD);
-		tbf->mtMS->talkedUp(true);	// Mark time, but dont double count.
+		tbf->mtMS->talkedUp(true); // Mark time, but dont double count.
 
-		//GPRSLOG(1) << "### Uplink Data Block tfi="<<rb->mTFI
+		// GPRSLOG(1) << "### Uplink Data Block tfi="<<rb->mTFI
 		//	<<" tbf="<<tbf << " bsn="<<src->mBSN;
-		if (GPRSDebug&2) {
+		if (GPRSDebug & 2) {
 			std::ostringstream oss;
 			rb->RLCUplinkDataBlockHeader::text(oss);
-			GPRSLOG(2) << "Uplink Data Block tfi="<<rb->mTFI
-				<<" tbf=" <<tbf <<" bsn="<<src->mBSN <<tbf<<oss.str();
+			GPRSLOG(2) << "Uplink Data Block tfi=" << rb->mTFI << " tbf=" << tbf << " bsn=" << src->mBSN
+				   << tbf << oss.str();
 		}
 		if (restbf && restbf != tbf) {
-			GLOG(ERR) << "Incoming block reservation does not match "<<tbf<< LOGVAR(restbf);
+			GLOG(ERR) << "Incoming block reservation does not match " << tbf << LOGVAR(restbf);
 		}
-		tbf->engineRecvDataBlock(rb,pdch->TN());
+		tbf->engineRecvDataBlock(rb, pdch->TN());
 	} else {
-		//GPRSLOG(1) << "### Uplink Data Block with unknown tfi="<<rb->mTFI
+		// GPRSLOG(1) << "### Uplink Data Block with unknown tfi="<<rb->mTFI
 		//	<< " bsn="<<src->mBSN;
-		GLOG(WARNING) << "Uplink Data Block with TFI="<<rb->mTFI
-			<< " bsn="<<src->mBSN <<" unassociated with TBF";
+		GLOG(WARNING) << "Uplink Data Block with TFI=" << rb->mTFI << " bsn=" << src->mBSN
+			      << " unassociated with TBF";
 	}
 }
-
 
 // The MS is requesting an uplink TBF.
 // Create the TBF, then go ahead and try to attach it right now.
@@ -1469,12 +1559,11 @@ static void processRLCUplinkDataBlock(PDCHL1FEC *pdch, RLCRawBlock *src,TBF *res
 // The data may or may not be lost, because if the TBF has not yet had any acknacks,
 // the data will get through on the second TBF, else if there have been acknacks,
 // the data is lost as far as we are concerned.
-static void processUplinkResourceRequest(
-	PDCHL1FEC *requestch,	// The channel the request arrived on.
-	RLCMsgPacketResourceRequest *rmsg,
-	RLCBlockReservation::type restype, RadData &rd)
+static void processUplinkResourceRequest(PDCHL1FEC *requestch, // The channel the request arrived on.
+					 RLCMsgPacketResourceRequest *rmsg, RLCBlockReservation::type restype,
+					 RadData &rd)
 {
-	MSInfo *ms = rmsg->getMS(requestch,true);
+	MSInfo *ms = rmsg->getMS(requestch, true);
 	if (!ms) {
 		// 3-20120: This happened if the MS tried to identify itself using a TFI,
 		// but the TBF for that TFI is already deleted.  Just ignore it, nothing else we can do.
@@ -1483,13 +1572,17 @@ static void processUplinkResourceRequest(
 	}
 	ms->talkedUp();
 	if (rd.mValid) {
-		ms->setRadData(rd.mRSSI,rd.mTimingError);
+		ms->setRadData(rd.mRSSI, rd.mTimingError);
 	}
 	// Store the channel quality report info.
 	ms->msCValue.addPoint(rmsg->mCValue);
-	if (rmsg->mSignVarPresent) { ms->msSigVar.addPoint(rmsg->mSignVar); } // Not present for two phase access.
-	for (int tn=0; tn < 8; tn++) {
-		if (rmsg->mILevelPresent[tn]) { ms->msILevel.addPoint(rmsg->mILevelTN[tn]); }
+	if (rmsg->mSignVarPresent) {
+		ms->msSigVar.addPoint(rmsg->mSignVar);
+	} // Not present for two phase access.
+	for (int tn = 0; tn < 8; tn++) {
+		if (rmsg->mILevelPresent[tn]) {
+			ms->msILevel.addPoint(rmsg->mILevelTN[tn]);
+		}
 	}
 
 	bool isRach = (restype == RLCBlockReservation::ForRACH);
@@ -1517,7 +1610,7 @@ static void processUplinkResourceRequest(
 	// }
 
 	// The MS was found using the TLLI, if any.
-	//UNNECESSARY:if (rmsg->mTLLIPresent) { ms->msTlli = rmsg->mTLLI; }
+	// UNNECESSARY:if (rmsg->mTLLIPresent) { ms->msTlli = rmsg->mTLLI; }
 
 	// TODO LATER: We may want to assign more channels based on params in the rmsg.
 	// If this uplink request was RACH initiated, we did not know the MS before
@@ -1526,54 +1619,54 @@ static void processUplinkResourceRequest(
 	// as PACCH, and will continue to do so unless and until we tell it otherwise.
 	if (ms->msPacch && ms->msPacch != requestch) {
 		// This does not really matter.
-		GPRSLOG(1) << ms <<" ch:"<<ms->msPacch<<" different from msg ch:"<<requestch;
+		GPRSLOG(1) << ms << " ch:" << ms->msPacch << " different from msg ch:" << requestch;
 	}
 
 	// If the MS is calling us on RACH, the old channel assignments are at best
 	// meaningless and at worst incorrect.
-		// The MS RACHed while a TBF is active.
-		// If we get here, the MS may have two channel assignments: the one
-		// in the existing TBF, and the one that was assigned for the
-		// single block assignment on which this channel request was sent.
-		// 06-07: I saw this happen when the MS is in packet idle mode and we
-		// have just sent it a DIA [downlink immediate assignment] on CCCH but
-		// then we get a RACH before it can respond.
-		// 04.18 3.5.2.1.2 says and I quote:
-		// "If the mobile station receives an IMMEDIATE ASSIGNMENT message during
-		// the packet access procedure indicating a packet downlink assignment procedure,
-		// the mobile station shall abort the packet access procedure and respond to the
-		// IMMEDIATE ASSIGNMENT message as specified in section 3.5.3.1.2.
-		// The mobile station shall then attempt an establishment of uplink TBF,
-		// using the procedure specified in GSM 04.60 which is applicable in packet transfer mode.
-		// There is a paragraph above that appears to contradict, but it applies
-		// only to the Packet Pause procedure.
+	// The MS RACHed while a TBF is active.
+	// If we get here, the MS may have two channel assignments: the one
+	// in the existing TBF, and the one that was assigned for the
+	// single block assignment on which this channel request was sent.
+	// 06-07: I saw this happen when the MS is in packet idle mode and we
+	// have just sent it a DIA [downlink immediate assignment] on CCCH but
+	// then we get a RACH before it can respond.
+	// 04.18 3.5.2.1.2 says and I quote:
+	// "If the mobile station receives an IMMEDIATE ASSIGNMENT message during
+	// the packet access procedure indicating a packet downlink assignment procedure,
+	// the mobile station shall abort the packet access procedure and respond to the
+	// IMMEDIATE ASSIGNMENT message as specified in section 3.5.3.1.2.
+	// The mobile station shall then attempt an establishment of uplink TBF,
+	// using the procedure specified in GSM 04.60 which is applicable in packet transfer mode.
+	// There is a paragraph above that appears to contradict, but it applies
+	// only to the Packet Pause procedure.
 
-		// In that case, we should just throw this Packet Resource Request away -
-		// although we put the MS on this channel, it should move to the channel
-		// specified by the immediate assignment when that start-time rolls around.  We hope.
-		// If the TBF is in some other mode, this is a potential disaster.
-		// 6-8: I am going to try to fix the mixup by immediately
-		// reissuing a new assignment for the MS.  Update: That did not work.
+	// In that case, we should just throw this Packet Resource Request away -
+	// although we put the MS on this channel, it should move to the channel
+	// specified by the immediate assignment when that start-time rolls around.  We hope.
+	// If the TBF is in some other mode, this is a potential disaster.
+	// 6-8: I am going to try to fix the mixup by immediately
+	// reissuing a new assignment for the MS.  Update: That did not work.
 
-		// But why did the MS rach us at all?
-		// Before I supported CRD [Channel Request Description] in the acknacks, the MS had
-		// to RACH during a long downlink to get our attention, but that is no longer necessary.
-		// In one case on the iphone the phone started an uplink TBF using the CRD in a downlinkacknack,
-		// but the uplink TBF was killed with cause=3101, and the iphone eventually RACHed for a new uplink TBF.
-		// It continued responding to the downlink TBF right up until the RACH, but afterward the downlink
-		// TBF was dead, and would not respond to sendreassign, but that may have
-		// been because the sendreassigns were on a different channel than the
-		// Packet Resource Request.
-		// Maybe we dont have to cancel the downlink at all?
+	// But why did the MS rach us at all?
+	// Before I supported CRD [Channel Request Description] in the acknacks, the MS had
+	// to RACH during a long downlink to get our attention, but that is no longer necessary.
+	// In one case on the iphone the phone started an uplink TBF using the CRD in a downlinkacknack,
+	// but the uplink TBF was killed with cause=3101, and the iphone eventually RACHed for a new uplink TBF.
+	// It continued responding to the downlink TBF right up until the RACH, but afterward the downlink
+	// TBF was dead, and would not respond to sendreassign, but that may have
+	// been because the sendreassigns were on a different channel than the
+	// Packet Resource Request.
+	// Maybe we dont have to cancel the downlink at all?
 
-		// If the downlink is new, it may be the weird ignored case
-		// because it may have started while the packetrequest was in flight.
-		// In that case we should cancel the downlink TBF instead.
-		// Update: I'm always cancelling.
-	TBF *atbf;	// There could be both up and down tbfs, so check both.
+	// If the downlink is new, it may be the weird ignored case
+	// because it may have started while the packetrequest was in flight.
+	// In that case we should cancel the downlink TBF instead.
+	// Update: I'm always cancelling.
+	TBF *atbf; // There could be both up and down tbfs, so check both.
 	bool ignore = 0;
 	if (isRach && ms->msCountActiveTBF(RLCDir::Down, &atbf)) {
-		GLOG(ERR) << ms <<" RACH while TBF transmitting:"<<atbf << " cancelled";
+		GLOG(ERR) << ms << " RACH while TBF transmitting:" << atbf << " cancelled";
 		// We should differentiate the case where the downlink happened via
 		// immediate assignment that passed the RACH in flight.
 		// The network sends the One Block Assignment and the DIA
@@ -1607,14 +1700,14 @@ static void processUplinkResourceRequest(
 		// assignment on the new PACCH.
 		// In any case, this sucks, because we did not deliver the downlink TBF reliably -
 		// unless I kept track of the TBFs that have been fully acked and resend the others?
-		//atbf->mtSetState(TBFState::DataReassign);
+		// atbf->mtSetState(TBFState::DataReassign);
 		if (atbf->isTransmitting()) {
 			// I think we can retry the TBF immediately, but until that is proved,
 			// we will wait for the timeout before retrying.
-			atbf->mtCancel(MSStopCause::Rach,TbfRetryAfterWait);
+			atbf->mtCancel(MSStopCause::Rach, TbfRetryAfterWait);
 		}
 		ignore = true;
-		GLOG(WARNING) << ms <<" Ignoring RACH while TBF active:"<<atbf;
+		GLOG(WARNING) << ms << " Ignoring RACH while TBF active:" << atbf;
 	}
 
 	if (ms->msCountTransmittingTBF(RLCDir::Up, &atbf)) {
@@ -1622,13 +1715,13 @@ static void processUplinkResourceRequest(
 			// I dont know if we should kill this TBF or not.
 			// Before I supported uplink requests in downlinkacknack I thought the Blackberry was using
 			// RACH to request new uplink TBFs but there were still so many bugs then that I'm not sure.
-			atbf->mtCancel(MSStopCause::Rach,TbfRetryInapplicable);
-			GLOG(WARNING) << ms <<" RACH while uplink TBF transmitting, TBF cancelled:"<<atbf;
+			atbf->mtCancel(MSStopCause::Rach, TbfRetryInapplicable);
+			GLOG(WARNING) << ms << " RACH while uplink TBF transmitting, TBF cancelled:" << atbf;
 			// This is an abnormal condition.
 			// For safety sake we are going to ignore this rach and make the
 			// MS do another one.
 			ignore = true;
-			GLOG(WARNING) << ms <<" Ignoring RACH while TBF active:"<<atbf;
+			GLOG(WARNING) << ms << " Ignoring RACH while TBF active:" << atbf;
 		} else {
 
 			// New: Fall through to call newUpTbf
@@ -1638,9 +1731,8 @@ static void processUplinkResourceRequest(
 			//	// or the MS will unilaterally drop the connection.
 			//	// Dont count state DataFinal, because the TBF is already ending by then.
 			//	if (atbf->mtGetState() != TBFState::DataFinal) {
-			//		GLOG(INFO) << ms <<" Uplink TBF reassignment request delayed until current TBF finished:"<<atbf;
-			//		ms->msSetUplinkRequest(rmsg->mCRD);
-			//	} else {
+			//		GLOG(INFO) << ms <<" Uplink TBF reassignment request delayed until current TBF
+			// finished:"<<atbf; 		ms->msSetUplinkRequest(rmsg->mCRD); 	} else {
 			//		atbf->mtSetState(TBFState::DataReassign);
 			//		GLOG(INFO) << ms <<" Uplink TBF reassignment request: "<<atbf;
 			//	}
@@ -1648,7 +1740,9 @@ static void processUplinkResourceRequest(
 		}
 	}
 
-	if (ignore) { return; }
+	if (ignore) {
+		return;
+	}
 
 	// We must always use the most recent PACCH.
 	// FIXME TODO: What do we do if the old tbf is still in datafinal state?
@@ -1663,37 +1757,37 @@ static void processUplinkResourceRequest(
 	// special case where an ms loses registration and tries to re-register;
 	// in this special case the request tlli will not match the msTlli because
 	// the ms has already undergone the change tlli procedure.
-	uint32_t tlli = rmsg->mTLLIPresent ? (uint32_t) rmsg->mTLLI : (uint32_t) ms->msTlli;
-	TBF *tbf = TBF::newUpTBF(ms,rmsg->mCRD,tlli,true);
-	if (tbf == NULL) return;
-	//tbf->mtUnAckMode = rmsg->mCRD.mRLCMode;
+	uint32_t tlli = rmsg->mTLLIPresent ? (uint32_t)rmsg->mTLLI : (uint32_t)ms->msTlli;
+	TBF *tbf = TBF::newUpTBF(ms, rmsg->mCRD, tlli, true);
+	if (tbf == NULL)
+		return;
+	// tbf->mtUnAckMode = rmsg->mCRD.mRLCMode;
 
-	GPRSLOG(1) <<"UplinkResourceRequest" <<LOGHEX(rmsg->mTLLI) <<ms
-		<<tbf <<" rlcmode=" <<tbf->mtUnAckMode
-		<<" count tbfs=",ms->msCountActiveTBF(RLCDir::Up);
+	GPRSLOG(1) << "UplinkResourceRequest" << LOGHEX(rmsg->mTLLI) << ms << tbf << " rlcmode=" << tbf->mtUnAckMode
+		   << " count tbfs=",
+		ms->msCountActiveTBF(RLCDir::Up);
 }
 
-static void processResourceRequest(
-	PDCHL1FEC *pdch,RLCMsgPacketResourceRequest* rmsg,
-	RLCBlockReservation::type restype, RadData &rd)
+static void processResourceRequest(PDCHL1FEC *pdch, RLCMsgPacketResourceRequest *rmsg,
+				   RLCBlockReservation::type restype, RadData &rd)
 {
-	int accessType = rmsg->mAccessTypePresent ? (int) rmsg->mAccessType : 0;
-	GPRSLOG(1) << "processResourceRequest "<<rmsg->str();
+	int accessType = rmsg->mAccessTypePresent ? (int)rmsg->mAccessType : 0;
+	GPRSLOG(1) << "processResourceRequest " << rmsg->str();
 	// TODO: This switch is not very interesting...
-	switch (accessType) {	// GSM04.60 table 11.2.16.2
-		case 0:	// Two Phase Access Request [second half of it]
-		case 3: // Mobility Management Procedure.
-		case 1: // Page Response
-		case 2: // Cell Update
-			processUplinkResourceRequest(pdch,rmsg,restype,rd);
-			break;
+	switch (accessType) { // GSM04.60 table 11.2.16.2
+	case 0:		      // Two Phase Access Request [second half of it]
+	case 3:		      // Mobility Management Procedure.
+	case 1:		      // Page Response
+	case 2:		      // Cell Update
+		processUplinkResourceRequest(pdch, rmsg, restype, rd);
+		break;
 	}
 }
 
-static void processDownlinkAckNack(PDCHL1FEC *pdch,RLCMsgPacketDownlinkAckNack* rmsg,RadData &rd)
+static void processDownlinkAckNack(PDCHL1FEC *pdch, RLCMsgPacketDownlinkAckNack *rmsg, RadData &rd)
 {
 	int tfi = rmsg->getTFI();
-	TBF *tbf = pdch->getTFITBF(tfi,RLCDir::Down);
+	TBF *tbf = pdch->getTFITBF(tfi, RLCDir::Down);
 	if (tbf) {
 		MSInfo *ms = tbf->mtMS;
 		ms->talkedUp();
@@ -1704,66 +1798,69 @@ static void processDownlinkAckNack(PDCHL1FEC *pdch,RLCMsgPacketDownlinkAckNack* 
 		ms->msSigVar.addPoint(rmsg->mCQR.mSignVar);
 		for (int tn = 0; tn < 8; tn++) {
 			// Dont bother to differentiate this per timeslot.
-			if (rmsg->mCQR.mHaveILevel[tn]) {ms->msILevel.addPoint(rmsg->mCQR.mILevel[tn]);}
+			if (rmsg->mCQR.mHaveILevel[tn]) {
+				ms->msILevel.addPoint(rmsg->mCQR.mILevel[tn]);
+			}
 		}
 
-		tbf->engineRecvAckNack(rmsg);	// process the ack/nack part of the msg.
+		tbf->engineRecvAckNack(rmsg);    // process the ack/nack part of the msg.
 		if (rmsg->mHaveChannelRequest) { // Process the channel request, if any.
-			TBF *uptbf = TBF::newUpTBF(ms,rmsg->mCRD,ms->msTlli,false);
+			TBF *uptbf = TBF::newUpTBF(ms, rmsg->mCRD, ms->msTlli, false);
 
 			if (uptbf) {
-				GPRSLOG(1) <<"Uplink TBF from downlink AckNack" <<ms
-					<<tbf <<" rlcmode=" <<tbf->mtUnAckMode
-					<<" count tbfs=",ms->msCountActiveTBF(RLCDir::Up);
+				GPRSLOG(1) << "Uplink TBF from downlink AckNack" << ms << tbf
+					   << " rlcmode=" << tbf->mtUnAckMode << " count tbfs=",
+					ms->msCountActiveTBF(RLCDir::Up);
 			}
 		}
 	} else {
-		GPRSLOG(1) <<"ERROR: downlinkacknack for "<<LOGVAR(tfi)<<" with no TBF!";
+		GPRSLOG(1) << "ERROR: downlinkacknack for " << LOGVAR(tfi) << " with no TBF!";
 	}
 }
 
 static void uplinkCommon(uint32_t tlli, RadData &rd, const char *culprit)
 {
-	MSInfo *ms = gL2MAC.macFindMSByTlli(tlli,false);
+	MSInfo *ms = gL2MAC.macFindMSByTlli(tlli, false);
 	if (ms) {
 		ms->talkedUp();
 		ms->setRadData(rd);
 	} else {
-		GLOG(ERR) << "TLLI"<<LOGHEX(tlli)<<" in "<<culprit<<" message not found";
+		GLOG(ERR) << "TLLI" << LOGHEX(tlli) << " in " << culprit << " message not found";
 	}
 }
 
-static void processControlAcknowledgement(PDCHL1FEC*pdch, RLCMsgPacketControlAcknowledgement*rmsg,RadData &rd)
+static void processControlAcknowledgement(PDCHL1FEC *pdch, RLCMsgPacketControlAcknowledgement *rmsg, RadData &rd)
 {
 	// TODO: We should add a debug check to make sure the MS identified by this TLLI
 	// is the same one in the reservation.
-	GPRSLOG(1) << "processControlAck "<<rmsg->str();
+	GPRSLOG(1) << "processControlAck " << rmsg->str();
 
 	// We dont have to do anything; recvReservation informed the TBF.
-	uplinkCommon(rmsg->mTLLI,rd,"ControlAck");
+	uplinkCommon(rmsg->mTLLI, rd, "ControlAck");
 }
 
-static void processUplinkDummy(PDCHL1FEC *pdch, RLCMsgPacketUplinkDummyControlBlock* rmsg, RadData &rd)
+static void processUplinkDummy(PDCHL1FEC *pdch, RLCMsgPacketUplinkDummyControlBlock *rmsg, RadData &rd)
 {
-	GPRSLOG(1) << "processDummyUplink "<<rmsg->str();
-	uplinkCommon(rmsg->mTLLI,rd,"DummyUplinkControl");
+	GPRSLOG(1) << "processDummyUplink " << rmsg->str();
+	uplinkCommon(rmsg->mTLLI, rd, "DummyUplinkControl");
 }
 
 // The src block is the decoded uplink BitVector from the radio.
 // The BitVector we are passed was allocated; delete when we are finished.
-static void processUplinkBlock(PDCHL1FEC *pdch, RLCRawBlock *src)  // SVGDBG  process blocks
+static void processUplinkBlock(PDCHL1FEC *pdch, RLCRawBlock *src) // SVGDBG  process blocks
 {
 	// Possibly handle timers. See: XCCHL1Decoder:handleGoodFrame();
 	// TODO ...
 
 	char buf[40];
-	GPRSLOG(1) <<"-----> processUplinkBlock mac type="<<MACPayloadType::name(src->mmac.mPayloadType) << " ch:"<<pdch<<pdch->getAnsweringUsfText(buf,src->mBSN);
+	GPRSLOG(1) << "-----> processUplinkBlock mac type=" << MACPayloadType::name(src->mmac.mPayloadType)
+		   << " ch:" << pdch << pdch->getAnsweringUsfText(buf, src->mBSN);
 	RadData rd;
 	TBF *restbf;
 	RLCUplinkMessage::MessageType mtype;
 	mac_debug();
-	RLCBlockReservation::type restype = pdch->recvReservation(src->mBSN,&restbf,&rd,pdch);
-	
+	RLCBlockReservation::type restype = pdch->recvReservation(src->mBSN, &restbf, &rd, pdch);
+
 	// Reset N3101.  We are doing it based on the presence of the burst rather.
 	// Someday we should look inside the burst and make sure it really came from the MS we expected.
 	// This code works for persistent (extended) uplink mode too; in that mode
@@ -1779,59 +1876,57 @@ static void processUplinkBlock(PDCHL1FEC *pdch, RLCRawBlock *src)  // SVGDBG  pr
 	}
 
 	switch (src->mmac.mPayloadType) {
-		case MACPayloadType::RLCData:
-			if (restype != RLCBlockReservation::None) {
-				// This happened alot before fixing the transceiverRAD1.
-				GLOG(ERR) << "ERROR: Received reservation in RLC data block";
-			}
-			processRLCUplinkDataBlock(pdch,src,restbf);
-			break;
-		case MACPayloadType::RLCControl: {
-			mtype = (RLCUplinkMessage::MessageType) src->mData.peekField(8,6);
-			GPRSLOG(1) << "processUplinkMessage:" <<RLCUplinkMessage::name(mtype);
-
-			RLCUplinkMessage* msg = RLCUplinkMessageParse(src);
-			if (msg == NULL) {
-				// 3-2012: NULL indicates error in message.
-				// Already logged an error, so just ignore it here.
-				return;
-			}
-
-			switch (msg->mMessageType) {
-			case RLCUplinkMessage::PacketControlAcknowledgement:
-				processControlAcknowledgement(pdch,(RLCMsgPacketControlAcknowledgement*)msg,src->mRD);
-				break;
-			case RLCUplinkMessage::PacketDownlinkAckNack:
-				processDownlinkAckNack(pdch,(RLCMsgPacketDownlinkAckNack*)msg,src->mRD);
-				break;
-			case RLCUplinkMessage::PacketResourceRequest:
-				processResourceRequest(pdch,(RLCMsgPacketResourceRequest*) msg,restype,src->mRD);
-				break;
-			case RLCUplinkMessage::PacketUplinkDummyControlBlock:
-				processUplinkDummy(pdch,(RLCMsgPacketUplinkDummyControlBlock*)msg,src->mRD);
-				break;
-			default: // Just ignore unrecognized messages.
-				GLOG(INFO) << "GPRS: Ignoring UplinkMessage:"
-					<< RLCUplinkMessage::name(msg->mMessageType);
-				break;
-			} // switch msg->mMessageType
-
-			delete msg;
-			break;
+	case MACPayloadType::RLCData:
+		if (restype != RLCBlockReservation::None) {
+			// This happened alot before fixing the transceiverRAD1.
+			GLOG(ERR) << "ERROR: Received reservation in RLC data block";
 		}
-		case MACPayloadType::RLCControlExt: {
-			mtype = (RLCUplinkMessage::MessageType) src->mData.peekField(8,6);
-			GLOG(INFO) << "GPRS: Ignoring uplink RLCControlExt block, msgtype="<<mtype;
-			break;
+		processRLCUplinkDataBlock(pdch, src, restbf);
+		break;
+	case MACPayloadType::RLCControl: {
+		mtype = (RLCUplinkMessage::MessageType)src->mData.peekField(8, 6);
+		GPRSLOG(1) << "processUplinkMessage:" << RLCUplinkMessage::name(mtype);
+
+		RLCUplinkMessage *msg = RLCUplinkMessageParse(src);
+		if (msg == NULL) {
+			// 3-2012: NULL indicates error in message.
+			// Already logged an error, so just ignore it here.
+			return;
 		}
-		default:
-			GLOG(INFO) << "GPRS: Ignoring block with payloadtype="<<src->mmac.mPayloadType;
+
+		switch (msg->mMessageType) {
+		case RLCUplinkMessage::PacketControlAcknowledgement:
+			processControlAcknowledgement(pdch, (RLCMsgPacketControlAcknowledgement *)msg, src->mRD);
 			break;
+		case RLCUplinkMessage::PacketDownlinkAckNack:
+			processDownlinkAckNack(pdch, (RLCMsgPacketDownlinkAckNack *)msg, src->mRD);
+			break;
+		case RLCUplinkMessage::PacketResourceRequest:
+			processResourceRequest(pdch, (RLCMsgPacketResourceRequest *)msg, restype, src->mRD);
+			break;
+		case RLCUplinkMessage::PacketUplinkDummyControlBlock:
+			processUplinkDummy(pdch, (RLCMsgPacketUplinkDummyControlBlock *)msg, src->mRD);
+			break;
+		default: // Just ignore unrecognized messages.
+			GLOG(INFO) << "GPRS: Ignoring UplinkMessage:" << RLCUplinkMessage::name(msg->mMessageType);
+			break;
+		} // switch msg->mMessageType
+
+		delete msg;
+		break;
+	}
+	case MACPayloadType::RLCControlExt: {
+		mtype = (RLCUplinkMessage::MessageType)src->mData.peekField(8, 6);
+		GLOG(INFO) << "GPRS: Ignoring uplink RLCControlExt block, msgtype=" << mtype;
+		break;
+	}
+	default:
+		GLOG(INFO) << "GPRS: Ignoring block with payloadtype=" << src->mmac.mPayloadType;
+		break;
 	} // switch mac.mPayloadType
 }
 
-
-#if INTERNAL_SGSN==0
+#if INTERNAL_SGSN == 0
 static void processBSSGMessages()
 {
 	BSSG::BSSGDownlinkMsg *dmsg;
@@ -1840,27 +1935,30 @@ static void processBSSGMessages()
 		switch (msgtype) {
 		case BSSG::BSPDUType::DL_UNITDATA: {
 
-			BSSG::BSSGMsgDLUnitData *dlmsg = new BSSG::BSSGMsgDLUnitData(dmsg); 
-			GPRSLOG(1) << "BSSG <=== "<<dlmsg->str()<<timestr();
+			BSSG::BSSGMsgDLUnitData *dlmsg = new BSSG::BSSGMsgDLUnitData(dmsg);
+			GPRSLOG(1) << "BSSG <=== " << dlmsg->str() << timestr();
 			// Note that the ByteVector from dmsg that contains the PDU
 			// has been moved to dlmsg.
-			//devassert(dlmsg->getRefCnt() == 2);
+			// devassert(dlmsg->getRefCnt() == 2);
 			delete dmsg;
-			//devassert(dlmsg->getRefCnt() == 1);
+			// devassert(dlmsg->getRefCnt() == 1);
 
 			// Find or create this MS.
 			MSInfo *ms = NULL;
 			if (dlmsg->mbdHaveOldTLLI) {
-				ms = bssgMSChangeTLLI(dlmsg->mbdOldTLLI,dlmsg->mbdTLLI);
+				ms = bssgMSChangeTLLI(dlmsg->mbdOldTLLI, dlmsg->mbdTLLI);
 			}
-			if (!ms) { ms = gL2MAC.macFindMSByTlli(dlmsg->mbdTLLI, true); }
-#if 0	// Code prior to internal sgsn
+			if (!ms) {
+				ms = gL2MAC.macFindMSByTlli(dlmsg->mbdTLLI, true);
+			}
+#if 0 // Code prior to internal sgsn
 			ms->msDownlinkQueue.write(dlmsg);
 #else
-			SGSN::GprsSgsnDownlinkPdu *dlpdu = new SGSN::GprsSgsnDownlinkPdu(dlmsg->mbdPDU,ms->msTlli,0,"BSSGMsgDlUnitData");
-			//devassert(dlmsg->getRefCnt() == 2);
-			//dlpdu->mDlData = dlmsg->mbdPDU;
-			//dlpdu->mDescr = "BSSGMsgDLUnitData";
+			SGSN::GprsSgsnDownlinkPdu *dlpdu =
+				new SGSN::GprsSgsnDownlinkPdu(dlmsg->mbdPDU, ms->msTlli, 0, "BSSGMsgDlUnitData");
+			// devassert(dlmsg->getRefCnt() == 2);
+			// dlpdu->mDlData = dlmsg->mbdPDU;
+			// dlpdu->mDescr = "BSSGMsgDLUnitData";
 			delete dlmsg;
 			ms->msDownlinkQueue.write(dlpdu);
 #endif
@@ -1871,17 +1969,17 @@ static void processBSSGMessages()
 		}
 
 		// TODO: Other BSSG messages:
-		case BSSG::BSPDUType::RA_CAPABILITY:	// network->BSS
-		case BSSG::BSPDUType::PTM_UNITDATA:	// not currently used
+		case BSSG::BSPDUType::RA_CAPABILITY: // network->BSS
+		case BSSG::BSPDUType::PTM_UNITDATA:  // not currently used
 		// PDUs between GMM SAPs:
-		case BSSG::BSPDUType::PAGING_PS:	// network->BSS request to page MS for packet connection.
-		case BSSG::BSPDUType::PAGING_CS:	// network->BSS request to page MS for RR connection.
-		case BSSG::BSPDUType::RA_CAPABILITY_UPDATE_ACK:	// network->BSS Radio Access Capability and IMSI.
-		case BSSG::BSPDUType::FLOW_CONTROL_BVC_ACK: // network->BSS
-		case BSSG::BSPDUType::FLOW_CONTROL_MS_ACK:	// network->BSS
+		case BSSG::BSPDUType::PAGING_PS: // network->BSS request to page MS for packet connection.
+		case BSSG::BSPDUType::PAGING_CS: // network->BSS request to page MS for RR connection.
+		case BSSG::BSPDUType::RA_CAPABILITY_UPDATE_ACK: // network->BSS Radio Access Capability and IMSI.
+		case BSSG::BSPDUType::FLOW_CONTROL_BVC_ACK:     // network->BSS
+		case BSSG::BSPDUType::FLOW_CONTROL_MS_ACK:      // network->BSS
 		default:
 			// See the list of unimplemented messages in BsRecvMsg()
-			GPRSLOG(1) << "BSSG Downlink Message Ignored:"<<dmsg;
+			GPRSLOG(1) << "BSSG Downlink Message Ignored:" << dmsg;
 			//<<BSSG::BSPDUType::name(msgtype) << " size="<<dmsg->size();
 			break;
 		}
@@ -1901,9 +1999,9 @@ static void processSgsnMessages()
 {
 	SGSN::GprsSgsnDownlinkPdu *dlpdu;
 	while ((dlpdu = sgsnDownlinkQueue.readNoBlock())) {
-    	MSInfo *ms = gL2MAC.macFindMSByTlli(dlpdu->mTlli, false);
+		MSInfo *ms = gL2MAC.macFindMSByTlli(dlpdu->mTlli, false);
 		if (ms) {
-			writeQueue(ms,dlpdu);
+			writeQueue(ms, dlpdu);
 			ms->msAliasTlli(dlpdu->mAliasTlli);
 		} else if (dlpdu->mAliasTlli && (ms = gL2MAC.macFindMSByTlli(dlpdu->mAliasTlli, false))) {
 			// This is a TLLI change procedure but the new MS does not already exist.
@@ -1913,7 +2011,7 @@ static void processSgsnMessages()
 			// AttachAccept without a PTMSI, so the MS does not answer.
 			// In any case, we will be doing the change TLLI procedure when
 			// this message is processed.
-			writeQueue(ms,dlpdu);
+			writeQueue(ms, dlpdu);
 			ms->msAliasTlli(dlpdu->mTlli);
 		} else {
 			// The downlink message from the SGSN should be for an MSInfo
@@ -1922,8 +2020,8 @@ static void processSgsnMessages()
 			// We must have an MSInfo to know RSSI and TimingError,
 			// otherwise we would have to page the MS.
 			GLOG(ERR) << "Downlink message from SGSN for non-existent TLLI:"
-				<<LOGHEX2("tlli",dlpdu->mTlli);
-			delete dlpdu;	// Done with that.
+				  << LOGHEX2("tlli", dlpdu->mTlli);
+			delete dlpdu; // Done with that.
 		}
 	}
 }
@@ -1938,23 +2036,25 @@ static void processSgsnMessages()
 // Return the utilization.
 float L2MAC::macComputeUtilization()
 {
-	ScopedLock lock(macLock);	// This function called from CLI.
+	ScopedLock lock(macLock); // This function called from CLI.
 	int numReady = 0;
-	float utilization = 0.0;	// Desired downlink utilization at this moment.
+	float utilization = 0.0; // Desired downlink utilization at this moment.
 	TBF *tbf;
-	RN_MAC_FOR_ALL_TBF(tbf) {
+	RN_MAC_FOR_ALL_TBF(tbf)
+	{
 		switch (tbf->mtGetState()) {
-			case TBFState::DataReadyToConnect:
-			case TBFState::DataWaiting1:
-			case TBFState::DataWaiting2:
-				numReady++;		// These TBFs are waiting to send a message.
-				continue;
-			case TBFState::DataTransmit:
-			case TBFState::DataReassign:
-			//case TBFState::DataStalled:
-				utilization += tbf->engineDesiredUtilization();
-				continue;
-			default: continue;
+		case TBFState::DataReadyToConnect:
+		case TBFState::DataWaiting1:
+		case TBFState::DataWaiting2:
+			numReady++; // These TBFs are waiting to send a message.
+			continue;
+		case TBFState::DataTransmit:
+		case TBFState::DataReassign:
+			// case TBFState::DataStalled:
+			utilization += tbf->engineDesiredUtilization();
+			continue;
+		default:
+			continue;
 		}
 	}
 	utilization += numReady;
@@ -1962,26 +2062,31 @@ float L2MAC::macComputeUtilization()
 	// We want to average the utilization over some timespan.
 	// This number should be picked to match the delay we use before closing
 	// GPRS chanels, whatever that will be.
-	const unsigned NumFramesToAverage = 48*5;	// roughly 5 seconds worth of RLC blocks.
+	const unsigned NumFramesToAverage = 48 * 5; // roughly 5 seconds worth of RLC blocks.
 	return macDownlinkUtilization =
-		(utilization + macDownlinkUtilization * (NumFramesToAverage-1)) / NumFramesToAverage;
+		       (utilization + macDownlinkUtilization * (NumFramesToAverage - 1)) / NumFramesToAverage;
 }
 
 void L2MAC::macCheckChannels()
 {
 	int minChC0 = configGprsChannelsMinC0();
 	int minChCn = configGprsChannelsMinCn();
-	if (minChC0 < 0) { minChC0 = 0; }
-	if (minChCn < 0) { minChCn = 0; }
+	if (minChC0 < 0) {
+		minChC0 = 0;
+	}
+	if (minChCn < 0) {
+		minChCn = 0;
+	}
 	bool addedChannels = false;
-	//GPRSLOG(2)<<"macCheckChannel"<<LOGVAR(minChC0)<<LOGVAR(minChCn)<<LOGVAR2("active",macActiveChannels());
+	// GPRSLOG(2)<<"macCheckChannel"<<LOGVAR(minChC0)<<LOGVAR(minChCn)<<LOGVAR2("active",macActiveChannels());
 	if (minChC0 + minChCn > (int)macActiveChannels()) {
 		// Allocate from CN0.
 		int active0 = macActiveChannelsC(0);
 		{
 			TCHFACCHLogicalChannel *lchan;
-			for ( ; active0 < minChC0 && (lchan = gBTS.getTCH(true,true)); active0++) {
-				//GPRSLOG(2)<<"macCheckChannel loop"<<LOGVAR(active0)<<LOGVAR(minChC0)<<LOGVAR2("lchan",lchan->TN());
+			for (; active0 < minChC0 && (lchan = gBTS.getTCH(true, true)); active0++) {
+				// GPRSLOG(2)<<"macCheckChannel
+				// loop"<<LOGVAR(active0)<<LOGVAR(minChC0)<<LOGVAR2("lchan",lchan->TN());
 				// We dont "open" the logical channel, which means we dont start
 				// the various timers referred to in L1Decoder::recyclable().
 				// It probably doesnt matter whether it is 'open' or not, because
@@ -1999,7 +2104,7 @@ void L2MAC::macCheckChannels()
 			int nfound, need = minChCn - activecn;
 			TCHFACCHLogicalChannel *results[8];
 			// TODO: Prevent this from allocating from C0 if user misconfigures.
-			for (; need > 0 && (nfound = gBTS.getTCHGroup(need,results)); need -= nfound) {
+			for (; need > 0 && (nfound = gBTS.getTCHGroup(need, results)); need -= nfound) {
 				for (int i = 0; i < nfound; i++) {
 					macAddOneChannel(results[i]);
 					addedChannels = true;
@@ -2040,7 +2145,9 @@ void L2MAC::macCheckChannels()
 		// If there are TBFs but no channels, try to allocate one.
 		// TBFs get added not only from the MAC but also indirectly by the BSSG.
 		// Note that we may not get the channel, in which case we will try each loop iteration.
-		if (!macActiveChannels()) { macAddChannel(); }
+		if (!macActiveChannels()) {
+			macAddChannel();
+		}
 	} else {
 		// No TBFs exist.
 		if (ChIdleCounter++ > macChIdleMax) {
@@ -2066,7 +2173,6 @@ void L2MAC::macCheckChannels()
 	****/
 }
 
-
 // Advance gBSNNext by the specified amount.
 // The reason this is a function instead of just adding one to gBSNNext
 // is to clean up old reservations behind us as we go.
@@ -2078,16 +2184,18 @@ static void advanceBSNNext(int amt)
 		++gBSNNext;
 
 		PDCHL1FEC *pdch;
-		RN_MAC_FOR_ALL_PDCH(pdch) {	// for all channels assigned to GPRS.
+		RN_MAC_FOR_ALL_PDCH(pdch)
+		{ // for all channels assigned to GPRS.
 			RLCBlockReservation *res;
 			// For debug purposes, show unanswered reservations, and show them more nearly
 			// when they are supposed to arrive than when we actually clear them out below:
 			if (GPRSDebug) {
-				RLCBSN_t rprevdeb(gBSNNext-(BSNLagTime+ExtraClockDelay+2));
+				RLCBSN_t rprevdeb(gBSNNext - (BSNLagTime + ExtraClockDelay + 2));
 				res = pdch->getReservation(rprevdeb);
 				if (res) {
-					GPRSLOG(1) << "Reservation unanswered "<<res->mrType<<LOGVAR2("ttype",res->mrSubType)<<" "<<res->mrTBF 
-						<<" bsn=" <<rprevdeb <<" fn="<<rprevdeb.FN() << *res;
+					GPRSLOG(1) << "Reservation unanswered " << res->mrType
+						   << LOGVAR2("ttype", res->mrSubType) << " " << res->mrTBF
+						   << " bsn=" << rprevdeb << " fn=" << rprevdeb.FN() << *res;
 				}
 			}
 
@@ -2095,15 +2203,15 @@ static void advanceBSNNext(int amt)
 			// The incoming decoded blocks seem to lag by several blocks, so wait
 			// a few extra to make sure we dont remove a reservation before
 			// all hope of receiving it has really passed.
-			RLCBSN_t rprev(gBSNNext-(BSNLagTime+ExtraClockDelay+4));
-			//if ((res = pdch->getReservation(rprev)) &&
-				//res->mrType != RLCBlockReservation::ForRRBP) {
-				//if (ExtraClockDelay < 4) {
-				//	ExtraClockDelay++;
-				//	GPRSLOG(1) << "*** Increasing Clock Delay to:"<<ExtraClockDelay;
-				//}
+			RLCBSN_t rprev(gBSNNext - (BSNLagTime + ExtraClockDelay + 4));
+			// if ((res = pdch->getReservation(rprev)) &&
+			// res->mrType != RLCBlockReservation::ForRRBP) {
+			// if (ExtraClockDelay < 4) {
+			//	ExtraClockDelay++;
+			//	GPRSLOG(1) << "*** Increasing Clock Delay to:"<<ExtraClockDelay;
 			//}
-			pdch->clearReservation(rprev,NULL);
+			//}
+			pdch->clearReservation(rprev, NULL);
 		}
 	}
 }
@@ -2113,14 +2221,16 @@ static void advanceBSNNext(int amt)
 // If you reboot, it is ok, but I am putting in some code to deal with it.
 // Here is the /var/log/OpenBTS.log:
 // My message:
-//Nov 10 22:48:49 ToshibaLap openbts: DEBUG GPRS:now=777040 waiting for 777044
-//Nov 10 22:48:49 ToshibaLap transceiver: ERR 3086998384 rnrad1Core.cpp:52:usbMsg: libusb_control_transfer failed: No such device (it may have been disconnected)
-//Nov 10 22:48:49 ToshibaLap transceiver: ERR 3086998384 rnrad1Core.cpp:52:usbMsg: libusb_control_transfer failed: No such device (it may have been disconnected)
+// Nov 10 22:48:49 ToshibaLap openbts: DEBUG GPRS:now=777040 waiting for 777044
+// Nov 10 22:48:49 ToshibaLap transceiver: ERR 3086998384 rnrad1Core.cpp:52:usbMsg: libusb_control_transfer failed: No
+// such device (it may have been disconnected)  Nov 10 22:48:49 ToshibaLap transceiver: ERR 3086998384
+// rnrad1Core.cpp:52:usbMsg: libusb_control_transfer failed: No such device (it may have been disconnected)
 // My message:
-//Nov 10 22:48:49 ToshibaLap openbts: DEBUG GPRS:unexpected gBSNNext delta: delta=(1306) gBSNNext=(179319) fnnext=(777049) fnnow=(775743)
+// Nov 10 22:48:49 ToshibaLap openbts: DEBUG GPRS:unexpected gBSNNext delta: delta=(1306) gBSNNext=(179319)
+// fnnext=(777049) fnnow=(775743)
 //
 // I am also getting this occassionally:
-//Nov 10 22:48:45 ToshibaLap transceiver: ERR 3074030448 fusb.cpp:445:reload_read_buffer: No libusb events
+// Nov 10 22:48:45 ToshibaLap transceiver: ERR 3074030448 fusb.cpp:445:reload_read_buffer: No libusb events
 //
 // Work around it by checking if time has run backwards, and switching to
 // calling sleep instead of catching up to the goofed up GSM clock.
@@ -2135,8 +2245,8 @@ static void serviceLoopSynchronize(bool firsttime)
 		static int fnprev;
 		int fnnow = tstart.FN();
 		if (!firsttime) {
-			int fndelta = GSM::FNDelta(fnnow,fnprev);
-			GPRSLOG(16) << "GSM FN delta="<<fndelta<<"\n";
+			int fndelta = GSM::FNDelta(fnnow, fnprev);
+			GPRSLOG(16) << "GSM FN delta=" << fndelta << "\n";
 			// 12-12-2011: The FN does run backwards ocassionally,
 			// because the Clock mClock we use is only approximate,
 			// and it is updated reguarly by the radio.
@@ -2146,10 +2256,10 @@ static void serviceLoopSynchronize(bool firsttime)
 			// INFO GPRS,2,134158:GSM FN ran backwards by -1851
 
 			if (fndelta < 0) {
-				//GPRSLOG(1) << "GSM FN ran backwards by " << fndelta << "\n";
+				// GPRSLOG(1) << "GSM FN ran backwards by " << fndelta << "\n";
 				GLOG(ERR) << "*** GSM FN ran backwards by " << fndelta << "\n";
-				//std::cout << "** ERROR: GSM FN ran backwards by "<< fndelta << "\n";
-				//gFixSyncUseClock = true;	// Switch to alternate methodology
+				// std::cout << "** ERROR: GSM FN ran backwards by "<< fndelta << "\n";
+				// gFixSyncUseClock = true;	// Switch to alternate methodology
 			}
 			if (fndelta > 6) {
 				GPRSLOG(4) << "GSM FN ran forwards by " << fndelta << "\n";
@@ -2163,12 +2273,12 @@ static void serviceLoopSynchronize(bool firsttime)
 		// The whole BTS is probably non-operational, but at least I can keep debugging.
 		// Try just waiting about a block time between each loop.
 		sleepf(RLCBlockTime);
-		//useconds_t usecs = (useconds_t) (1000000.0 / 48.0);
-		//usleep(usecs);
+		// useconds_t usecs = (useconds_t) (1000000.0 / 48.0);
+		// usleep(usecs);
 	} else {
 		// Wait for the prev frame to come around.
 		Time tprev(gBSNPrev.FN());
-		tprev = tprev - configGetNumQ("GPRS.ThreadAdvance",0);
+		tprev = tprev - configGetNumQ("GPRS.ThreadAdvance", 0);
 		gBTS.clock().wait(tprev);
 
 		// Check if the wait is screwing up: It is.
@@ -2176,10 +2286,10 @@ static void serviceLoopSynchronize(bool firsttime)
 		// which (I hope) is because the gBTS clock was resynchronized with the radio
 		// causing it to run backwards.
 		Time tnow = gBTS.time();
-		int deltaAfterWait = GSM::FNDelta(tnow.FN(),tprev.FN());
+		int deltaAfterWait = GSM::FNDelta(tnow.FN(), tprev.FN());
 		// The deltaAfterWait is usually -1, so ignore that.
 		if (deltaAfterWait > 3 || deltaAfterWait < -1) {
-			GPRSLOG(2) << "gBTS.clock.wait unexpected wait time: "<<LOGVAR(deltaAfterWait);
+			GPRSLOG(2) << "gBTS.clock.wait unexpected wait time: " << LOGVAR(deltaAfterWait);
 		}
 
 		// See if this thread was stalled in the last iteration.
@@ -2189,8 +2299,8 @@ static void serviceLoopSynchronize(bool firsttime)
 		// We started the previous iteration of the loop with time
 		// set at the start of gBSNPrev
 		// Has time already run past the beginning of gBSNNext?
-		int delta = GSM::FNDelta(tnow.FN(),gBSNNext.FN());
-		if (delta > 0 || delta < -(51*26)) {
+		int delta = GSM::FNDelta(tnow.FN(), gBSNNext.FN());
+		if (delta > 0 || delta < -(51 * 26)) {
 			// Set bsnFixed to the beginning frame of the RLC block containing tnow.
 			// | gBSNPrev | gBSNNext | ... | bsnFixed |
 			RLCBSN_t bsnFixed = FrameNumber2BSN(tnow.FN());
@@ -2201,13 +2311,13 @@ static void serviceLoopSynchronize(bool firsttime)
 				// This is really a disaster.
 				gBSNNext = bsnFixed + 1;
 			}
-			GPRSLOG(2) << "unexpected gBSNNext delta:" <<LOGVAR(delta)
-					<<LOGVAR(tnow) <<LOGVAR(gBSNNext) <<LOGVAR(gBSNNext.FN()) <<LOGVAR(bsnFixed)
-					<< " seconds=" << (timef() - timeprev)  << "\n";
+			GPRSLOG(2) << "unexpected gBSNNext delta:" << LOGVAR(delta) << LOGVAR(tnow) << LOGVAR(gBSNNext)
+				   << LOGVAR(gBSNNext.FN()) << LOGVAR(bsnFixed) << " seconds=" << (timef() - timeprev)
+				   << "\n";
 		}
-
 	}
-	if (GPRSDebug) timeprev = timef();
+	if (GPRSDebug)
+		timeprev = timef();
 }
 
 // SVGDBG
@@ -2218,7 +2328,7 @@ static void serviceLoopSynchronize(bool firsttime)
 // It is attached to the L1 layer below via thread-safe queues in the L1Encoder/L2Decoder classes
 // attached to each PCH (packet physical channel), and attached to the L3 layer above via
 // thread-safe queues in the BSSGSP interface.
-// 
+//
 // We have to keep the downlink PCH encoder classes fed with data on time.
 // We would like to delay as long as possible before feeding them, so that we
 // can assign uplink resources at the last minute to keep system throughput and
@@ -2231,10 +2341,12 @@ static void serviceLoopSynchronize(bool firsttime)
 //
 void L2MAC::macServiceLoop()
 {
-	double starttime = 0;	// useless initialization to shut up gcc.
-	GPRSLOG(16) << "macServiceLoop:" << LOGVAR(gBSNNext);   // SVGDBG
+	double starttime = 0;				      // useless initialization to shut up gcc.
+	GPRSLOG(16) << "macServiceLoop:" << LOGVAR(gBSNNext); // SVGDBG
 
-	if (GPRSDebug) { starttime = timef(); }
+	if (GPRSDebug) {
+		starttime = timef();
+	}
 	mac_debug();
 
 	// Step: Each incoming RACH will need a single block assignment.
@@ -2249,10 +2361,11 @@ void L2MAC::macServiceLoop()
 	// Do this first because it may change TBF states so that they have
 	// downlink messages to send.
 	PDCHL1FEC *pdch;
-	RN_MAC_FOR_ALL_PDCH(pdch) {	// for all channels assigned to GPRS.
+	RN_MAC_FOR_ALL_PDCH(pdch)
+	{ // for all channels assigned to GPRS.
 		pdch->debug_test();
 		while (RLCRawBlock *src = pdch->uplink()->mchUplinkData.readNoBlock()) {
-			processUplinkBlock(pdch,src);
+			processUplinkBlock(pdch, src);
 			delete src;
 		}
 	}
@@ -2266,7 +2379,8 @@ void L2MAC::macServiceLoop()
 	// Be a little careful since we are deleting from the list we are iterating.
 	{
 		TBF *tbf;
-		RN_MAC_FOR_ALL_TBF(tbf) {
+		RN_MAC_FOR_ALL_TBF(tbf)
+		{
 			// This call may remove the tbf from the list being iterated:
 			tbf->mtServiceUnattached();
 		}
@@ -2274,15 +2388,14 @@ void L2MAC::macServiceLoop()
 
 	// Step: Service the MSs; they may want to start new TBFs.
 	MSInfo *ms;
-	RN_MAC_FOR_ALL_MS(ms) {
-		ms->msService();
-	}
+	RN_MAC_FOR_ALL_MS(ms) { ms->msService(); }
 	GPRSLOG(16) << "macServiceLoop: after ms service";
 
 	// Step:  Feed each downlink PDCH with RadioBlocks.
 	// As a side effect, this services all the [connected] TBFs in round robin order.
 	extDyn.edReset();
-	RN_MAC_FOR_ALL_PDCH(pdch) {	// for all channels assigned to GPRS.
+	RN_MAC_FOR_ALL_PDCH(pdch)
+	{ // for all channels assigned to GPRS.
 		extDyn.edSetCn(pdch->CN());
 		pdch->downlink()->dlService();
 	}
@@ -2294,8 +2407,8 @@ void L2MAC::macServiceLoop()
 
 	// Step: Service the BSSG queue.
 	// This mostly means moving any downlink PDUs into their MS.
-	if (! GPRSConfig::sgsnIsInternal()) {
-#if INTERNAL_SGSN==0
+	if (!GPRSConfig::sgsnIsInternal()) {
+#if INTERNAL_SGSN == 0
 		processBSSGMessages();
 #endif
 		GPRSLOG(16) << "macServiceLoop: after bssg service";
@@ -2310,14 +2423,13 @@ void L2MAC::macServiceLoop()
 	}
 }
 
-
 // The main processing thread
 static void *macThreadFunc(void *arg)
 {
 	gL2MAC.macRunning = true;
 
 	// Set the current RLC BSN.
-	//Time tstart = gBTS.time().FN();
+	// Time tstart = gBTS.time().FN();
 	Time tstart = gBTS.time();
 	int fnstart = tstart.FN();
 	gBSNNext = FrameNumber2BSN(fnstart);
@@ -2334,19 +2446,19 @@ static void *macThreadFunc(void *arg)
 		}
 	}
 
-	GPRSLOG(1) << "macServiceLoop starting:" << LOGVAR(gBSNNext) <<LOGVAR(fnstart);
+	GPRSLOG(1) << "macServiceLoop starting:" << LOGVAR(gBSNNext) << LOGVAR(fnstart);
 
 	// We need to run the service loop even if there are no channels allocated because
 	// the BSSG may add downlink PDUs to an MS which will create a new TBF,
 	// which will add a channel on demand.
-	bool firsttime = true;		// First iteration.
+	bool firsttime = true; // First iteration.
 	while (!gL2MAC.macStopFlag) {
 		gL2MAC.macConfigInit();
 		advanceBSNNext(1);
 		serviceLoopSynchronize(firsttime);
 		firsttime = false;
 
-		{ 
+		{
 			ScopedLock lock(gL2MAC.macLock);
 			gL2MAC.macServiceLoop();
 		}
@@ -2357,7 +2469,6 @@ static void *macThreadFunc(void *arg)
 	gL2MAC.macRunning = false;
 	return NULL;
 }
-
 
 // When the MS RACHes into the GSM RR/MM side for any reason, we must cancel ongoing TBFs.
 // The danged MS will RACH into the GSM stack right in the middle of downlink TBFs, without warning,
@@ -2372,43 +2483,35 @@ static void *macThreadFunc(void *arg)
 // this mapping itself, but since we use an internal SGSN which knows the IMSI mapping,
 // we can just forward the request there.  If the IMSI is registered, the SGSN will send us a cancel message.
 // WARNING: This routine runs in a different thread.
-void GPRSNotifyGsmActivity(const char *imsi)
-{
-	SGSN::Sgsn::notifyGsmActivity(imsi);
-}
+void GPRSNotifyGsmActivity(const char *imsi) { SGSN::Sgsn::notifyGsmActivity(imsi); }
 
-
-}; // namespace
-
-
-
+}; // namespace GPRS
 
 // These routines are the interface between the SGSN and GPRS:
 namespace SGSN {
-    MSUEAdapter *SgsnAdapter::findMs(uint32_t handle) {
-		GPRS::MSInfo *ms = GPRS::gL2MAC.macFindMSByTlli(handle, false);
-		return ms;
-    }
 
-    bool SgsnAdapter::isUmts() {
-        return false;
-    }
+MSUEAdapter *SgsnAdapter::findMs(uint32_t handle)
+{
+	GPRS::MSInfo *ms = GPRS::gL2MAC.macFindMSByTlli(handle, false);
+	return ms;
+}
 
-	// The SGSN writes pdus here instead of directly to an MS because
-	// the SGSN may be running in a different thread driven from the miniggsn.
-	void SgsnAdapter::saWriteHighSide(GprsSgsnDownlinkPdu *dlpdu) {
-		GPRS::sgsnDownlinkQueue.write(dlpdu);
-	}
+bool SgsnAdapter::isUmts() { return false; }
 
-    // This allocates the RB and sends the message to the UE then returns.
-    // We wont know if the UE gets the message until it replies.
-    //RabStatus SgsnAdapter::allocateRabForPdp(uint32_t msHandle,int rbid, ByteVector &qos)
-	//{
-	//	// Always successful in GPRS.
-	//	RabStatus result(RabStatus::RabAllocated,(SmCauseType)0);
-	//	return result;
-    //}
+// The SGSN writes pdus here instead of directly to an MS because
+// the SGSN may be running in a different thread driven from the miniggsn.
+void SgsnAdapter::saWriteHighSide(GprsSgsnDownlinkPdu *dlpdu) { GPRS::sgsnDownlinkQueue.write(dlpdu); }
 
-	// This is a complete no-op in gprs.
-	//void SgsnAdapter::startIntegrityProtection(uint32_t urnti, std::string Kcs) {}
-};	// namespace SGSN
+// This allocates the RB and sends the message to the UE then returns.
+// We wont know if the UE gets the message until it replies.
+// RabStatus SgsnAdapter::allocateRabForPdp(uint32_t msHandle,int rbid, ByteVector &qos)
+//{
+//	// Always successful in GPRS.
+//	RabStatus result(RabStatus::RabAllocated,(SmCauseType)0);
+//	return result;
+//}
+
+// This is a complete no-op in gprs.
+// void SgsnAdapter::startIntegrityProtection(uint32_t urnti, std::string Kcs) {}
+
+}; // namespace SGSN

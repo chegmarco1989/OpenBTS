@@ -17,9 +17,10 @@
 
 */
 
-#include "config.h"
-#include <Globals.h>
+#include <config.h>
+
 #include <CLI.h>
+#include <Globals.h>
 #include <TMSITable.h>
 #include <URLEncode.h>
 
@@ -41,8 +42,12 @@ void gResetWatchdog()
 {
 	ScopedLock lock(watchdogLock);
 	int value = gConfig.getNum("Control.WatchdogMinutes");
-	if (value <= 0) { watchdogActive = false; }	// The stupid timer core-dumps if you call reset with a 0 value.
-	else { watchdog.future(value*60*1000); }
+	if (value <= 0) {
+		watchdogActive = false;
+	} // The stupid timer core-dumps if you call reset with a 0 value.
+	else {
+		watchdog.future(value * 60 * 1000);
+	}
 	LOG(DEBUG) << "reset watchdog timer, expires in " << watchdog.remaining() / 1000 << " seconds";
 }
 

@@ -30,309 +30,268 @@ extern "C" {
 #include "convert.h"
 }
 
-#define CHUNK		625
-#define NUMCHUNKS	4
+#define CHUNK 625
+#define NUMCHUNKS 4
 
-RadioInterface::RadioInterface(RadioDevice *wRadio,
-			       int wReceiveOffset,
-			       int wSPS,
-			       GSM::Time wStartTime)
-  : mRadio(wRadio),
-    mSPSTx(wSPS), mSPSRx(1),
-    sendBuffer(NULL), recvBuffer(NULL),
-    sendCursor(0), recvCursor(0),
-    convertRecvBuffer(NULL), convertSendBuffer(NULL),
-    underrun(false),
-    overrun(false),
-    receiveOffset(wReceiveOffset),
-    mOn(false),
-    powerScaling(1.0),
-    loadTest(false)
+RadioInterface::RadioInterface(RadioDevice *wRadio, int wReceiveOffset, int wSPS, GSM::Time wStartTime)
+	: mRadio(wRadio), mSPSTx(wSPS), mSPSRx(1), sendBuffer(NULL), recvBuffer(NULL), sendCursor(0), recvCursor(0),
+	  convertRecvBuffer(NULL), convertSendBuffer(NULL), underrun(false), overrun(false),
+	  receiveOffset(wReceiveOffset), mOn(false), powerScaling(1.0), loadTest(false)
 {
-  mClock.set(wStartTime);
+	mClock.set(wStartTime);
 }
 
-RadioInterface::~RadioInterface(void)
-{
-  close();
-}
+RadioInterface::~RadioInterface(void) { close(); }
 
 bool RadioInterface::init(int type)
 {
-  if (type != RadioDevice::NORMAL)
-    return false;
+	if (type != RadioDevice::NORMAL)
+		return false;
 
-  close();
+	close();
 
-  sendBuffer = new signalVector(CHUNK * mSPSTx);
-  recvBuffer = new signalVector(NUMCHUNKS * CHUNK * mSPSRx);
+	sendBuffer = new signalVector(CHUNK * mSPSTx);
+	recvBuffer = new signalVector(NUMCHUNKS * CHUNK * mSPSRx);
 
-  convertSendBuffer = new short[sendBuffer->size() * 2];
-  convertRecvBuffer = new short[recvBuffer->size() * 2];
+	convertSendBuffer = new short[sendBuffer->size() * 2];
+	convertRecvBuffer = new short[recvBuffer->size() * 2];
 
-  sendCursor = 0;
-  recvCursor = 0;
+	sendCursor = 0;
+	recvCursor = 0;
 
-  return true;
+	return true;
 }
 
 void RadioInterface::close()
 {
-  delete sendBuffer;
-  delete recvBuffer;
-  delete convertSendBuffer;
-  delete convertRecvBuffer;
+	delete sendBuffer;
+	delete recvBuffer;
+	delete convertSendBuffer;
+	delete convertRecvBuffer;
 
-  sendBuffer = NULL;
-  recvBuffer = NULL;
-  convertRecvBuffer = NULL;
-  convertSendBuffer = NULL;
+	sendBuffer = NULL;
+	recvBuffer = NULL;
+	convertRecvBuffer = NULL;
+	convertSendBuffer = NULL;
 }
 
+double RadioInterface::fullScaleInputValue(void) { return mRadio->fullScaleInputValue(); }
 
-double RadioInterface::fullScaleInputValue(void) {
-  return mRadio->fullScaleInputValue();
-}
-
-double RadioInterface::fullScaleOutputValue(void) {
-  return mRadio->fullScaleOutputValue();
-}
-
+double RadioInterface::fullScaleOutputValue(void) { return mRadio->fullScaleOutputValue(); }
 
 void RadioInterface::setPowerAttenuation(double atten)
 {
-  double rfGain, digAtten;
+	double rfGain, digAtten;
 
-  rfGain = mRadio->setTxGain(mRadio->maxTxGain() - atten);
-  digAtten = atten - mRadio->maxTxGain() + rfGain;
+	rfGain = mRadio->setTxGain(mRadio->maxTxGain() - atten);
+	digAtten = atten - mRadio->maxTxGain() + rfGain;
 
-  if (digAtten < 1.0)
-    powerScaling = 1.0;
-  else
-    powerScaling = 1.0/sqrt(pow(10, (digAtten/10.0)));
+	if (digAtten < 1.0)
+		powerScaling = 1.0;
+	else
+		powerScaling = 1.0 / sqrt(pow(10, (digAtten / 10.0)));
 }
 
-int RadioInterface::radioifyVector(signalVector &wVector,
-				   float *retVector,
-				   bool zero)
+int RadioInterface::radioifyVector(signalVector &wVector, float *retVector, bool zero)
 {
-  if (zero) {
-    memset(retVector, 0, wVector.size() * 2 * sizeof(float));
-    return wVector.size();
-  }
+	if (zero) {
+		memset(retVector, 0, wVector.size() * 2 * sizeof(float));
+		return wVector.size();
+	}
 
-  memcpy(retVector, wVector.begin(), wVector.size() * 2 * sizeof(float));
+	memcpy(retVector, wVector.begin(), wVector.size() * 2 * sizeof(float));
 
-  return wVector.size();
+	return wVector.size();
 }
 
-int RadioInterface::unRadioifyVector(float *floatVector,
-				     signalVector& newVector)
+int RadioInterface::unRadioifyVector(float *floatVector, signalVector &newVector)
 {
-  signalVector::iterator itr = newVector.begin();
+	signalVector::iterator itr = newVector.begin();
 
-  if (newVector.size() > recvCursor) {
-    LOG(ALERT) << "Insufficient number of samples in receive buffer";
-    return -1;
-  }
+	if (newVector.size() > recvCursor) {
+		LOG(ALERT) << "Insufficient number of samples in receive buffer";
+		return -1;
+	}
 
-  for (size_t i = 0; i < newVector.size(); i++) {
-    *itr++ = Complex<float>(floatVector[2 * i + 0],
-			    floatVector[2 * i + 1]);
-  }
+	for (size_t i = 0; i < newVector.size(); i++) {
+		*itr++ = Complex<float>(floatVector[2 * i + 0], floatVector[2 * i + 1]);
+	}
 
-  return newVector.size();
+	return newVector.size();
 }
 
-bool RadioInterface::tuneTx(double freq)
-{
-  return mRadio->setTxFreq(freq);
-}
+bool RadioInterface::tuneTx(double freq) { return mRadio->setTxFreq(freq); }
 
-bool RadioInterface::tuneRx(double freq)
-{
-  return mRadio->setRxFreq(freq);
-}
-
+bool RadioInterface::tuneRx(double freq) { return mRadio->setRxFreq(freq); }
 
 void RadioInterface::start()
 {
-  LOG(INFO) << "starting radio interface...";
+	LOG(INFO) << "starting radio interface...";
 #ifdef USRP1
-  mAlignRadioServiceLoopThread.start((void * (*)(void*))AlignRadioServiceLoopAdapter,
-                                     (void*)this);
+	mAlignRadioServiceLoopThread.start((void *(*)(void *))AlignRadioServiceLoopAdapter, (void *)this);
 #endif
-  writeTimestamp = mRadio->initialWriteTimestamp();
-  readTimestamp = mRadio->initialReadTimestamp();
-  mRadio->start(); 
-  LOG(DEBUG) << "Radio started";
-  mRadio->updateAlignment(writeTimestamp-10000); 
-  mRadio->updateAlignment(writeTimestamp-10000);
+	writeTimestamp = mRadio->initialWriteTimestamp();
+	readTimestamp = mRadio->initialReadTimestamp();
+	mRadio->start();
+	LOG(DEBUG) << "Radio started";
+	mRadio->updateAlignment(writeTimestamp - 10000);
+	mRadio->updateAlignment(writeTimestamp - 10000);
 
-  mOn = true;
-
+	mOn = true;
 }
 
 #ifdef USRP1
 void *AlignRadioServiceLoopAdapter(RadioInterface *radioInterface)
 {
-  while (1) {
-    radioInterface->alignRadio();
-    pthread_testcancel();
-  }
-  return NULL;
+	while (1) {
+		radioInterface->alignRadio();
+		pthread_testcancel();
+	}
+	return NULL;
 }
 
-void RadioInterface::alignRadio() {
-  sleep(60);
-  mRadio->updateAlignment(writeTimestamp+ (TIMESTAMP) 10000);
+void RadioInterface::alignRadio()
+{
+	sleep(60);
+	mRadio->updateAlignment(writeTimestamp + (TIMESTAMP)10000);
 }
 #endif
 
 void RadioInterface::driveTransmitRadio(signalVector &radioBurst, bool zeroBurst)
 {
-  if (!mOn)
-    return;
+	if (!mOn)
+		return;
 
-  radioifyVector(radioBurst,
-                 (float *) (sendBuffer->begin() + sendCursor), zeroBurst);
+	radioifyVector(radioBurst, (float *)(sendBuffer->begin() + sendCursor), zeroBurst);
 
-  sendCursor += radioBurst.size();
+	sendCursor += radioBurst.size();
 
-  pushBuffer();
+	pushBuffer();
 }
 
-void RadioInterface::driveReceiveRadio() {
+void RadioInterface::driveReceiveRadio()
+{
 
-  if (!mOn) return;
+	if (!mOn)
+		return;
 
-  if (mReceiveFIFO.size() > 8) return;
+	if (mReceiveFIFO.size() > 8)
+		return;
 
-  pullBuffer();
+	pullBuffer();
 
-  GSM::Time rcvClock = mClock.get();
-  rcvClock.decTN(receiveOffset);
-  unsigned tN = rcvClock.TN();
-  int rcvSz = recvCursor;
-  int readSz = 0;
-  const int symbolsPerSlot = gSlotLen + 8;
+	GSM::Time rcvClock = mClock.get();
+	rcvClock.decTN(receiveOffset);
+	unsigned tN = rcvClock.TN();
+	int rcvSz = recvCursor;
+	int readSz = 0;
+	const int symbolsPerSlot = gSlotLen + 8;
 
-  // while there's enough data in receive buffer, form received 
-  //    GSM bursts and pass up to Transceiver
-  // Using the 157-156-156-156 symbols per timeslot format.
-  while (rcvSz > (symbolsPerSlot + (tN % 4 == 0)) * mSPSRx) {
-    signalVector rxVector((symbolsPerSlot + (tN % 4 == 0)) * mSPSRx);
-    unRadioifyVector((float *) (recvBuffer->begin() + readSz), rxVector);
-    GSM::Time tmpTime = rcvClock;
-    if (rcvClock.FN() >= 0) {
-      //LOG(DEBUG) << "FN: " << rcvClock.FN();
-      radioVector *rxBurst = NULL;
-      if (!loadTest)
-        rxBurst = new radioVector(rxVector,tmpTime);
-      else {
-	if (tN % 4 == 0)
-	  rxBurst = new radioVector(*finalVec9,tmpTime);
-        else
-          rxBurst = new radioVector(*finalVec,tmpTime); 
-      }
-      mReceiveFIFO.put(rxBurst); 
-    }
-    mClock.incTN(); 
-    rcvClock.incTN();
-    readSz += (symbolsPerSlot+(tN % 4 == 0)) * mSPSRx;
-    rcvSz -= (symbolsPerSlot+(tN % 4 == 0)) * mSPSRx;
+	// while there's enough data in receive buffer, form received
+	//    GSM bursts and pass up to Transceiver
+	// Using the 157-156-156-156 symbols per timeslot format.
+	while (rcvSz > (symbolsPerSlot + (tN % 4 == 0)) * mSPSRx) {
+		signalVector rxVector((symbolsPerSlot + (tN % 4 == 0)) * mSPSRx);
+		unRadioifyVector((float *)(recvBuffer->begin() + readSz), rxVector);
+		GSM::Time tmpTime = rcvClock;
+		if (rcvClock.FN() >= 0) {
+			// LOG(DEBUG) << "FN: " << rcvClock.FN();
+			radioVector *rxBurst = NULL;
+			if (!loadTest)
+				rxBurst = new radioVector(rxVector, tmpTime);
+			else {
+				if (tN % 4 == 0)
+					rxBurst = new radioVector(*finalVec9, tmpTime);
+				else
+					rxBurst = new radioVector(*finalVec, tmpTime);
+			}
+			mReceiveFIFO.put(rxBurst);
+		}
+		mClock.incTN();
+		rcvClock.incTN();
+		readSz += (symbolsPerSlot + (tN % 4 == 0)) * mSPSRx;
+		rcvSz -= (symbolsPerSlot + (tN % 4 == 0)) * mSPSRx;
 
-    tN = rcvClock.TN();
-  }
+		tN = rcvClock.TN();
+	}
 
-  if (readSz > 0) {
-    memmove(recvBuffer->begin(),
-            recvBuffer->begin() + readSz,
-            (recvCursor - readSz) * 2 * sizeof(float));
+	if (readSz > 0) {
+		memmove(recvBuffer->begin(), recvBuffer->begin() + readSz, (recvCursor - readSz) * 2 * sizeof(float));
 
-    recvCursor -= readSz;
-  }
+		recvCursor -= readSz;
+	}
 }
 
 bool RadioInterface::isUnderrun()
 {
-  bool retVal = underrun;
-  underrun = false;
+	bool retVal = underrun;
+	underrun = false;
 
-  return retVal;
+	return retVal;
 }
 
 double RadioInterface::setRxGain(double dB)
 {
-  if (mRadio)
-    return mRadio->setRxGain(dB);
-  else
-    return -1;
+	if (mRadio)
+		return mRadio->setRxGain(dB);
+	else
+		return -1;
 }
 
 double RadioInterface::getRxGain()
 {
-  if (mRadio)
-    return mRadio->getRxGain();
-  else
-    return -1;
+	if (mRadio)
+		return mRadio->getRxGain();
+	else
+		return -1;
 }
 
 /* Receive a timestamped chunk from the device */
 void RadioInterface::pullBuffer()
 {
-  bool local_underrun;
-  int num_recv;
-  float *output;
+	bool local_underrun;
+	int num_recv;
+	float *output;
 
-  if (recvCursor > recvBuffer->size() - CHUNK)
-    return;
+	if (recvCursor > recvBuffer->size() - CHUNK)
+		return;
 
-  /* Outer buffer access size is fixed */
-  num_recv = mRadio->readSamples(convertRecvBuffer,
-                                 CHUNK,
-                                 &overrun,
-                                 readTimestamp,
-                                 &local_underrun);
-  if (num_recv != CHUNK) {
-          LOG(ALERT) << "Receive error " << num_recv;
-          return;
-  }
+	/* Outer buffer access size is fixed */
+	num_recv = mRadio->readSamples(convertRecvBuffer, CHUNK, &overrun, readTimestamp, &local_underrun);
+	if (num_recv != CHUNK) {
+		LOG(ALERT) << "Receive error " << num_recv;
+		return;
+	}
 
-  output = (float *) (recvBuffer->begin() + recvCursor);
+	output = (float *)(recvBuffer->begin() + recvCursor);
 
-  convert_short_float(output, convertRecvBuffer, 2 * num_recv);
+	convert_short_float(output, convertRecvBuffer, 2 * num_recv);
 
-  underrun |= local_underrun;
+	underrun |= local_underrun;
 
-  readTimestamp += num_recv;
-  recvCursor += num_recv;
+	readTimestamp += num_recv;
+	recvCursor += num_recv;
 }
 
 /* Send timestamped chunk to the device with arbitrary size */
 void RadioInterface::pushBuffer()
 {
-  int num_sent;
+	int num_sent;
 
-  if (sendCursor < CHUNK)
-    return;
+	if (sendCursor < CHUNK)
+		return;
 
-  if (sendCursor > sendBuffer->size())
-    LOG(ALERT) << "Send buffer overflow";
+	if (sendCursor > sendBuffer->size())
+		LOG(ALERT) << "Send buffer overflow";
 
-  convert_float_short(convertSendBuffer,
-                      (float *) sendBuffer->begin(),
-                      powerScaling, 2 * sendCursor);
+	convert_float_short(convertSendBuffer, (float *)sendBuffer->begin(), powerScaling, 2 * sendCursor);
 
-  /* Send the all samples in the send buffer */ 
-  num_sent = mRadio->writeSamples(convertSendBuffer,
-                                  sendCursor,
-                                  &underrun,
-                                  writeTimestamp);
-  if (num_sent != (int)sendCursor) {
-          LOG(ALERT) << "Transmit error " << num_sent;
-  }
+	/* Send the all samples in the send buffer */
+	num_sent = mRadio->writeSamples(convertSendBuffer, sendCursor, &underrun, writeTimestamp);
+	if (num_sent != (int)sendCursor) {
+		LOG(ALERT) << "Transmit error " << num_sent;
+	}
 
-  writeTimestamp += num_sent;
-  sendCursor = 0;
+	writeTimestamp += num_sent;
+	sendCursor = 0;
 }

@@ -17,8 +17,11 @@
 
 #ifndef GPRSEXPORT_H
 #define GPRSEXPORT_H
+
 #include <ostream>
+
 #include <CLI.h>
+
 // The user of this file must include these first, to avoid circular .h files:
 //#include "GSMConfig.h"		// For Time
 //#include "GSMCommon.h"		// For ChannelType
@@ -27,14 +30,16 @@
 // that read files out of order, but we need transparent pointers to these classes,
 // so they must be defined first.
 namespace GSM {
-	class RxBurst;
-	class RachInfo;
-	class L3RRMessage;
-	class CCCHLogicalChannel;
-	class L3RequestReference;
-	class L3ImmediateAssignment;
-	class Time;
-};
+
+class RxBurst;
+class RachInfo;
+class L3RRMessage;
+class CCCHLogicalChannel;
+class L3RequestReference;
+class L3ImmediateAssignment;
+class Time;
+
+}; // namespace GSM
 
 namespace GPRS {
 
@@ -45,7 +50,7 @@ struct GPRSConfig {
 	static bool sgsnIsInternal();
 };
 
-enum ChannelCodingType {	// Compression/Coding schemes CS-1 to CS-4 coded as 0-3
+enum ChannelCodingType { // Compression/Coding schemes CS-1 to CS-4 coded as 0-3
 	ChannelCodingCS1,
 	ChannelCodingCS2,
 	ChannelCodingCS3,
@@ -56,13 +61,13 @@ enum ChannelCodingType {	// Compression/Coding schemes CS-1 to CS-4 coded as 0-3
 // See notes at GPRSCellOptions_t::GPRSCellOptions_t()
 struct GPRSCellOptions_t {
 	unsigned mNMO;
-    unsigned mT3168Code;        // range 0..7
-    unsigned mT3192Code;        // range 0..7
-    unsigned mDRX_TIMER_MAX;
-    unsigned mACCESS_BURST_TYPE;
-    unsigned mCONTROL_ACK_TYPE;
-    unsigned mBS_CV_MAX;
-	bool mNW_EXT_UTBF;	// Extended uplink TBF 44.060 9.3.1b and 9.3.1.3
+	unsigned mT3168Code; // range 0..7
+	unsigned mT3192Code; // range 0..7
+	unsigned mDRX_TIMER_MAX;
+	unsigned mACCESS_BURST_TYPE;
+	unsigned mCONTROL_ACK_TYPE;
+	unsigned mBS_CV_MAX;
+	bool mNW_EXT_UTBF; // Extended uplink TBF 44.060 9.3.1b and 9.3.1.3
 	GPRSCellOptions_t();
 };
 
@@ -74,8 +79,7 @@ extern GPRSCellOptions_t &GPRSGetCellOptions();
 
 // The function by which bursts are delivered to GPRS.
 class PDCHL1FEC;
-extern void GPRSWriteLowSideRx(const GSM::RxBurst&, PDCHL1FEC*);
-
+extern void GPRSWriteLowSideRx(const GSM::RxBurst &, PDCHL1FEC *);
 
 // The function by which RACH messages are delivered to GPRS.
 extern void GPRSProcessRACH(unsigned RA, const GSM::Time &when, float RSSI, float timingError);
@@ -90,13 +94,12 @@ extern bool gprsPageCcchSetTime(TBF *tbf, GSM::L3ImmediateAssignment *iap, unsig
 extern GSM::L3ImmediateAssignment *makeSingleBlockImmediateAssign(GSM::RachInfo *rip, unsigned afterFrame);
 
 // Hook into CLI/CLI.cpp:Parser class for GPRS sub-command.
-CommandLine::CLIStatus gprsCLI(int,char**,std::ostream&);
+CommandLine::CLIStatus gprsCLI(int, char **, std::ostream &);
 int configGprsChannelsMin();
 
-void gprsStart();	// External entry point to start gprs service.
+void gprsStart(); // External entry point to start gprs service.
 void gprsStop();
 
 }; // namespace GPRS
-
 
 #endif

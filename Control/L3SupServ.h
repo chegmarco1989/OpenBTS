@@ -1,4 +1,4 @@
-/* 
+/*
 * Copyright 2013, 2014 Range Networks, Inc.
 *
 * This software is distributed under multiple licenses;
@@ -16,7 +16,6 @@
 #ifndef _L3SUPSERV_H_
 #define _L3SUPSERV_H_ 1
 
-
 #include "ControlCommon.h"
 #include "L3StateMachine.h"
 #include <GSML3MMMessages.h>
@@ -25,13 +24,14 @@ namespace Control {
 
 // The base class for SS [Supplementary Services]
 class SSDBase : public MachineBase {
-	protected:
-	MachineStatus handleSSMessage(const GSM::L3Message*ssmsg);
+protected:
+	MachineStatus handleSSMessage(const GSM::L3Message *ssmsg);
 	SSDBase(TranEntry *wTran) : MachineBase(wTran) {}
 };
 
-void startMOSSD(const GSM::L3CMServiceRequest*cmsrq, MMContext *mmchan);
-string ssMap2Ussd(const unsigned char *mapcmd,unsigned maplen);
+void startMOSSD(const GSM::L3CMServiceRequest *cmsrq, MMContext *mmchan);
+string ssMap2Ussd(const unsigned char *mapcmd, unsigned maplen);
 
-};
+}; // namespace Control
+
 #endif

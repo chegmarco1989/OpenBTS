@@ -16,19 +16,15 @@
 
 */
 
-
-
 #ifndef PHYSICALSTATUS_H
 #define PHYSICALSTATUS_H
 
 #include <map>
 
-#include <Timeval.h>
 #include <Threads.h>
-
+#include <Timeval.h>
 
 struct sqlite3;
-
 
 namespace GSM {
 
@@ -41,50 +37,42 @@ class SACCHLogicalChannel;
 class PhysicalStatus {
 
 private:
-
-	Mutex mLock;		///< to reduce the load on the filesystem locking
-	sqlite3 *mDB;		///< database connection
+	Mutex mLock;  ///< to reduce the load on the filesystem locking
+	sqlite3 *mDB; ///< database connection
 
 public:
-
 	/**
 		Initialize a physical status reporting table.
 		@param path Path fto sqlite3 database file.
 		@return 0 if the database was successfully opened and initialized; 1 otherwise
 	*/
-	int open(const char*wPath);
+	int open(const char *wPath);
 
 	~PhysicalStatus();
 
-	/** 
+	/**
 		Add reporting information associated with a channel to the table.
 		@param chan The channel to report.
 		@param measResults The measurement report.
 		@return The result of the SQLite query: true for the query being executed successfully, false otherwise.
 	*/
-	bool setPhysical(const SACCHLogicalChannel* chan, const L3MeasurementResults& measResults);
+	bool setPhysical(const SACCHLogicalChannel *chan, const L3MeasurementResults &measResults);
 
 	/**
 		Dump the physical status table to the output stream.
 		@param os The output stream to dump the channel information to.
 	*/
-//	void dump(std::ostream& os) const;
+	//	void dump(std::ostream& os) const;
 
-	private:
-
-	/** 
+private:
+	/**
 		Create entry in table. This is for the initial creation.
 		@param chan The channel to create an entry for.
 		@return The result of the SQLite query: true for the query being executed successfully, false otherwise.
 	*/
-	bool createEntry(const SACCHLogicalChannel* chan);
-
-
+	bool createEntry(const SACCHLogicalChannel *chan);
 };
 
-
-}
+}; // namespace GSM
 
 #endif
-
-// vim: ts=4 sw=4

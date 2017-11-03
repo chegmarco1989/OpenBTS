@@ -1,7 +1,8 @@
 /*
 * Copyright 2008 Free Software Foundation, Inc.
 *
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing information for this specific distribution.
+* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
+information for this specific distribution.
 *
 * This use of this software may be subject to additional restrictions.
 * See the LEGAL file in the main directory for details.
@@ -12,166 +13,153 @@
 
 */
 
-
-
-#include "sigProcLib.h"  
 #include "GSMCommon.h"
 #include "LinkedLists.h"
+#include "radioClock.h"
 #include "radioDevice.h"
 #include "radioVector.h"
-#include "radioClock.h"
+#include "sigProcLib.h"
 
 /** class to interface the transceiver with the USRP */
 class RadioInterface {
 
 protected:
+	Thread mAlignRadioServiceLoopThread; ///< thread that synchronizes transmit and receive sections
 
-  Thread mAlignRadioServiceLoopThread;	      ///< thread that synchronizes transmit and receive sections
+	VectorFIFO mReceiveFIFO; ///< FIFO that holds receive  bursts
 
-  VectorFIFO  mReceiveFIFO;		      ///< FIFO that holds receive  bursts
+	RadioDevice *mRadio; ///< the USRP object
 
-  RadioDevice *mRadio;			      ///< the USRP object
+	int mSPSTx;
+	int mSPSRx;
+	signalVector *sendBuffer;
+	signalVector *recvBuffer;
+	unsigned sendCursor;
+	unsigned recvCursor;
 
-  int mSPSTx;
-  int mSPSRx;
-  signalVector *sendBuffer;
-  signalVector *recvBuffer;
-  unsigned sendCursor;
-  unsigned recvCursor;
+	short *convertRecvBuffer;
+	short *convertSendBuffer;
 
-  short *convertRecvBuffer;
-  short *convertSendBuffer;
+	bool underrun;		  ///< indicates writes to USRP are too slow
+	bool overrun;		  ///< indicates reads from USRP are too slow
+	TIMESTAMP writeTimestamp; ///< sample timestamp of next packet written to USRP
+	TIMESTAMP readTimestamp;  ///< sample timestamp of next packet read from USRP
 
-  bool underrun;			      ///< indicates writes to USRP are too slow
-  bool overrun;				      ///< indicates reads from USRP are too slow
-  TIMESTAMP writeTimestamp;		      ///< sample timestamp of next packet written to USRP
-  TIMESTAMP readTimestamp;		      ///< sample timestamp of next packet read from USRP
+	RadioClock mClock; ///< the basestation clock!
 
-  RadioClock mClock;                          ///< the basestation clock!
+	int receiveOffset; ///< offset b/w transmit and receive GSM timestamps, in timeslots
 
-  int receiveOffset;                          ///< offset b/w transmit and receive GSM timestamps, in timeslots
+	bool mOn; ///< indicates radio is on
 
-  bool mOn;				      ///< indicates radio is on
+	double powerScaling;
 
-  double powerScaling;
-
-  bool loadTest;
-  int mNumARFCNs;
-  signalVector *finalVec, *finalVec9;
+	bool loadTest;
+	int mNumARFCNs;
+	signalVector *finalVec, *finalVec9;
 
 private:
+	/** format samples to USRP */
+	int radioifyVector(signalVector &wVector, float *floatVector, bool zero);
 
-  /** format samples to USRP */ 
-  int radioifyVector(signalVector &wVector,
-                     float *floatVector,
-                     bool zero);
+	/** format samples from USRP */
+	int unRadioifyVector(float *floatVector, signalVector &wVector);
 
-  /** format samples from USRP */
-  int unRadioifyVector(float *floatVector, signalVector &wVector);
+	/** push GSM bursts into the transmit buffer */
+	virtual void pushBuffer(void);
 
-  /** push GSM bursts into the transmit buffer */
-  virtual void pushBuffer(void);
-
-  /** pull GSM bursts from the receive buffer */
-  virtual void pullBuffer(void);
+	/** pull GSM bursts from the receive buffer */
+	virtual void pullBuffer(void);
 
 public:
+	/** start the interface */
+	void start();
 
-  /** start the interface */
-  void start();
+	/** intialization */
+	virtual bool init(int type);
+	virtual void close();
 
-  /** intialization */
-  virtual bool init(int type);
-  virtual void close();
+	/** constructor */
+	RadioInterface(RadioDevice *wRadio = NULL, int receiveOffset = 3, int wSPS = 4,
+		       GSM::Time wStartTime = GSM::Time(0));
 
-  /** constructor */
-  RadioInterface(RadioDevice* wRadio = NULL,
-		 int receiveOffset = 3,
-		 int wSPS = 4,
-		 GSM::Time wStartTime = GSM::Time(0));
-    
-  /** destructor */
-  virtual ~RadioInterface();
+	/** destructor */
+	virtual ~RadioInterface();
 
-  /** check for underrun, resets underrun value */
-  bool isUnderrun();
-  
-  /** attach an existing USRP to this interface */
-  void attach(RadioDevice *wRadio, int wRadioOversampling);
+	/** check for underrun, resets underrun value */
+	bool isUnderrun();
 
-  /** return the receive FIFO */
-  VectorFIFO* receiveFIFO() { return &mReceiveFIFO;}
+	/** attach an existing USRP to this interface */
+	void attach(RadioDevice *wRadio, int wRadioOversampling);
 
-  /** return the basestation clock */
-  RadioClock* getClock(void) { return &mClock;};
+	/** return the receive FIFO */
+	VectorFIFO *receiveFIFO() { return &mReceiveFIFO; }
 
-  /** set transmit frequency */
-  bool tuneTx(double freq);
+	/** return the basestation clock */
+	RadioClock *getClock(void) { return &mClock; };
 
-  /** set receive frequency */
-  bool tuneRx(double freq);
+	/** set transmit frequency */
+	bool tuneTx(double freq);
 
-  /** set receive gain */
-  double setRxGain(double dB);
+	/** set receive frequency */
+	bool tuneRx(double freq);
 
-  /** get receive gain */
-  double getRxGain(void);
+	/** set receive gain */
+	double setRxGain(double dB);
 
-  /** drive transmission of GSM bursts */
-  void driveTransmitRadio(signalVector &radioBurst, bool zeroBurst);
+	/** get receive gain */
+	double getRxGain(void);
 
-  /** drive reception of GSM bursts */
-  void driveReceiveRadio();
+	/** drive transmission of GSM bursts */
+	void driveTransmitRadio(signalVector &radioBurst, bool zeroBurst);
 
-  void setPowerAttenuation(double atten);
+	/** drive reception of GSM bursts */
+	void driveReceiveRadio();
 
-  /** returns the full-scale transmit amplitude **/
-  double fullScaleInputValue();
+	void setPowerAttenuation(double atten);
 
-  /** returns the full-scale receive amplitude **/
-  double fullScaleOutputValue();
+	/** returns the full-scale transmit amplitude **/
+	double fullScaleInputValue();
 
-  /** set thread priority on current thread */
-  void setPriority() { mRadio->setPriority(); }
+	/** returns the full-scale receive amplitude **/
+	double fullScaleOutputValue();
 
-  /** get transport window type of attached device */ 
-  enum RadioDevice::TxWindowType getWindowType() { return mRadio->getWindowType(); }
+	/** set thread priority on current thread */
+	void setPriority() { mRadio->setPriority(); }
+
+	/** get transport window type of attached device */
+	enum RadioDevice::TxWindowType getWindowType() { return mRadio->getWindowType(); }
 
 #if USRP1
 protected:
+	/** drive synchronization of Tx/Rx of USRP */
+	void alignRadio();
 
-  /** drive synchronization of Tx/Rx of USRP */
-  void alignRadio();
-
-  friend void *AlignRadioServiceLoopAdapter(RadioInterface*);
+	friend void *AlignRadioServiceLoopAdapter(RadioInterface *);
 #endif
 };
 
 #if USRP1
 /** synchronization thread loop */
-void *AlignRadioServiceLoopAdapter(RadioInterface*);
+void *AlignRadioServiceLoopAdapter(RadioInterface *);
 #endif
 
 class RadioInterfaceResamp : public RadioInterface {
 
 private:
-  signalVector *innerSendBuffer;
-  signalVector *outerSendBuffer;
-  signalVector *innerRecvBuffer;
-  signalVector *outerRecvBuffer;
+	signalVector *innerSendBuffer;
+	signalVector *outerSendBuffer;
+	signalVector *innerRecvBuffer;
+	signalVector *outerRecvBuffer;
 
-  void pushBuffer();
-  void pullBuffer();
+	void pushBuffer();
+	void pullBuffer();
 
 public:
+	RadioInterfaceResamp(RadioDevice *wRadio = NULL, int receiveOffset = 3, int wSPS = 4,
+			     GSM::Time wStartTime = GSM::Time(0));
 
-  RadioInterfaceResamp(RadioDevice* wRadio = NULL,
-		       int receiveOffset = 3,
-		       int wSPS = 4,
-		       GSM::Time wStartTime = GSM::Time(0));
+	~RadioInterfaceResamp();
 
-  ~RadioInterfaceResamp();
-
-  bool init(int type);
-  void close();
+	bool init(int type);
+	void close();
 };

@@ -24,13 +24,14 @@
 #define GLOBALS_H
 
 #if !defined(BUILD_CLI)
+
+#include <CLI.h>
 #include <GSMCommon.h>
 #include <OpenBTSConfig.h>
-#include <CLI.h>
 #include <PhysicalStatus.h>
 //#include <TMSITable.h>
-#include <TRXManager.h>
 #include <Reporting.h>
+#include <TRXManager.h>
 
 #ifndef RN_DEVERLOPER_MODE
 #define RN_DEVERLOPER_MODE 0
@@ -40,30 +41,34 @@
 #define RN_DISABLE_MEMORY_LEAK_TEST 1
 #endif
 
-namespace GPRS { extern unsigned GPRSDebug; }
+namespace GPRS {
+extern unsigned GPRSDebug;
+};
 
 /** Date-and-time string, defined in OpenBTS.cpp. */
-extern const char* gDateTime;
+extern const char *gDateTime;
 
 /**
 	Just about everything goes into the configuration table.
 	This should be defined in the main body of the top-level application.
 */
 extern OpenBTSConfig gConfig;
+
 #endif // !defined(BUILD_CLI)
 
 /** The OpenBTS welcome message. */
-extern const char* gOpenBTSWelcome;
+extern const char *gOpenBTSWelcome;
 
 /** The OpenBTS version string. */
 extern const char *gVersionString;
 
 #if !defined(BUILD_CLI)
+
 /** The central parser. */
 extern CommandLine::Parser gParser;
 
 /** The global TMSI table. */
-//extern Control::TMSITable gTMSITable;
+// extern Control::TMSITable gTMSITable;
 
 /** The physical status reporting table */
 extern GSM::PhysicalStatus gPhysStatus;
@@ -81,5 +86,7 @@ extern ReportingTable gReports;
 extern const char *gVERSION(void);
 extern const char *gFEATURES(void);
 extern const char *gPROD_CAT(void);
+
 #endif // !defined(BUILD_CLI)
+
 #endif

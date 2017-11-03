@@ -18,16 +18,19 @@
 #define L3HANDOVER_H
 
 namespace GSM {
-	class L3MeasurementResults;
-	class SACCHLogicalChannel;
-};
+class L3MeasurementResults;
+class SACCHLogicalChannel;
+}; // namespace GSM
 
 namespace Control {
-	class L3LogicalChannel;
-	class TranEntry;
+
+class L3LogicalChannel;
+class TranEntry;
 
 void ProcessHandoverAccess(L3LogicalChannel *chan);
-bool outboundHandoverTransfer(TranEntry* transaction, L3LogicalChannel *TCH);
-void HandoverDetermination(const GSM::L3MeasurementResults* measurements, GSM::SACCHLogicalChannel* sacch);
-};
+bool outboundHandoverTransfer(TranEntry *transaction, L3LogicalChannel *TCH);
+void HandoverDetermination(const GSM::L3MeasurementResults *measurements, GSM::SACCHLogicalChannel *sacch);
+
+}; // namespace Control
+
 #endif

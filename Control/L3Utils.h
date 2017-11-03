@@ -17,38 +17,41 @@
 
 #ifndef _L3UTILS_H_
 #define _L3UTILS_H_
-#include <GSMCommon.h>		// Where Z100Timer lives.
+
+#include <GSMCommon.h> // Where Z100Timer lives.
 
 namespace Control {
+
 enum L3TimerId {
-	T301,		///< recv ALERT --> recv CONN
-	T302,		///< send SETUP ACK --> any progress
-	T303,		///< send SETUP --> recv CALL CONF or REL COMP  On network side, MTC only.
-	T304,	// TODO: (pat)cant find it		///< recv SETUP ACK --> any progress
-	T305,		///< send DISC --> recv REL or DISC
-	T308,		///< send REL --> rev REL or REL COMP
-	T310,		///< recv CALL CONF --> recv ALERT, CONN, or DISC
-	T313,		///< send CONNECT --> recv CONNECT ACK
-	TCancel,	// Generic cancellation timer.
+	T301,    ///< recv ALERT --> recv CONN
+	T302,    ///< send SETUP ACK --> any progress
+	T303,    ///< send SETUP --> recv CALL CONF or REL COMP  On network side, MTC only.
+	T304,    // TODO: (pat)cant find it		///< recv SETUP ACK --> any progress
+	T305,    ///< send DISC --> recv REL or DISC
+	T308,    ///< send REL --> rev REL or REL COMP
+	T310,    ///< recv CALL CONF --> recv ALERT, CONN, or DISC
+	T313,    ///< send CONNECT --> recv CONNECT ACK
+	TCancel, // Generic cancellation timer.
 
 	// Mobility Management Timers.  TODO: These should be in the MMContext.
-	T3101,	// Reassignment failure.
+	T3101, // Reassignment failure.
 	T3113, // for paging.
-			// Note that there is a 10s timeout in the MS between any two MM commands.
-	T3260,	// AuthenticationRequest -> AuthenticationResponse. 12sec.
-	T3270,	// IdentityRequest -> IdentityResponse. 12sec.
+	       // Note that there is a 10s timeout in the MS between any two MM commands.
+	T3260, // AuthenticationRequest -> AuthenticationResponse. 12sec.
+	T3270, // IdentityRequest -> IdentityResponse. 12sec.
 	// THandoverComplete is not a GSM timer.  We use it to make sure we get a HandoverComplete message.
 	THandoverComplete,
-	// TSipHandover is not a GSM timer - it is how long we wait on the SIP side for the peer response during handover
-	// before dropping the GSM side connection.  It should be nearly instantaneous but we must avoid hanging in this state.
+	// TSipHandover is not a GSM timer - it is how long we wait on the SIP side for the peer response during
+	// handover before dropping the GSM side connection.  It should be nearly instantaneous but we must avoid
+	// hanging in this state.
 	TSipHandover,
 
-	TMisc1,	// Generic timer for use by whoever needs one.
-	TMMCancel,	// Generic cancellation timer.
-	TR1M,		// MO-SMS timer.
-	TR2M,		// MT-SMS timer.
+	TMisc1,    // Generic timer for use by whoever needs one.
+	TMMCancel, // Generic cancellation timer.
+	TR1M,      // MO-SMS timer.
+	TR2M,      // MT-SMS timer.
 	cNumTimers // The last entry is not a timer - it is the number of max number of timers defined.
-	};
+};
 
 typedef enum L3TimerId MMTimerId;
 typedef enum L3TimerId TranTimerId;
@@ -92,18 +95,27 @@ class L3TimerTable {
 };
 #endif
 
-const int TimerAbortTran = -1;	// Abort the transaction;  If there are other transactions pending, they may be able to run.
-const int TimerAbortChan = -2;	// Abort the entire MMChannel.
+const int TimerAbortTran =
+	-1; // Abort the transaction;  If there are other transactions pending, they may be able to run.
+const int TimerAbortChan = -2; // Abort the entire MMChannel.
 
-class L3Timer : GSM::Z100Timer
-{
+class L3Timer : GSM::Z100Timer {
 	L3TimerId mTimerId;
 	// Payload.  Used as Procedure state to be invoked on timeout.  Negative value is one of these:
 	int mNextState;
 
-	public:
-	void tStart(L3TimerId wTimerId, long wEndtime, int wNextState) { Z100Timer::set(wEndtime); mTimerId = wTimerId; mNextState = wNextState; }
-	void tStop() { if (active()) Z100Timer::reset(); }
+public:
+	void tStart(L3TimerId wTimerId, long wEndtime, int wNextState)
+	{
+		Z100Timer::set(wEndtime);
+		mTimerId = wTimerId;
+		mNextState = wNextState;
+	}
+	void tStop()
+	{
+		if (active())
+			Z100Timer::reset();
+	}
 	bool tIsActive() const { return Z100Timer::active(); }
 	bool tIsExpired() const { return Z100Timer::active() ? Z100Timer::expired() : false; }
 	long tRemaining() const { return Z100Timer::remaining(); }
@@ -111,14 +123,14 @@ class L3Timer : GSM::Z100Timer
 	const char *tName() const;
 };
 
-
 class L3TimerList {
 	L3Timer mtlTimers[cNumTimers];
-	protected:
+
+protected:
 	virtual bool lockAndInvokeTimeout(L3Timer *timer) = 0;
 
-	public:
-	//void timerStartAbort(L3TimerId id, long wEndtime);
+public:
+	// void timerStartAbort(L3TimerId id, long wEndtime);
 	void timerStart(L3TimerId id, unsigned wEndtime, int wNextState);
 	void timerStop(L3TimerId id);
 	void timerStopAll();
@@ -127,8 +139,9 @@ class L3TimerList {
 	bool checkTimers();
 	// Return the remaining time of any timers, or -1 if none active.
 	int remainingTime();
-	void text(std::ostream&os) const;
-};	// class L3TimerList
+	void text(std::ostream &os) const;
+}; // class L3TimerList
 
-};	// namespace
+}; // namespace Control
+
 #endif

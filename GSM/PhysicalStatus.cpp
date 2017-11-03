@@ -23,56 +23,52 @@
  *
  */
 
-#define LOG_GROUP LogGroup::GSM		// Can set Log.Level.GSM for debugging
+#define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
-
-#include "PhysicalStatus.h"
-#include <Logger.h>
-#include <Globals.h>
-#include <sqlite3.h>
-#include <sqlite3util.h>
-
-#include <NeighborTable.h>
-#include <GSML3RRElements.h>
-#include <GSMLogicalChannel.h>
-
-#include <iostream>
-#include <iomanip>
 #include <math.h>
+
+#include <iomanip>
+#include <iostream>
 #include <string>
 
 #include "NodeManager.h"
+#include "PhysicalStatus.h"
+#include <GSML3RRElements.h>
+#include <GSMLogicalChannel.h>
+#include <Globals.h>
+#include <Logger.h>
+#include <NeighborTable.h>
+#include <sqlite3util.h>
+
 extern NodeManager gNodeManager;
 
 using namespace std;
 using namespace GSM;
 
-#define RN_DISABLE_PHYSICAL_DB 1		// (pat 3-2014) Try disabling this for the major load test.
-
+#define RN_DISABLE_PHYSICAL_DB 1 // (pat 3-2014) Try disabling this for the major load test.
 
 #if RN_DISABLE_PHYSICAL_DB
 #else
-static const char* createPhysicalStatus = {
+static const char *createPhysicalStatus = {
 	"CREATE TABLE IF NOT EXISTS PHYSTATUS ("
-		"CN_TN_TYPE_AND_OFFSET STRING PRIMARY KEY, "		// CnTn <chan>-<index>
-		"ARFCN INTEGER DEFAULT NULL, "						// actual ARFCN
-		"ACCESSED INTEGER DEFAULT 0, "						// Unix time of last update
-		"RXLEV_FULL_SERVING_CELL INTEGER DEFAULT NULL, "	// from the most recent measurement report
-		"RXLEV_SUB_SERVING_CELL INTEGER DEFAULT NULL, "		// from the most recent measurement report
-		"RXQUAL_FULL_SERVING_CELL_BER FLOAT DEFAULT NULL, "	// from the most recent measurement report
-		"RXQUAL_SUB_SERVING_CELL_BER FLOAT DEFAULT NULL, "	// from the most recent measurement report
-		"RSSI FLOAT DEFAULT NULL, "							// RSSI relative to full scale input
-		"TIME_ERR FLOAT DEFAULT NULL, "						// timing advance error in symbol periods
-		"TRANS_PWR INTEGER DEFAULT NULL, "					// handset tx power in dBm
-		"TIME_ADVC INTEGER DEFAULT NULL, "					// handset timing advance in symbol periods
-		"FER FLOAT DEFAULT NULL, "							// uplink FER
-		"NCELL_ARFCN INTEGER DEFAULT NULL, "				// ARFCN of strongest neighbor
-		"NCELL_RSSI INTEGER DEFAULT NULL "				// RSSI of strongest neighbor
-	")"
-};
+	"CN_TN_TYPE_AND_OFFSET STRING PRIMARY KEY, "	// CnTn <chan>-<index>
+	"ARFCN INTEGER DEFAULT NULL, "			    // actual ARFCN
+	"ACCESSED INTEGER DEFAULT 0, "			    // Unix time of last update
+	"RXLEV_FULL_SERVING_CELL INTEGER DEFAULT NULL, "    // from the most recent measurement report
+	"RXLEV_SUB_SERVING_CELL INTEGER DEFAULT NULL, "     // from the most recent measurement report
+	"RXQUAL_FULL_SERVING_CELL_BER FLOAT DEFAULT NULL, " // from the most recent measurement report
+	"RXQUAL_SUB_SERVING_CELL_BER FLOAT DEFAULT NULL, "  // from the most recent measurement report
+	"RSSI FLOAT DEFAULT NULL, "			    // RSSI relative to full scale input
+	"TIME_ERR FLOAT DEFAULT NULL, "			    // timing advance error in symbol periods
+	"TRANS_PWR INTEGER DEFAULT NULL, "		    // handset tx power in dBm
+	"TIME_ADVC INTEGER DEFAULT NULL, "		    // handset timing advance in symbol periods
+	"FER FLOAT DEFAULT NULL, "			    // uplink FER
+	"NCELL_ARFCN INTEGER DEFAULT NULL, "		    // ARFCN of strongest neighbor
+	"NCELL_RSSI INTEGER DEFAULT NULL "		    // RSSI of strongest neighbor
+	")"};
 #endif
 
-int PhysicalStatus::open(const char* wPath)
+int PhysicalStatus::open(const char *wPath)
 {
 #if RN_DISABLE_PHYSICAL_DB
 #else
@@ -88,8 +84,9 @@ int PhysicalStatus::open(const char* wPath)
 		return 1;
 	}
 	// Set high-concurrency WAL mode.
-	if (!sqlite3_command(mDB,enableWAL)) {
-		LOG(EMERG) << "Cannot enable WAL mode on database at " << wPath << ", error message: " << sqlite3_errmsg(mDB);
+	if (!sqlite3_command(mDB, enableWAL)) {
+		LOG(EMERG) << "Cannot enable WAL mode on database at " << wPath
+			   << ", error message: " << sqlite3_errmsg(mDB);
 	}
 #endif
 	return 0;
@@ -97,34 +94,35 @@ int PhysicalStatus::open(const char* wPath)
 
 PhysicalStatus::~PhysicalStatus()
 {
-	if (mDB) sqlite3_close(mDB);
+	if (mDB)
+		sqlite3_close(mDB);
 }
 
-bool PhysicalStatus::createEntry(const SACCHLogicalChannel* chan)
+bool PhysicalStatus::createEntry(const SACCHLogicalChannel *chan)
 {
 	assert(mDB);
 	assert(chan);
 
 	ScopedLock lock(mLock);
 
-	const char* chanString = chan->descriptiveString();
+	const char *chanString = chan->descriptiveString();
 	LOG(DEBUG) << chan->descriptiveString();
 
 	/* Check to see if the key exists. */
 	if (!sqlite3_exists(mDB, "PHYSTATUS", "CN_TN_TYPE_AND_OFFSET", chanString)) {
 		/* No? Ok, it should now. */
 		char query[500];
-		sprintf(query, "INSERT INTO PHYSTATUS (CN_TN_TYPE_AND_OFFSET, ACCESSED) VALUES "
-					   "(\"%s\", %u)",
-				chanString, (unsigned)time(NULL));
+		sprintf(query,
+			"INSERT INTO PHYSTATUS (CN_TN_TYPE_AND_OFFSET, ACCESSED) VALUES "
+			"(\"%s\", %u)",
+			chanString, (unsigned)time(NULL));
 		return sqlite3_command(mDB, query);
 	}
 
 	return false;
 }
 
-bool PhysicalStatus::setPhysical(const SACCHLogicalChannel* chan,
-								const L3MeasurementResults& measResults)
+bool PhysicalStatus::setPhysical(const SACCHLogicalChannel *chan, const L3MeasurementResults &measResults)
 {
 	// TODO -- It would be better if the argument what just the channel
 	// and the key was just the descriptiveString.
@@ -137,14 +135,18 @@ bool PhysicalStatus::setPhysical(const SACCHLogicalChannel* chan,
 	ScopedLock lock(mLock);
 
 	int CN = -1;
-	if (measResults.NO_NCELL()>0) CN = measResults.BCCH_FREQ_NCELL(0);
+	if (measResults.NO_NCELL() > 0)
+		CN = measResults.BCCH_FREQ_NCELL(0);
 	int ARFCN = -1;
-	if (CN>=0) {
+	if (CN >= 0) {
 		std::vector<unsigned> ARFCNList = gNeighborTable.ARFCNList();
 		size_t sz = ARFCNList.size();
-		if (sz!=0) {
-			if (CN<(int)sz) ARFCN=ARFCNList[CN];
-			else { LOG(NOTICE) << "BCCH index " << CN << " does not match ARFCN list of size " << sz; }
+		if (sz != 0) {
+			if (CN < (int)sz)
+				ARFCN = ARFCNList[CN];
+			else {
+				LOG(NOTICE) << "BCCH index " << CN << " does not match ARFCN list of size " << sz;
+			}
 		} else {
 			LOG(DEBUG) << "empty measurement list";
 		}
@@ -167,10 +169,14 @@ bool PhysicalStatus::setPhysical(const SACCHLogicalChannel* chan,
 		eData["burst"]["actualMSTimingAdvance"] = JsonBox::Value(phys->actualMSTiming());
 		eData["burst"]["actualMSPower"] = JsonBox::Value(phys->actualMSPower());
 		eData["burst"]["timingError"] = JsonBox::Value(phys->timingError());
-		eData["reports"]["servingCell"]["RXLEVEL_FULL_dBm"] = JsonBox::Value(measResults.RXLEV_FULL_SERVING_CELL_dBm());
-		eData["reports"]["servingCell"]["RXLEVEL_SUB_dBm"] = JsonBox::Value(measResults.RXLEV_SUB_SERVING_CELL_dBm());
-		eData["reports"]["servingCell"]["RXQUALITY_FULL_BER"] = JsonBox::Value(measResults.RXQUAL_FULL_SERVING_CELL_BER());
-		eData["reports"]["servingCell"]["RXQUALITY_SUB_BER"] = JsonBox::Value(measResults.RXQUAL_SUB_SERVING_CELL_BER());
+		eData["reports"]["servingCell"]["RXLEVEL_FULL_dBm"] =
+			JsonBox::Value(measResults.RXLEV_FULL_SERVING_CELL_dBm());
+		eData["reports"]["servingCell"]["RXLEVEL_SUB_dBm"] =
+			JsonBox::Value(measResults.RXLEV_SUB_SERVING_CELL_dBm());
+		eData["reports"]["servingCell"]["RXQUALITY_FULL_BER"] =
+			JsonBox::Value(measResults.RXQUAL_FULL_SERVING_CELL_BER());
+		eData["reports"]["servingCell"]["RXQUALITY_SUB_BER"] =
+			JsonBox::Value(measResults.RXQUAL_SUB_SERVING_CELL_BER());
 
 		JsonBox::Array neighbors;
 		unsigned nCount = measResults.NO_NCELL();
@@ -191,16 +197,16 @@ bool PhysicalStatus::setPhysical(const SACCHLogicalChannel* chan,
 		gNodeManager.publishEvent("PhysicalStatus", "0.1", eData);
 	}
 
-
 #if RN_DISABLE_PHYSICAL_DB
-	if (ARFCN) {}	// shuts up gcc.
+	if (ARFCN) {
+	} // shuts up gcc.
 	return true;
 #else
 	assert(mDB);
 	createEntry(chan);
 
 	char query[500];
-	if (ARFCN<0) {
+	if (ARFCN < 0) {
 		sprintf(query,
 			"UPDATE PHYSTATUS SET "
 			"RXLEV_FULL_SERVING_CELL=%d, "
@@ -215,16 +221,10 @@ bool PhysicalStatus::setPhysical(const SACCHLogicalChannel* chan,
 			"ACCESSED=%u, "
 			"ARFCN=%u "
 			"WHERE CN_TN_TYPE_AND_OFFSET==\"%s\"",
-			measResults.RXLEV_FULL_SERVING_CELL_dBm(),
-			measResults.RXLEV_SUB_SERVING_CELL_dBm(),
-			measResults.RXQUAL_FULL_SERVING_CELL_BER(),
-			measResults.RXQUAL_SUB_SERVING_CELL_BER(),
-			phys->RSSI(), phys->timingError(),
-			phys->actualMSPower(), phys->actualMSTiming(),
-			chan->FER(),
-			(unsigned)time(NULL),
-			chan->ARFCN(),
-			chan->descriptiveString());
+			measResults.RXLEV_FULL_SERVING_CELL_dBm(), measResults.RXLEV_SUB_SERVING_CELL_dBm(),
+			measResults.RXQUAL_FULL_SERVING_CELL_BER(), measResults.RXQUAL_SUB_SERVING_CELL_BER(),
+			phys->RSSI(), phys->timingError(), phys->actualMSPower(), phys->actualMSTiming(), chan->FER(),
+			(unsigned)time(NULL), chan->ARFCN(), chan->descriptiveString());
 	} else {
 		sprintf(query,
 			"UPDATE PHYSTATUS SET "
@@ -242,19 +242,11 @@ bool PhysicalStatus::setPhysical(const SACCHLogicalChannel* chan,
 			"NCELL_ARFCN=%u, "
 			"NCELL_RSSI=%d "
 			"WHERE CN_TN_TYPE_AND_OFFSET==\"%s\"",
-			measResults.RXLEV_FULL_SERVING_CELL_dBm(),
-			measResults.RXLEV_SUB_SERVING_CELL_dBm(),
-			measResults.RXQUAL_FULL_SERVING_CELL_BER(),
-			measResults.RXQUAL_SUB_SERVING_CELL_BER(),
-			phys->RSSI(), phys->timingError(),
-			phys->actualMSPower(), phys->actualMSTiming(),
-			chan->FER(),
-			(unsigned)time(NULL),
-			chan->ARFCN(),
-			(unsigned)ARFCN,
-			measResults.RXLEV_NCELL_dBm(0),
-			chan->descriptiveString()
-			);
+			measResults.RXLEV_FULL_SERVING_CELL_dBm(), measResults.RXLEV_SUB_SERVING_CELL_dBm(),
+			measResults.RXQUAL_FULL_SERVING_CELL_BER(), measResults.RXQUAL_SUB_SERVING_CELL_BER(),
+			phys->RSSI(), phys->timingError(), phys->actualMSPower(), phys->actualMSTiming(), chan->FER(),
+			(unsigned)time(NULL), chan->ARFCN(), (unsigned)ARFCN, measResults.RXLEV_NCELL_dBm(0),
+			chan->descriptiveString());
 	}
 
 	LOG(DEBUG) << "Query: " << query;
@@ -290,6 +282,3 @@ void PhysicalStatus::dump(ostream& os) const
 	sqlite3_finalize(stmt);
 }
 #endif
-
-
-// vim: ts=4 sw=4

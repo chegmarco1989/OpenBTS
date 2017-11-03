@@ -19,8 +19,11 @@
 #include <ControlTransfer.h>
 
 namespace SIP {
-extern void startRegister(TranEntryId tid, const Control::FullMobileId &msic, const string rand, const string sres, L3LogicalChannel *chan);
+
+extern void startRegister(TranEntryId tid, const Control::FullMobileId &msic, const string rand, const string sres,
+			  L3LogicalChannel *chan);
 extern void startUnregister(const FullMobileId &msid, L3LogicalChannel *chan);
+
 class SipDialog;
 extern SipDialog *getRegistrar();
 
@@ -33,16 +36,17 @@ extern SipDialog *getRegistrar();
 // with any exceptions handled specially.
 struct DialogState {
 	enum msgState {
-	dialogUndefined,		// The initial state until something happens.  For MO we stay here until answer to INVITE
-	dialogStarted,			// initial INVITE sent.
-	dialogProceeding,
-	dialogRinging,
-	dialogActive,
-	dialogBye,
-	dialogFail,			// busy, cancel or fail for any reason.
+		dialogUndefined, // The initial state until something happens.  For MO we stay here until answer to
+				 // INVITE
+		dialogStarted,   // initial INVITE sent.
+		dialogProceeding,
+		dialogRinging,
+		dialogActive,
+		dialogBye,
+		dialogFail, // busy, cancel or fail for any reason.
 
-	// Other messages not related to the current dialog state.
-	dialogDtmf,
+		// Other messages not related to the current dialog state.
+		dialogDtmf,
 	};
 	static const char *msgStateString(DialogState::msgState dstate);
 };
@@ -55,36 +59,42 @@ struct SipCode {
 };
 
 class DialogMessage {
-	//virtual void _define_vtable();
-	public:
+	// virtual void _define_vtable();
+public:
 	virtual ~DialogMessage() {}
-	Control::TranEntryId mTranId;		// The associated TransactionEntry or 0 for the old MobilityManagement SipBase which has none.
-										// By using the TransactionId instead of a pointer, we dont crash if the TransactionEntry disappears
-										// while this message is in flight.
-										// Update: now the message is queued into the TranEntry, so this probably is not used.
+	Control::TranEntryId mTranId; // The associated TransactionEntry or 0 for the old MobilityManagement SipBase
+				      // which has none. By using the TransactionId instead of a pointer, we dont crash
+				      // if the TransactionEntry disappears while this message is in flight. Update: now
+				      // the message is queued into the TranEntry, so this probably is not used.
 	DialogState::msgState mMsgState;
-	//SipMethod::MethodType mMethod;	// If not a method then SipMethod:Undefined.
-	unsigned mSipStatusCode;			// eg 200 for OK.
-	DialogMessage(Control::TranEntryId wTranId,DialogState::msgState nextState, unsigned code) :
-		mTranId(wTranId), mMsgState(nextState), mSipStatusCode(code) {}
+	// SipMethod::MethodType mMethod;	// If not a method then SipMethod:Undefined.
+	unsigned mSipStatusCode; // eg 200 for OK.
+	DialogMessage(Control::TranEntryId wTranId, DialogState::msgState nextState, unsigned code)
+		: mTranId(wTranId), mMsgState(nextState), mSipStatusCode(code)
+	{
+	}
 	DialogState::msgState dialogState() const { return mMsgState; }
 	unsigned sipStatusCode() const { return mSipStatusCode; }
 
-	// Works, but not used:
-	// bool isBusy() const { return mSipStatusCode == 486 || mSipStatusCode == 600 || mSipStatusCode == 603; }
+		// Works, but not used:
+		// bool isBusy() const { return mSipStatusCode == 486 || mSipStatusCode == 600 || mSipStatusCode == 603;
+		// }
 
-	// What a brain dead language.
+		// What a brain dead language.
 #define DIALOG_MESSAGE_CONSTRUCTOR(subclass) \
-	subclass(Control::TranEntryId wTranId,DialogState::msgState nextState, unsigned code) : DialogMessage(wTranId,nextState,code) {}
+	subclass(Control::TranEntryId wTranId, DialogState::msgState nextState, unsigned code) \
+		: DialogMessage(wTranId, nextState, code) \
+	{ \
+	}
 };
 
 struct DialogUssdMessage : public DialogMessage {
-	string dmMsgPayload;			// For USSD message.
+	string dmMsgPayload; // For USSD message.
 	DIALOG_MESSAGE_CONSTRUCTOR(DialogUssdMessage)
 };
 
 struct DialogChallengeMessage : public DialogMessage {
-	string dmRand;				// for 401 message.
+	string dmRand; // for 401 message.
 	Int_z dmRejectCause;
 	DIALOG_MESSAGE_CONSTRUCTOR(DialogChallengeMessage)
 };
@@ -96,7 +106,9 @@ struct DialogAuthMessage : public DialogMessage {
 	DIALOG_MESSAGE_CONSTRUCTOR(DialogAuthMessage)
 };
 
-std::ostream& operator<<(std::ostream& os, const DialogMessage&);
-std::ostream& operator<<(std::ostream& os, const DialogMessage*);
-};
+std::ostream &operator<<(std::ostream &os, const DialogMessage &);
+std::ostream &operator<<(std::ostream &os, const DialogMessage *);
+
+}; // namespace SIP
+
 #endif

@@ -22,32 +22,34 @@
 
 */
 
-
 // KEEP THIS FILE CLEAN FOR GPL PUBLIC RELEASE.
 
-#include <config.h>
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/un.h>
+
+#include <arpa/inet.h>
+
+#include <errno.h>
+#include <limits.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <time.h>
-#include <errno.h>
-#include <arpa/inet.h>
-#include <stdarg.h>
-#include <string>
+#include <unistd.h>
+
 #include <cstring>
+#include <string>
 
 #define HAVE_LIBREADLINE
 
-
 #ifdef HAVE_LIBREADLINE
-#  include <readline/readline.h>
-#  include <readline/history.h>
+#include <readline/history.h>
+#include <readline/readline.h>
 #endif
+
+#include <config.h>
 
 // Note that we ONLY use this for the name of the file to use.
 
@@ -55,8 +57,8 @@
 #include "Globals.h"
 
 struct sockaddr_in sa;
-static char *progname = (char*) "";
 
+static char *progname = (char *)"";
 
 char target[64] = "127.0.0.1";
 int port = 49300;
@@ -64,7 +66,8 @@ int port = 49300;
 static void banner()
 {
 	static int bannerPrinted = false;
-	if (bannerPrinted) return;
+	if (bannerPrinted)
+		return;
 	bannerPrinted = true;
 	printf("OpenBTS Command Line Interface (CLI) utility\n");
 	printf("Copyright 2012, 2013, 2014 Range Networks, Inc.\n");
@@ -78,17 +81,16 @@ static void oops(const char *fmt, ...)
 {
 	banner();
 	va_list ap;
-	va_start(ap,fmt);
-	vprintf(fmt,ap);
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
 	va_end(ap);
 	printf(" OpenBTSCLI options:\n"
-		"  -t ip_address : specify IP address of target machine on which OpenBTS is running\n"
-		"  -p port_number : specify OpenBTS port number\n"
-		"  -c command .. : execute this OpenBTS command and exit; also suppresses extraneous banners\n"
-		"  -d : read one OpenBTS command, execute it and exit\n"
-		"If -d or -c not specified, read OpenBTS commands and execute them.\n"
-		"To see OpenBTS help, type the 'help' command to OpenBTS, or for example: OpenBTSCLI -c help\n"
-		);
+	       "  -t ip_address : specify IP address of target machine on which OpenBTS is running\n"
+	       "  -p port_number : specify OpenBTS port number\n"
+	       "  -c command .. : execute this OpenBTS command and exit; also suppresses extraneous banners\n"
+	       "  -d : read one OpenBTS command, execute it and exit\n"
+	       "If -d or -c not specified, read OpenBTS commands and execute them.\n"
+	       "To see OpenBTS help, type the 'help' command to OpenBTS, or for example: OpenBTSCLI -c help\n");
 	exit(1);
 }
 
@@ -119,19 +121,19 @@ bool doCmd(int fd, char *cmd) // return false to abort/exit
 		printf("Remote connection closed\n");
 		exit(1);
 	}
-	if (nread != (int) sizeof(len)) {
+	if (nread != (int)sizeof(len)) {
 		printf("Partial read of length from server, expected %zu, got %d\n", sizeof(len), len);
 		exit(1);
 	}
 	len = ntohl(len);
-	if (len >= bufsz-1) {
+	if (len >= bufsz - 1) {
 		printf("Response of %d bytes is too long\n", len);
 		exit(1);
 	}
 	int off = 0;
 	svlen = len;
-	while(len != 0) {
-		nread = recv(fd,&resbuf[off],len,0);
+	while (len != 0) {
+		nread = recv(fd, &resbuf[off], len, 0);
 		if (nread < 0) {
 			perror("receiving stream");
 			return false;
@@ -145,78 +147,77 @@ bool doCmd(int fd, char *cmd) // return false to abort/exit
 	}
 	nread = svlen;
 
-	if (nread<0) {
+	if (nread < 0) {
 		perror("receiving response");
 		return false;
 	}
 	resbuf[nread] = '\0';
-    if (strcmp("restart", cmd) == 0)
-    {
-        printf("OpenBTS has been shut down or restarted.\n");
-        printf("You will need to restart OpenBTSCLI after it restarts.\n");
-        return false;
-    }
-    if (strcmp("shutdown", cmd) == 0)
-    {
-        printf("OpenBTS has been shut down or restarted.\n");
-        printf("You will need to restart OpenBTSCLI after it restarts.\n");
-        return false;
-    }
-    printf("%s\n",resbuf);
-    if (nread==(bufsz-1)) {
-        printf("(response truncated at %d characters)\n",nread);
-    }
+	if (strcmp("restart", cmd) == 0) {
+		printf("OpenBTS has been shut down or restarted.\n");
+		printf("You will need to restart OpenBTSCLI after it restarts.\n");
+		return false;
+	}
+	if (strcmp("shutdown", cmd) == 0) {
+		printf("OpenBTS has been shut down or restarted.\n");
+		printf("You will need to restart OpenBTSCLI after it restarts.\n");
+		return false;
+	}
+	printf("%s\n", resbuf);
+	if (nread == (bufsz - 1)) {
+		printf("(response truncated at %d characters)\n", nread);
+	}
 	return true;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
-	bool isBTSDo = false;	// If set, execute one command without prompting, then exit.
+	bool isBTSDo = false; // If set, execute one command without prompting, then exit.
 	std::string sCommand("");
 	progname = argv[0];
-	argc--; argv++;			// Skip program name.
-	while(argc > 0) {
+	argc--;
+	argv++; // Skip program name.
+	while (argc > 0) {
 		if (argv[0][0] == '-') {
 			if (strlen(argv[0]) > 2) {
 				oops("Invalid option '%s'\n", argv[0]);
 				exit(1);
 			}
-			switch(argv[0][1]) {
-				case 'd': // OpenBTSDo interface
-					isBTSDo = true;
-					break;
-				case 'c': // Run command on command line then exit.
-					isBTSDo = true;
-					if (argc == 1) {
-						oops("Missing argument to -c\n");
+			switch (argv[0][1]) {
+			case 'd': // OpenBTSDo interface
+				isBTSDo = true;
+				break;
+			case 'c': // Run command on command line then exit.
+				isBTSDo = true;
+				if (argc == 1) {
+					oops("Missing argument to -c\n");
+				}
+				{
+					// Gather up the command line.
+					for (int j = 1; j < argc; j++) {
+						sCommand += argv[j];
+						sCommand += " ";
 					}
-					{
-						// Gather up the command line.
-						for (int j = 1; j < argc; j++) {
-							sCommand += argv[j];
-							sCommand += " ";
-						}
-					}
-					argc = 1;	// terminates while loop.
-					break;
-				case 'p': // TCP Port number
-					argc--, argv++;
-					port = atoi(argv[0]);
-					printf("TCP %d\n", port);
-					break;
-				case 't': // target
-					argc--, argv++;
-					snprintf(target, sizeof(target)-1, "%s", argv[0]);
-					break;
-				default:
-					oops("Invalid option '%s'\n", argv[0]);
-					exit(1);	// NOTREACHED but makes the compiler happy.
+				}
+				argc = 1; // terminates while loop.
+				break;
+			case 'p': // TCP Port number
+				argc--, argv++;
+				port = atoi(argv[0]);
+				printf("TCP %d\n", port);
+				break;
+			case 't': // target
+				argc--, argv++;
+				snprintf(target, sizeof(target) - 1, "%s", argv[0]);
+				break;
+			default:
+				oops("Invalid option '%s'\n", argv[0]);
+				exit(1); // NOTREACHED but makes the compiler happy.
 			}
 			argc--;
 			argv++;
 		} else {
 			oops("Invalid argument '%s'\n", argv[0]);
-			exit(1);	// NOTREACHED but makes the compiler happy.
+			exit(1); // NOTREACHED but makes the compiler happy.
 		}
 	}
 
@@ -232,8 +233,8 @@ int main(int argc, char *argv[])
 	memset(&sa, 0, sizeof(sa));
 
 	// the socket
-	sock = socket(AF_INET,SOCK_STREAM,0);
-	if (sock<0) {
+	sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (sock < 0) {
 		perror("opening stream socket");
 		exit(1);
 	}
@@ -250,12 +251,13 @@ int main(int argc, char *argv[])
 		// If you wanted to specify the port you were binding from, this is how you would do it...
 		// We dont use this code - we let the connect system call pick the port.
 		struct sockaddr_in sockAddrBuf;
-		memset(&sockAddrBuf,0,sizeof(sockAddrBuf));		// overkill.
+		memset(&sockAddrBuf, 0, sizeof(sockAddrBuf)); // overkill.
 		sockAddrBuf.sin_family = AF_INET;
 		sockAddrBuf.sin_addr.s_addr = INADDR_ANY;
 		sockAddrBuf.sin_port = htons(13011);
-		if (bind(sock, (struct sockaddr *) &sockAddrBuf, sizeof(struct sockaddr_in))) {	// Bind the socket to our assigned port.
-			printf("bind call failed: %s",strerror(errno));
+		if (bind(sock, (struct sockaddr *)&sockAddrBuf,
+			 sizeof(struct sockaddr_in))) { // Bind the socket to our assigned port.
+			printf("bind call failed: %s", strerror(errno));
 			exit(2);
 		}
 	}
@@ -268,75 +270,72 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_LIBREADLINE
 	char *history_name = 0;
-	if (!isBTSDo)
-	{
-	    // start console
-	    using_history();
+	if (!isBTSDo) {
+		// start console
+		using_history();
 
-	    static const char * const history_file_name = "/.openbts_history";
-	    char *home_dir = getenv("HOME");
+		static const char *const history_file_name = "/.openbts_history";
+		char *home_dir = getenv("HOME");
 
-	    if(home_dir) {
-		    size_t home_dir_len = strlen(home_dir);
-		    size_t history_file_len = strlen(history_file_name);
-		    size_t history_len = home_dir_len + history_file_len + 1;
-		    if(history_len > home_dir_len) {
-			    if(!(history_name = (char *)malloc(history_len))) {
-				    perror("malloc failed");
-				    exit(2);
-			    }
-			    memcpy(history_name, home_dir, home_dir_len);
-			    memcpy(history_name + home_dir_len, history_file_name,
-			       history_file_len + 1);
-			    read_history(history_name);
-		    }
-	    }
+		if (home_dir) {
+			size_t home_dir_len = strlen(home_dir);
+			size_t history_file_len = strlen(history_file_name);
+			size_t history_len = home_dir_len + history_file_len + 1;
+			if (history_len > home_dir_len) {
+				if (!(history_name = (char *)malloc(history_len))) {
+					perror("malloc failed");
+					exit(2);
+				}
+				memcpy(history_name, home_dir, home_dir_len);
+				memcpy(history_name + home_dir_len, history_file_name, history_file_len + 1);
+				read_history(history_name);
+			}
+		}
 	}
 #endif
 
-
 	if (!isBTSDo)
-	    printf("Remote Interface Ready.\nType:\n \"help\" to see commands,\n \"version\" for version information,\n \"notices\" for licensing information,\n \"quit\" to exit console interface.\n");
+		printf("Remote Interface Ready.\nType:\n \"help\" to see commands,\n \"version\" for version "
+		       "information,\n \"notices\" for licensing information,\n \"quit\" to exit console interface.\n");
 
-
-        if (sCommand.c_str()[0] != '\0') {
-                doCmd(sock, (char *)sCommand.c_str());
-        } else
-            while (1)
-            {
+	if (sCommand.c_str()[0] != '\0') {
+		doCmd(sock, (char *)sCommand.c_str());
+	} else
+		while (1) {
 #ifdef HAVE_LIBREADLINE
-                char *cmd = readline(isBTSDo ? NULL : prompt);
-                if (!cmd) continue;
-                        if (cmd[0] == '\0') continue;
-                if (!isBTSDo)
-                    if (*cmd) add_history(cmd);
+			char *cmd = readline(isBTSDo ? NULL : prompt);
+			if (!cmd)
+				continue;
+			if (cmd[0] == '\0')
+				continue;
+			if (!isBTSDo)
+				if (*cmd)
+					add_history(cmd);
 #else // HAVE_LIBREADLINE
-                if (!isBTSDo)
-                {
-                    printf("%s",prompt);
-                    fflush(stdout);
-                }
-                char *inbuf = (char*)malloc(BUFSIZ);
-                char *cmd = fgets(inbuf,BUFSIZ-1,stdin);
-                if (!cmd)
-                {
-                    if (isBTSDo)
-                        break;
-                    continue;
-                }
-                        if (cmd[0] == '\0') continue;
-                // strip trailing CR
-                cmd[strlen(cmd)-1] = '\0';
+			if (!isBTSDo) {
+				printf("%s", prompt);
+				fflush(stdout);
+			}
+			char *inbuf = (char *)malloc(BUFSIZ);
+			char *cmd = fgets(inbuf, BUFSIZ - 1, stdin);
+			if (!cmd) {
+				if (isBTSDo)
+					break;
+				continue;
+			}
+			if (cmd[0] == '\0')
+				continue;
+			// strip trailing CR
+			cmd[strlen(cmd) - 1] = '\0';
 #endif
-                if (!isBTSDo)
-                {
-                    // local quit?
-                    if (strcmp(cmd,"quit")==0) {
-                        printf("closing remote console\n");
-                        break;
-                    }
-                            // shutdown via upstart
-                    if (strcmp(cmd,"shutdown")==0) {
+			if (!isBTSDo) {
+				// local quit?
+				if (strcmp(cmd, "quit") == 0) {
+					printf("closing remote console\n");
+					break;
+				}
+				// shutdown via upstart
+				if (strcmp(cmd, "shutdown") == 0) {
 #if 0
                         printf("terminating openbts\n");
                         if (getuid() == 0)
@@ -347,61 +346,58 @@ int main(int argc, char *argv[])
                             system("sudo stop openbts");
                         }
 #else
-			printf("unimplemented\n");
+					printf("unimplemented\n");
 #endif
-                        break;
-                    }
-                    // shell escape?
-                    if (cmd[0]=='!') {
-                        int i = system(cmd+1);
-                        if (i < 0)
-                        {
-                            perror("system");
-                        }
-                        continue;
-                    }
-                }
-                char *pCmd = cmd;
-                while(isspace(*pCmd)) pCmd++; // skip leading whitespace
-                if (*pCmd)
-                {
-                    if (doCmd(sock, cmd) == false)
-                    {
-                        bool sd = false;
-                        if (strcmp(cmd,"shutdown")==0)
-                            sd = true;
-                        else if (strcmp(cmd,"restart")==0)
-                            sd = true;
-                        free(cmd);
-                        //{
-                            if (isBTSDo)
-                                break;
-                            if (sd)
-                                break;
-                            continue;
-                        //}
-                    }
-                }
-                free(cmd);
-                if (isBTSDo)
-                    break;
-            }
+					break;
+				}
+				// shell escape?
+				if (cmd[0] == '!') {
+					int i = system(cmd + 1);
+					if (i < 0) {
+						perror("system");
+					}
+					continue;
+				}
+			}
+			char *pCmd = cmd;
+			while (isspace(*pCmd))
+				pCmd++; // skip leading whitespace
+			if (*pCmd) {
+				if (doCmd(sock, cmd) == false) {
+					bool sd = false;
+					if (strcmp(cmd, "shutdown") == 0)
+						sd = true;
+					else if (strcmp(cmd, "restart") == 0)
+						sd = true;
+					free(cmd);
+					//{
+					if (isBTSDo)
+						break;
+					if (sd)
+						break;
+					continue;
+					//}
+				}
+			}
+			free(cmd);
+			if (isBTSDo)
+				break;
+		}
 
 #ifdef HAVE_LIBREADLINE
-	if (!isBTSDo)
-	{
-	    if(history_name)
-	    {
-		    int e = write_history(history_name);
-		    if(e) {
-			    fprintf(stderr, "error: history: %s\n", strerror(e));
-		    }
-		    free(history_name);
-		    history_name = 0;
-	    }
+	if (!isBTSDo) {
+		if (history_name) {
+			int e = write_history(history_name);
+			if (e) {
+				fprintf(stderr, "error: history: %s\n", strerror(e));
+			}
+			free(history_name);
+			history_name = 0;
+		}
 	}
 #endif
 
-
 	close(sock);
+
+	return 0;
 }

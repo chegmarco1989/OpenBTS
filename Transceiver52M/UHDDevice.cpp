@@ -1,5 +1,5 @@
 /*
- * Device support for Ettus Research UHD driver 
+ * Device support for Ettus Research UHD driver
  * Written by Thomas Tsou <ttsou@vt.edu>
  *
  * Copyright 2010,2011 Free Software Foundation, Inc.
@@ -19,24 +19,25 @@
  * See the COPYING file in the main directory for details.
  */
 
-#include "radioDevice.h"
-#include "Threads.h"
-#include "Logger.h"
-#include <uhd/version.hpp>
 #include <uhd/property_tree.hpp>
 #include <uhd/usrp/multi_usrp.hpp>
-#include <uhd/utils/thread_priority.hpp>
 #include <uhd/utils/msg.hpp>
+#include <uhd/utils/thread_priority.hpp>
+#include <uhd/version.hpp>
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
-#define B2XX_CLK_RT      26e6
-#define B100_BASE_RT     400000
-#define USRP2_BASE_RT    390625
-#define TX_AMPL          0.3
-#define SAMPLE_BUF_SZ    (1 << 20)
+#include "Logger.h"
+#include "Threads.h"
+#include "radioDevice.h"
+
+#define B2XX_CLK_RT 26e6
+#define B100_BASE_RT 400000
+#define USRP2_BASE_RT 390625
+#define TX_AMPL 0.3
+#define SAMPLE_BUF_SZ (1 << 20)
 
 enum uhd_dev_type {
 	USRP1,
@@ -59,11 +60,11 @@ struct uhd_dev_offset {
  * USRP version dependent device timings
  */
 #ifdef USE_UHD_3_9
-#define B2XX_TIMING_1SPS	1.7153e-4
-#define B2XX_TIMING_4SPS	1.1696e-4
+#define B2XX_TIMING_1SPS 1.7153e-4
+#define B2XX_TIMING_4SPS 1.1696e-4
 #else
-#define B2XX_TIMING_1SPS	9.9692e-5
-#define B2XX_TIMING_4SPS	6.9248e-5
+#define B2XX_TIMING_1SPS 9.9692e-5
+#define B2XX_TIMING_4SPS 6.9248e-5
 #endif
 
 /*
@@ -77,18 +78,12 @@ struct uhd_dev_offset {
  *   USRP1 with timestamps is not supported by UHD.
  */
 static struct uhd_dev_offset uhd_offsets[NUM_USRP_TYPES * 2] = {
-	{ USRP1, 1,       0.0, "USRP1 not supported" },
-	{ USRP1, 4,       0.0, "USRP1 not supported"},
-	{ USRP2, 1, 1.2184e-4, "N2XX 1 SPS" },
-	{ USRP2, 4, 8.0230e-5, "N2XX 4 SPS" },
-	{ B100,  1, 1.2104e-4, "B100 1 SPS" },
-	{ B100,  4, 7.9307e-5, "B100 4 SPS" },
-	{ B2XX,  1, B2XX_TIMING_1SPS, "B200 1 SPS" },
-	{ B2XX,  4, B2XX_TIMING_4SPS, "B200 4 SPS" },
-	{ X3XX,  1, 1.5360e-4, "X3XX 1 SPS"},
-	{ X3XX,  4, 1.1264e-4, "X3XX 4 SPS"},
-	{ UMTRX, 1, 9.9692e-5, "UmTRX 1 SPS" },
-	{ UMTRX, 4, 7.3846e-5, "UmTRX 4 SPS" },
+	{USRP1, 1, 0.0, "USRP1 not supported"},    {USRP1, 4, 0.0, "USRP1 not supported"},
+	{USRP2, 1, 1.2184e-4, "N2XX 1 SPS"},       {USRP2, 4, 8.0230e-5, "N2XX 4 SPS"},
+	{B100, 1, 1.2104e-4, "B100 1 SPS"},	{B100, 4, 7.9307e-5, "B100 4 SPS"},
+	{B2XX, 1, B2XX_TIMING_1SPS, "B200 1 SPS"}, {B2XX, 4, B2XX_TIMING_4SPS, "B200 4 SPS"},
+	{X3XX, 1, 1.5360e-4, "X3XX 1 SPS"},	{X3XX, 4, 1.1264e-4, "X3XX 4 SPS"},
+	{UMTRX, 1, 9.9692e-5, "UmTRX 1 SPS"},      {UMTRX, 4, 7.3846e-5, "UmTRX 4 SPS"},
 };
 
 static double get_dev_offset(enum uhd_dev_type type, int sps)
@@ -138,14 +133,14 @@ static double select_rate(uhd_dev_type type, int sps)
 
 /*
     Sample Buffer - Allows reading and writing of timed samples using OpenBTS
-                    or UHD style timestamps.
+		    or UHD style timestamps.
 */
 class smpl_buf {
 public:
 	/** Sample buffer constructor
 	    @param len number of 32-bit samples the buffer should hold
-	    @param rate sample clockrate 
-	    @param timestamp 
+	    @param rate sample clockrate
+	    @param timestamp
 	*/
 	smpl_buf(size_t len, double rate);
 	~smpl_buf();
@@ -173,18 +168,13 @@ public:
 	*/
 	std::string str_status() const;
 
-	/** Formatted error string 
+	/** Formatted error string
 	    @param code an error code
 	    @return a formatted error string
 	*/
 	static std::string str_code(ssize_t code);
 
-	enum err_code {
-		ERROR_TIMESTAMP = -1,
-		ERROR_READ = -2,
-		ERROR_WRITE = -3,
-		ERROR_OVERFLOW = -4
-	};
+	enum err_code { ERROR_TIMESTAMP = -1, ERROR_READ = -2, ERROR_WRITE = -3, ERROR_OVERFLOW = -4 };
 
 private:
 	uint32_t *data;
@@ -201,10 +191,10 @@ private:
 
 /*
     uhd_device - UHD implementation of the Device interface. Timestamped samples
-                are sent to and received from the device. An intermediate buffer
-                on the receive side collects and aligns packets of samples.
-                Events and errors such as underruns are reported asynchronously
-                by the device and received in a separate thread.
+		are sent to and received from the device. An intermediate buffer
+		on the receive side collects and aligns packets of samples.
+		Events and errors such as underruns are reported asynchronously
+		by the device and received in a separate thread.
 */
 class uhd_device : public RadioDevice {
 public:
@@ -218,11 +208,9 @@ public:
 	void setPriority();
 	enum TxWindowType getWindowType() { return tx_window; }
 
-	int readSamples(short *buf, int len, bool *overrun, 
-			TIMESTAMP timestamp, bool *underrun, unsigned *RSSI);
+	int readSamples(short *buf, int len, bool *overrun, TIMESTAMP timestamp, bool *underrun, unsigned *RSSI);
 
-	int writeSamples(short *buf, int len, bool *underrun, 
-			 TIMESTAMP timestamp, bool isControl);
+	int writeSamples(short *buf, int len, bool *underrun, TIMESTAMP timestamp, bool isControl);
 
 	bool updateAlignment(TIMESTAMP timestamp);
 
@@ -313,7 +301,7 @@ void *async_event_loop(uhd_device *dev)
 	return NULL;
 }
 
-/* 
+/*
     Catch and drop underrun 'U' and overrun 'O' messages from stdout
     since we already report using the logging facility. Direct
     everything else appropriately.
@@ -336,11 +324,9 @@ void uhd_msg_handler(uhd::msg::type_t type, const std::string &msg)
 }
 
 uhd_device::uhd_device(int sps, bool skip_rx)
-	: tx_gain(0.0), tx_gain_min(0.0), tx_gain_max(0.0),
-	  rx_gain(0.0), rx_gain_min(0.0), rx_gain_max(0.0),
-	  tx_freq(0.0), rx_freq(0.0), tx_spp(0), rx_spp(0),
-	  started(false), aligned(false), rx_pkt_cnt(0), drop_cnt(0),
-	  prev_ts(0,0), ts_offset(0), rx_smpl_buf(NULL)
+	: tx_gain(0.0), tx_gain_min(0.0), tx_gain_max(0.0), rx_gain(0.0), rx_gain_min(0.0), rx_gain_max(0.0),
+	  tx_freq(0.0), rx_freq(0.0), tx_spp(0), rx_spp(0), started(false), aligned(false), rx_pkt_cnt(0), drop_cnt(0),
+	  prev_ts(0, 0), ts_offset(0), rx_smpl_buf(NULL)
 {
 	this->sps = sps;
 	this->skip_rx = skip_rx;
@@ -449,8 +435,7 @@ int uhd_device::set_rates(double tx_rate, double rx_rate)
 	rx_offset = fabs(this->rx_rate - rx_rate);
 	if ((tx_offset > offset_limit) || (rx_offset > offset_limit)) {
 		LOG(ALERT) << "Actual sample rate differs from desired rate";
-		LOG(ALERT) << "Tx/Rx (" << this->tx_rate << "/"
-			   << this->rx_rate << ")";
+		LOG(ALERT) << "Tx/Rx (" << this->tx_rate << "/" << this->rx_rate << ")";
 		return -1;
 	}
 
@@ -487,8 +472,7 @@ bool uhd_device::parse_dev_type()
 {
 	std::string mboard_str, dev_str;
 	uhd::property_tree::sptr prop_tree;
-	size_t usrp1_str, usrp2_str, b100_str, b200_str,
-	       b210_str, x300_str, x310_str, umtrx_str;
+	size_t usrp1_str, usrp2_str, b100_str, b200_str, b210_str, x300_str, x310_str, umtrx_str;
 
 	prop_tree = usrp_dev->get_device()->get_tree();
 	dev_str = prop_tree->access<std::string>("/name").get();
@@ -512,8 +496,7 @@ bool uhd_device::parse_dev_type()
 
 	if (b100_str != std::string::npos) {
 		tx_window = TX_WINDOW_USRP1;
-		LOG(INFO) << "Using USRP1 type transmit window for "
-			  << dev_str << " " << mboard_str;
+		LOG(INFO) << "Using USRP1 type transmit window for " << dev_str << " " << mboard_str;
 		dev_type = B100;
 		return true;
 	} else if (b200_str != std::string::npos) {
@@ -534,8 +517,7 @@ bool uhd_device::parse_dev_type()
 	}
 
 	tx_window = TX_WINDOW_FIXED;
-	LOG(INFO) << "Using fixed transmit window for "
-		  << dev_str << " " << mboard_str;
+	LOG(INFO) << "Using fixed transmit window for " << dev_str << " " << mboard_str;
 	return true;
 }
 
@@ -553,7 +535,7 @@ int uhd_device::open(const std::string &args, ReferenceType ref)
 	LOG(INFO) << "Using discovered UHD device " << dev_addrs[0].to_string();
 	try {
 		usrp_dev = uhd::usrp::multi_usrp::make(dev_addrs[0]);
-	} catch(...) {
+	} catch (...) {
 		LOG(ALERT) << "UHD make failed, device " << dev_addrs[0].to_string();
 		return -1;
 	}
@@ -583,16 +565,16 @@ int uhd_device::open(const std::string &args, ReferenceType ref)
 	size_t buf_len = SAMPLE_BUF_SZ / sizeof(uint32_t);
 	rx_smpl_buf = new smpl_buf(buf_len, rx_rate);
 
-	// Set receive chain sample offset 
+	// Set receive chain sample offset
 	double offset = get_dev_offset(dev_type, sps);
 	if (offset == 0.0) {
 		LOG(ERR) << "Unsupported configuration, no correction applied";
 		ts_offset = 0;
-	} else  {
-		ts_offset = (TIMESTAMP) (offset * rx_rate);
+	} else {
+		ts_offset = (TIMESTAMP)(offset * rx_rate);
 	}
 
-	// Initialize and shadow gain values 
+	// Initialize and shadow gain values
 	init_gains();
 
 	// Print configuration
@@ -622,8 +604,7 @@ bool uhd_device::flush_recv(size_t num_pkts)
 	timeout = .01;
 
 	for (size_t i = 0; i < num_pkts; i++) {
-		num_smpls = rx_stream->recv(buff, rx_spp, md,
-					    timeout, true);
+		num_smpls = rx_stream->recv(buff, rx_spp, md, timeout, true);
 		if (!num_smpls) {
 			switch (md.error_code) {
 			case uhd::rx_metadata_t::ERROR_CODE_TIMEOUT:
@@ -667,7 +648,7 @@ bool uhd_device::start()
 	uhd::msg::register_handler(&uhd_msg_handler);
 
 	// Start asynchronous event (underrun check) loop
-	async_event_thrd.start((void * (*)(void*))async_event_loop, (void*)this);
+	async_event_thrd.start((void *(*)(void *))async_event_loop, (void *)this);
 
 	// Start streaming
 	restart(uhd::time_spec_t(0.0));
@@ -682,8 +663,7 @@ bool uhd_device::start()
 
 bool uhd_device::stop()
 {
-	uhd::stream_cmd_t stream_cmd = 
-		uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
+	uhd::stream_cmd_t stream_cmd = uhd::stream_cmd_t::STREAM_MODE_STOP_CONTINUOUS;
 
 	usrp_dev->issue_stream_cmd(stream_cmd);
 
@@ -728,7 +708,7 @@ int uhd_device::check_rx_md_err(uhd::rx_metadata_t &md, ssize_t num_smpls)
 	// Monotonicity check
 	if (ts < prev_ts) {
 		LOG(ALERT) << "UHD: Loss of monotonic time";
-		LOG(ALERT) << "Current time: " << ts.get_real_secs() << ", " 
+		LOG(ALERT) << "Current time: " << ts.get_real_secs() << ", "
 			   << "Previous time: " << prev_ts.get_real_secs();
 		return ERROR_TIMING;
 	} else {
@@ -738,8 +718,7 @@ int uhd_device::check_rx_md_err(uhd::rx_metadata_t &md, ssize_t num_smpls)
 	return 0;
 }
 
-int uhd_device::readSamples(short *buf, int len, bool *overrun,
-			TIMESTAMP timestamp, bool *underrun, unsigned *RSSI)
+int uhd_device::readSamples(short *buf, int len, bool *overrun, TIMESTAMP timestamp, bool *underrun, unsigned *RSSI)
 {
 	ssize_t rc;
 	uhd::time_spec_t ts;
@@ -768,15 +747,10 @@ int uhd_device::readSamples(short *buf, int len, bool *overrun,
 
 	// Receive samples from the usrp until we have enough
 	while (rx_smpl_buf->avail_smpls(timestamp) < len) {
-		size_t num_smpls = rx_stream->recv(
-					(void*)pkt_buf,
-					rx_spp,
-					metadata,
-					0.1,
-					true);
+		size_t num_smpls = rx_stream->recv((void *)pkt_buf, rx_spp, metadata, 0.1, true);
 		rx_pkt_cnt++;
 
-		// Check for errors 
+		// Check for errors
 		rc = check_rx_md_err(metadata, num_smpls);
 		switch (rc) {
 		case ERROR_UNRECOVERABLE:
@@ -789,13 +763,10 @@ int uhd_device::readSamples(short *buf, int len, bool *overrun,
 			continue;
 		}
 
-
 		ts = metadata.time_spec;
 		LOG(DEBUG) << "Received timestamp = " << ts.get_real_secs();
 
-		rc = rx_smpl_buf->write(pkt_buf,
-					num_smpls,
-					metadata.time_spec);
+		rc = rx_smpl_buf->write(pkt_buf, num_smpls, metadata.time_spec);
 
 		// Continue on local overrun, exit on other errors
 		if ((rc < 0)) {
@@ -817,8 +788,7 @@ int uhd_device::readSamples(short *buf, int len, bool *overrun,
 	return len;
 }
 
-int uhd_device::writeSamples(short *buf, int len, bool *underrun,
-			unsigned long long timestamp,bool isControl)
+int uhd_device::writeSamples(short *buf, int len, bool *underrun, unsigned long long timestamp, bool isControl)
 {
 	uhd::tx_metadata_t metadata;
 	metadata.has_time_spec = true;
@@ -855,7 +825,7 @@ int uhd_device::writeSamples(short *buf, int len, bool *underrun,
 
 	size_t num_smpls = tx_stream->send(buf, len, metadata);
 
-	if (num_smpls != (unsigned) len) {
+	if (num_smpls != (unsigned)len) {
 		LOG(ALERT) << "UHD: Device send timed out";
 		LOG(ALERT) << "UHD: Version " << uhd::get_version_string();
 		LOG(ALERT) << "UHD: Unrecoverable error, exiting...";
@@ -865,10 +835,7 @@ int uhd_device::writeSamples(short *buf, int len, bool *underrun,
 	return num_smpls;
 }
 
-bool uhd_device::updateAlignment(TIMESTAMP timestamp)
-{
-	return true;
-}
+bool uhd_device::updateAlignment(TIMESTAMP timestamp) { return true; }
 
 bool uhd_device::setTxFreq(double wFreq)
 {
@@ -974,16 +941,12 @@ std::string uhd_device::str_code(uhd::async_metadata_t metadata)
 }
 
 smpl_buf::smpl_buf(size_t len, double rate)
-	: buf_len(len), clk_rt(rate),
-	  time_start(0), time_end(0), data_start(0), data_end(0)
+	: buf_len(len), clk_rt(rate), time_start(0), time_end(0), data_start(0), data_end(0)
 {
 	data = new uint32_t[len];
 }
 
-smpl_buf::~smpl_buf()
-{
-	delete[] data;
-}
+smpl_buf::~smpl_buf() { delete[] data; }
 
 ssize_t smpl_buf::avail_smpls(TIMESTAMP timestamp) const
 {
@@ -995,10 +958,7 @@ ssize_t smpl_buf::avail_smpls(TIMESTAMP timestamp) const
 		return time_end - timestamp;
 }
 
-ssize_t smpl_buf::avail_smpls(uhd::time_spec_t ts) const
-{
-	return avail_smpls(ts.to_ticks(clk_rt));
-}
+ssize_t smpl_buf::avail_smpls(uhd::time_spec_t ts) const { return avail_smpls(ts.to_ticks(clk_rt)); }
 
 ssize_t smpl_buf::read(void *buf, size_t len, TIMESTAMP timestamp)
 {
@@ -1029,7 +989,7 @@ ssize_t smpl_buf::read(void *buf, size_t len, TIMESTAMP timestamp)
 		size_t second_cp = len * type_sz - first_cp;
 
 		memcpy(buf, data + read_start, first_cp);
-		memcpy((char*) buf + first_cp, data, second_cp);
+		memcpy((char *)buf + first_cp, data, second_cp);
 	}
 
 	data_start = (read_start + len) % buf_len;
@@ -1041,10 +1001,7 @@ ssize_t smpl_buf::read(void *buf, size_t len, TIMESTAMP timestamp)
 		return num_smpls;
 }
 
-ssize_t smpl_buf::read(void *buf, size_t len, uhd::time_spec_t ts)
-{
-	return read(buf, len, ts.to_ticks(clk_rt));
-}
+ssize_t smpl_buf::read(void *buf, size_t len, uhd::time_spec_t ts) { return read(buf, len, ts.to_ticks(clk_rt)); }
 
 ssize_t smpl_buf::write(void *buf, size_t len, TIMESTAMP timestamp)
 {
@@ -1068,7 +1025,7 @@ ssize_t smpl_buf::write(void *buf, size_t len, TIMESTAMP timestamp)
 		size_t second_cp = len * type_sz - first_cp;
 
 		memcpy(data + write_start, buf, first_cp);
-		memcpy(data, (char*) buf + first_cp, second_cp);
+		memcpy(data, (char *)buf + first_cp, second_cp);
 	}
 
 	data_end = (write_start + len) % buf_len;
@@ -1082,10 +1039,7 @@ ssize_t smpl_buf::write(void *buf, size_t len, TIMESTAMP timestamp)
 		return len;
 }
 
-ssize_t smpl_buf::write(void *buf, size_t len, uhd::time_spec_t ts)
-{
-	return write(buf, len, ts.to_ticks(clk_rt));
-}
+ssize_t smpl_buf::write(void *buf, size_t len, uhd::time_spec_t ts) { return write(buf, len, ts.to_ticks(clk_rt)); }
 
 std::string smpl_buf::str_status() const
 {
@@ -1116,7 +1070,4 @@ std::string smpl_buf::str_code(ssize_t code)
 	}
 }
 
-RadioDevice *RadioDevice::make(int sps, bool skip_rx)
-{
-	return new uhd_device(sps, skip_rx);
-}
+RadioDevice *RadioDevice::make(int sps, bool skip_rx) { return new uhd_device(sps, skip_rx); }

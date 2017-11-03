@@ -13,14 +13,17 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 */
 
-#define LOG_GROUP LogGroup::GPRS		// Can set Log.Level.GPRS for debugging
+#define LOG_GROUP LogGroup::GPRS // Can set Log.Level.GPRS for debugging
 
-#include "BSSG.h"
 #include "BSSGMessages.h"
+#include "BSSG.h"
 #include "GPRSInternal.h"
 #include "Globals.h"
 #include "LLC.h"
-#define CASENAME(x) case x: return #x;
+
+#define CASENAME(x) \
+	case x: \
+		return #x;
 
 namespace BSSG {
 
@@ -68,9 +71,9 @@ const char *BSPDUType::name(int val)
 	}
 	return "unrecognized PDU";
 }
-std::ostream& operator<<(std::ostream& os, const BSPDUType::type val)
+std::ostream &operator<<(std::ostream &os, const BSPDUType::type val)
 {
-	os << "PDU_Type=" <<(int)val <<"=" <<BSPDUType::name(val);
+	os << "PDU_Type=" << (int)val << "=" << BSPDUType::name(val);
 	return os;
 }
 
@@ -155,9 +158,9 @@ const char *IEIType::name(int val)
 	}
 	return "unrecognized IEI";
 }
-std::ostream& operator<<(std::ostream& os, const IEIType::type val)
+std::ostream &operator<<(std::ostream &os, const IEIType::type val)
 {
-	os << "IEI_Type=" <<(int)val <<"=" <<IEIType::name(val);
+	os << "IEI_Type=" << (int)val << "=" << IEIType::name(val);
 	return os;
 }
 
@@ -177,9 +180,9 @@ const char *NSPDUType::name(int val)
 	}
 	return "unrecognized NSPDUType";
 }
-std::ostream& operator<<(std::ostream& os, const NSPDUType::type val)
+std::ostream &operator<<(std::ostream &os, const NSPDUType::type val)
 {
-	os << "NSPDU_Type=" <<(int)val <<"=" <<NSPDUType::name(val);
+	os << "NSPDU_Type=" << (int)val << "=" << NSPDUType::name(val);
 	return os;
 }
 
@@ -241,54 +244,55 @@ BSSGDownlinkMsg* BSSGDownlinkMessageParse(ByteVector&src)
 
 void BSSGMsgDLUnitData::parseDLUnitDataBody(ByteVector &src, size_t &wp)
 {
-	wp++;	// Skip over the pdutype.
-	mbdTLLI = src.getUInt32(wp); wp+=4;
-	mbdQoS.qosRead(src,wp);
+	wp++; // Skip over the pdutype.
+	mbdTLLI = src.getUInt32(wp);
+	wp += 4;
+	mbdQoS.qosRead(src, wp);
 	// The rest of the fields use TLV format:
-	unsigned len = src.size() - 1;	// wp cant actually get anywhere near size() because
-				// the TLV headers take at least 2 bytes.
+	unsigned len = src.size() - 1; // wp cant actually get anywhere near size() because
+				       // the TLV headers take at least 2 bytes.
 	while (wp < len) {
 		unsigned iei = src.getByte(wp++);
 		unsigned length = src.readLI(wp);
 		unsigned nextwp = wp + length;
 		switch (iei) {
-			case IEIType::PDULifetime:
-				mbdPDULifetime = src.getUInt16(wp);
-				break;
-			case IEIType::IMSI:
-				mbdIMSI.set(src.segment(wp,length));
-				break;
-			case IEIType::MSRadioAccessCapability:
-				mbdRACap.set(src.segment(wp,length));
-				break;
-			case IEIType::LLCPDU:
-				// Finally, here is the data:
-				mbdPDU.set(src.segment(wp,length));
-				goto done;
-			case IEIType::TLLI:		// old TLLI
-				mbdHaveOldTLLI = true;
-				mbdOldTLLI = src.getUInt32(wp);
-				break;
+		case IEIType::PDULifetime:
+			mbdPDULifetime = src.getUInt16(wp);
+			break;
+		case IEIType::IMSI:
+			mbdIMSI.set(src.segment(wp, length));
+			break;
+		case IEIType::MSRadioAccessCapability:
+			mbdRACap.set(src.segment(wp, length));
+			break;
+		case IEIType::LLCPDU:
+			// Finally, here is the data:
+			mbdPDU.set(src.segment(wp, length));
+			goto done;
+		case IEIType::TLLI: // old TLLI
+			mbdHaveOldTLLI = true;
+			mbdOldTLLI = src.getUInt32(wp);
+			break;
 
-			case IEIType::Priority:
-			case IEIType::DRXParameters:
-			case IEIType::PacketFlowIdentifier:
-			case IEIType::LSAInformation:
-			case IEIType::AlignmentOctets:
-			default:
-				// ignored.
-				break;
+		case IEIType::Priority:
+		case IEIType::DRXParameters:
+		case IEIType::PacketFlowIdentifier:
+		case IEIType::LSAInformation:
+		case IEIType::AlignmentOctets:
+		default:
+			// ignored.
+			break;
 		}
 		wp = nextwp;
 	}
-	done:;
+done:;
 	//...
 }
 
-//std::ostream& operator<<(std::ostream& os, const BSSGMsgDLUnitData &val)
+// std::ostream& operator<<(std::ostream& os, const BSSGMsgDLUnitData &val)
 //{
-	//val.text(os);
-	//return os;
+// val.text(os);
+// return os;
 //}
 
 static void NsAddCause(ByteVector *vec, unsigned cause)
@@ -298,7 +302,7 @@ static void NsAddCause(ByteVector *vec, unsigned cause)
 	vec->appendByte(cause);
 }
 
-static void NsAddBVCI(ByteVector *vec, BVCI::type  bvci)
+static void NsAddBVCI(ByteVector *vec, BVCI::type bvci)
 {
 	vec->appendByte(NsIEIType::IEINsBVCI);
 	vec->appendLI(2);
@@ -321,14 +325,14 @@ static void NsAddNSEI(ByteVector *vec)
 
 NSMsg *NsFactory(NSPDUType::type nstype, int cause)
 {
-	NSMsg *vec = new NSMsg(80);	// Big enough for any message.
+	NSMsg *vec = new NSMsg(80); // Big enough for any message.
 
-	vec->setAppendP(0);			// Setup vec for appending.
-	vec->appendByte(nstype);	// First byte of message is NS PDUType.
+	vec->setAppendP(0);      // Setup vec for appending.
+	vec->appendByte(nstype); // First byte of message is NS PDUType.
 
 	switch (nstype) {
 	case NSPDUType::NS_RESET:
-		NsAddCause(vec,cause);
+		NsAddCause(vec, cause);
 		NsAddVCI(vec);
 		NsAddNSEI(vec);
 		break;
@@ -337,50 +341,51 @@ NSMsg *NsFactory(NSPDUType::type nstype, int cause)
 		NsAddNSEI(vec);
 		break;
 	case NSPDUType::NS_BLOCK:
-		NsAddCause(vec,cause);
+		NsAddCause(vec, cause);
 		NsAddVCI(vec);
 		break;
 	case NSPDUType::NS_BLOCK_ACK:
 		NsAddVCI(vec);
 		break;
 	case NSPDUType::NS_UNBLOCK:
-		break;	// 1 byte messages is finished.
+		break; // 1 byte messages is finished.
 	case NSPDUType::NS_UNBLOCK_ACK:
-		break;	// 1 byte messages is finished.
+		break; // 1 byte messages is finished.
 	case NSPDUType::NS_STATUS:
-		NsAddCause(vec,cause);
+		NsAddCause(vec, cause);
 		switch (cause) {
-			case NsCause::NSVCBlocked:
-			case NsCause::NSVCUnknown:
-				NsAddVCI(vec);
-				break;
-			case NsCause::SemanticallyIncorrectPDU:
-			case NsCause::PduNotCompatible:
-			case NsCause::ProtocolError:
-			case NsCause::InvalidEssentialIE:
-			case NsCause::MissingEssentialIE:
-				// unimplemented.
-				assert(0);	// In these cases need to append PDU.
+		case NsCause::NSVCBlocked:
+		case NsCause::NSVCUnknown:
+			NsAddVCI(vec);
+			break;
+		case NsCause::SemanticallyIncorrectPDU:
+		case NsCause::PduNotCompatible:
+		case NsCause::ProtocolError:
+		case NsCause::InvalidEssentialIE:
+		case NsCause::MissingEssentialIE:
+			// unimplemented.
+			assert(0); // In these cases need to append PDU.
 
-			case NsCause::BVCIUnknown:
-				// We dont really know what the cause was,
-				// and this wont happen, so just make up a BVCI
-				NsAddBVCI(vec,BVCI::PTP);
-				break;
-			case NsCause::TransitNetworkFailure:
-			case NsCause::OAndMIntervention:
-			case NsCause::EquipmentFailure:
-				break;	// nothing more needed.
+		case NsCause::BVCIUnknown:
+			// We dont really know what the cause was,
+			// and this wont happen, so just make up a BVCI
+			NsAddBVCI(vec, BVCI::PTP);
+			break;
+		case NsCause::TransitNetworkFailure:
+		case NsCause::OAndMIntervention:
+		case NsCause::EquipmentFailure:
+			break; // nothing more needed.
 		}
 		break;
 	case NSPDUType::NS_ALIVE:
-		break;	// 1 byte messages is finished.
+		break; // 1 byte messages is finished.
 	case NSPDUType::NS_ALIVE_ACK:
-		break;	// 1 byte messages is finished.
+		break; // 1 byte messages is finished.
 
 	case NSPDUType::NS_UNITDATA:
-		assert(0);		// Not handled by this routine.
-	default: assert(0);
+		assert(0); // Not handled by this routine.
+	default:
+		assert(0);
 	}
 	return vec;
 }
@@ -414,13 +419,13 @@ static void BVCAddCellIdentifier(ByteVector *vec)
 	// Add Routing Area Identification IE from GSM 04.08 10.5.5.15, excluding IEI type and length bytes.
 	// Another fine example of Object Oriented programming preventing sharing of code:
 	// this information is wrapped up in the middle of an inapplicable class hierarchy.
-	const char*mMCC = gConfig.getStr("GSM.Identity.MCC").c_str();
-	const char*mMNC = gConfig.getStr("GSM.Identity.MNC").c_str();
+	const char *mMCC = gConfig.getStr("GSM.Identity.MCC").c_str();
+	const char *mMNC = gConfig.getStr("GSM.Identity.MNC").c_str();
 	unsigned mLAC = gConfig.getNum("GSM.Identity.LAC");
 	unsigned mRAC = gConfig.getNum("GPRS.RAC");
-	vec->appendByte(((mMCC[1]-'0')<<4) | (mMCC[0]-'0'));	// MCC digit 2, MCC digit 1
-	vec->appendByte(((mMNC[2]-'0')<<4) | (mMCC[2]-'0'));	// MNC digit 3, MCC digit 3
-	vec->appendByte(((mMNC[1]-'0')<<4) | (mMNC[0]-'0')); // MNC digit 2, MNC digit 1
+	vec->appendByte(((mMCC[1] - '0') << 4) | (mMCC[0] - '0')); // MCC digit 2, MCC digit 1
+	vec->appendByte(((mMNC[2] - '0') << 4) | (mMCC[2] - '0')); // MNC digit 3, MCC digit 3
+	vec->appendByte(((mMNC[1] - '0') << 4) | (mMNC[0] - '0')); // MNC digit 2, MNC digit 1
 	vec->appendUInt16(mLAC);
 	vec->appendByte(mRAC);
 	// Add Routing Area Identification IE from GSM 04.08 10.5.5.15, excluding IEI type and length bytes.
@@ -432,16 +437,16 @@ static void BVCAddCellIdentifier(ByteVector *vec)
 // GSM 08.18 sec 10 describes the PDU messages that the SGSN can send to the BSS.
 // Cause values: 08.18 sec 11.3.8
 BSSGUplinkMsg *BVCFactory(BSPDUType::type bstype,
-	int arg1)	// For reset, the bvci to reset; for others may be cause or tag .
+			  int arg1) // For reset, the bvci to reset; for others may be cause or tag .
 {
-	BSSGUplinkMsg *vec = new BSSGUplinkMsg(80);	// Big enough for any message.
+	BSSGUplinkMsg *vec = new BSSGUplinkMsg(80); // Big enough for any message.
 	BVCI::type bvci;
 
-	vec->setAppendP(0);			// Setup vec for appending.
+	vec->setAppendP(0); // Setup vec for appending.
 
 	// Add the NS header.
 	vec->appendByte(NSPDUType::NS_UNITDATA);
-	vec->appendByte(0);	// unused byte.
+	vec->appendByte(0); // unused byte.
 	vec->appendUInt16(gBSSG.mbsNSEI);
 	// Add the BSSG message type
 	vec->appendByte((ByteType)bstype);
@@ -449,34 +454,35 @@ BSSGUplinkMsg *BVCFactory(BSPDUType::type bstype,
 	switch (bstype) {
 	case BSPDUType::BVC_RESET:
 		// See GSM 08.18 sec 8.4: BVC-RESET procedure; and 10.4.12: BVC-RESET message.
-		bvci = (BVCI::type) arg1;
+		bvci = (BVCI::type)arg1;
 		vec->appendByte(IEIType::BVCI);
 		vec->appendLI(2);
 		vec->appendUInt16(bvci);
-		BVCAddCause(vec,0x8);	// Cause 8: O&M Intervention
+		BVCAddCause(vec, 0x8); // Cause 8: O&M Intervention
 		if (bvci != BVCI::SIGNALLING) {
 			BVCAddCellIdentifier(vec);
 		}
 		// We dont use the feature bitmap.
 		break;
 	case BSPDUType::BVC_RESET_ACK:
-		BVCAddBVCI(vec,bstype);
+		BVCAddBVCI(vec, bstype);
 		// There could be a cell identifier
 		// There coulde be a feature bitmap.
 		break;
 	case BSPDUType::BVC_BLOCK:
-		BVCAddBVCI(vec,bstype);
-		BVCAddCause(vec,arg1);
+		BVCAddBVCI(vec, bstype);
+		BVCAddCause(vec, arg1);
 		break;
-	case BSPDUType::BVC_BLOCK_ACK:	// fall through
-	case BSPDUType::BVC_UNBLOCK:	// fall through
+	case BSPDUType::BVC_BLOCK_ACK: // fall through
+	case BSPDUType::BVC_UNBLOCK:   // fall through
 	case BSPDUType::BVC_UNBLOCK_ACK:
-		BVCAddBVCI(vec,bstype);
+		BVCAddBVCI(vec, bstype);
 		break;
 	case BSPDUType::FLOW_CONTROL_BVC_ACK:
-		BVCAddTag(vec,arg1);
+		BVCAddTag(vec, arg1);
 		break;
-	default: assert(0);
+	default:
+		assert(0);
 	}
 	return vec;
 }
@@ -491,50 +497,48 @@ BSSGUplinkMsg *BVCFactory(BSPDUType::type bstype,
 // so the upper most bit is 0 if the value is <= 32767
 static unsigned IEILength(unsigned int len)
 {
-	if (len < 127) return 0x80 + len;
+	if (len < 127)
+		return 0x80 + len;
 	assert(0);
 }
 
-
-void NSMsg::textNSHeader(std::ostream&os) const
+void NSMsg::textNSHeader(std::ostream &os) const
 {
 	int nstype = (int)getNSPDUType();
 	if (nstype == NSPDUType::NS_UNITDATA) {
-		os <<"NSPDUType="<<nstype <<"="<<NSPDUType::name(nstype)<<" BVCI="<<getUInt16(2);
+		os << "NSPDUType=" << nstype << "=" << NSPDUType::name(nstype) << " BVCI=" << getUInt16(2);
 	} else {
-		os <<"NSPDUType="<<nstype <<"="<<NSPDUType::name(nstype);
+		os << "NSPDUType=" << nstype << "=" << NSPDUType::name(nstype);
 		// The rest of the message is not interesting to us, so dont bother.
 	}
 }
 
-void NSMsg::text(std::ostream&os) const
+void NSMsg::text(std::ostream &os) const
 {
-	os <<" NSMsg:"; textNSHeader(os);
+	os << " NSMsg:";
+	textNSHeader(os);
 }
 
-void BSSGMsg::text(std::ostream&os) const
+void BSSGMsg::text(std::ostream &os) const
 {
 	textNSHeader(os);
-	os << " BSPDUType="<<getPDUType() <<" size="<<size();
+	os << " BSPDUType=" << getPDUType() << " size=" << size();
 }
 
-std::string BSSGMsg::briefDescription() const
-{
-	return BSPDUType::name(getPDUType());
-}
+std::string BSSGMsg::briefDescription() const { return BSPDUType::name(getPDUType()); }
 
-BSSGMsgULUnitData::BSSGMsgULUnitData(unsigned wLen,	// Length of the PDU to be sent.
-	uint32_t wTLLI)
+BSSGMsgULUnitData::BSSGMsgULUnitData(unsigned wLen, // Length of the PDU to be sent.
+				     uint32_t wTLLI)
 	: BSSGUplinkMsg(wLen + HeaderLength)
 {
-	QoSProfile qos;	// Both we and the SGSN ignore the contents of this.
-					// Note there is a different QoS format included in
-					// PDP Context activation messages.
+	QoSProfile qos; // Both we and the SGSN ignore the contents of this.
+			// Note there is a different QoS format included in
+			// PDP Context activation messages.
 
-	setAppendP(0);			// Setup vec for appending.
+	setAppendP(0); // Setup vec for appending.
 	// Write the NS header.
 	appendByte(NSPDUType::NS_UNITDATA);
-	appendByte(0);	// unused byte.
+	appendByte(0); // unused byte.
 	// The NS UNITDATA message puts the BVCI in the NS header where the NSEI normally goes.
 	appendUInt16(gBSSG.mbsBVCI);
 	// End of NS Header, start of BSSG message.
@@ -550,8 +554,8 @@ BSSGMsgULUnitData::BSSGMsgULUnitData(unsigned wLen,	// Length of the PDU to be s
 	appendByte(IEIType::LLCPDU);
 	// We are allowed to use a 16 bit length IEI even for elements
 	// less than 128 bytes long, so we will.
-	mLengthPosition = size();		// Where the length goes.
-	appendUInt16(0);	// A spot for the length.
+	mLengthPosition = size(); // Where the length goes.
+	appendUInt16(0);	  // A spot for the length.
 	// Followed by the PDU data.
 	assert(size() == HeaderLength);
 }
@@ -562,28 +566,28 @@ void BSSGMsgULUnitData::setLength()
 	// The PDU begins immediately after the 2 byte length.
 	assert(size() >= HeaderLength);
 	unsigned pdulen = size() - HeaderLength;
-	GPRSLOG(1) << "setLength:"<<LOGVAR(pdulen) << LOGVAR(mLengthPosition) << LOGVAR(size());
-	setUInt16(mLengthPosition,pdulen);
+	GPRSLOG(1) << "setLength:" << LOGVAR(pdulen) << LOGVAR(mLengthPosition) << LOGVAR(size());
+	setUInt16(mLengthPosition, pdulen);
 }
 
-void BSSGMsgULUnitData::text(std::ostream&os) const
+void BSSGMsgULUnitData::text(std::ostream &os) const
 {
-	os <<"BSSGMsgULUnitData=("; 
-	os <<"tbf=TBF#"<<mTBFId<<" ";
+	os << "BSSGMsgULUnitData=(";
+	os << "tbf=TBF#" << mTBFId << " ";
 	BSSGUplinkMsg::text(os);
 	unsigned TLLI = getTLLI();
 	os << LOGHEX(TLLI);
 	// The payload is 0 length only during debugging when we send in empty messages.
 	ByteVector payload(tail(HeaderLength));
 	if (payload.size()) {
-		//GPRS::LLCFrame llcmsg(*const_cast<BSSGMsgULUnitData*>(this));
-		os << " LLC UL payload="<<payload;
+		// GPRS::LLCFrame llcmsg(*const_cast<BSSGMsgULUnitData*>(this));
+		os << " LLC UL payload=" << payload;
 		SGSN::LlcFrameDump llcmsg(payload);
 		os << " ";
 		llcmsg.text(os);
 	}
-	//os << " payload=" <<payload;
-	os <<")";
+	// os << " payload=" <<payload;
+	os << ")";
 }
 
 std::string BSSGMsgDLUnitData::briefDescription() const
@@ -591,7 +595,7 @@ std::string BSSGMsgDLUnitData::briefDescription() const
 	std::ostringstream ss;
 	if (mbdPDU.size()) {
 		SGSN::LlcFrameDump llcmsg(mbdPDU);
-		llcmsg.textContent(ss,false);
+		llcmsg.textContent(ss, false);
 	}
 	return ss.str();
 }
@@ -600,20 +604,22 @@ void BSSGMsgDLUnitData::text(std::ostream &os) const
 {
 	os << "BSSGMsgDLUnitData:";
 	BSSGDownlinkMsg::text(os);
-	os << " BSPDUType="<<getPDUType();
-	os<<LOGHEX(mbdTLLI) <<LOGVAR(mbdPDULifetime);
-	os <<" QoS skipped"; // Skip qos for now.
-	if (mbdHaveOldTLLI) { os << LOGHEX(mbdOldTLLI); }
-	os <<" RACap=(" <<mbdRACap <<")";
-	os <<" IMSI=(" <<mbdIMSI <<")";
-	//os <<" PDU=(" <<mbdPDU <<")";
+	os << " BSPDUType=" << getPDUType();
+	os << LOGHEX(mbdTLLI) << LOGVAR(mbdPDULifetime);
+	os << " QoS skipped"; // Skip qos for now.
+	if (mbdHaveOldTLLI) {
+		os << LOGHEX(mbdOldTLLI);
+	}
+	os << " RACap=(" << mbdRACap << ")";
+	os << " IMSI=(" << mbdIMSI << ")";
+	// os <<" PDU=(" <<mbdPDU <<")";
 	if (mbdPDU.size()) {
-		os << " LLC DL payload="<<mbdPDU;
+		os << " LLC DL payload=" << mbdPDU;
 		SGSN::LlcFrameDump llcmsg(mbdPDU);
 		os << " ";
 		llcmsg.text(os);
 	}
-	os <<"\n";
+	os << "\n";
 }
 
-};
+}; // namespace BSSG

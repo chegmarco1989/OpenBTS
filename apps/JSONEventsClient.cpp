@@ -13,10 +13,10 @@
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 */
 
-
+#include <cstdlib>
 #include <iostream>
 #include <sstream>
-#include <cstdlib>
+
 #include <zmq.hpp>
 
 int main(int argc, char **argv)
@@ -31,10 +31,12 @@ int main(int argc, char **argv)
 		try {
 			zmq::message_t event;
 			targetPublisher.recv(&event);
-			std::cout << std::string(static_cast<char*>(event.data()), event.size()) << std::endl;
+			std::cout << std::string(static_cast<char *>(event.data()), event.size()) << std::endl;
 
-		} catch(const zmq::error_t& e) {
+		} catch (const zmq::error_t &e) {
 			std::cout << "!! exception !!" << std::endl;
 		}
 	}
+
+	return 0;
 }

@@ -21,7 +21,7 @@
 
 #include "radioClock.h"
 
-void RadioClock::set(const GSM::Time& wTime)
+void RadioClock::set(const GSM::Time &wTime)
 {
 	mLock.lock();
 	mClock = wTime;
@@ -49,6 +49,6 @@ GSM::Time RadioClock::get()
 void RadioClock::wait()
 {
 	mLock.lock();
-	updateSignal.wait(mLock,1);
+	updateSignal.wait(mLock, 1);
 	mLock.unlock();
 }

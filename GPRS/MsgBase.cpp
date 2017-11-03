@@ -13,7 +13,7 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 */
 
-#define LOG_GROUP LogGroup::GPRS		// Can set Log.Level.GPRS for debugging
+#define LOG_GROUP LogGroup::GPRS // Can set Log.Level.GPRS for debugging
 
 #include <stdio.h>
 
@@ -24,46 +24,55 @@ void MsgCommonLength::_define_vtable() {}
 void MsgCommonText::_define_vtable() {}
 
 // Copied from same functions in L3Frame:
-static const unsigned fillPattern[8] = {0,0,1,0,1,0,1,1};
+static const unsigned fillPattern[8] = {0, 0, 1, 0, 1, 0, 1, 1};
 
-void MsgCommonWrite::writeField(const ItemWithValueAndWidth&item,const char*)
+void MsgCommonWrite::writeField(const ItemWithValueAndWidth &item, const char *)
 {
-	mResult.writeField(wp,item.getValue(),item.getWidth());
+	mResult.writeField(wp, item.getValue(), item.getWidth());
 }
 
 void MsgCommonWrite::writeField(uint64_t value, unsigned len, const char *, Type2Str)
 {
-	mResult.writeField(wp,value,len);
+	mResult.writeField(wp, value, len);
 }
 
 void MsgCommonWrite::writeOptFieldLH(uint64_t value, unsigned len, int present, const char *)
 {
-	if (present) { writeH(); writeField(value,len); } else { writeL(); }
+	if (present) {
+		writeH();
+		writeField(value, len);
+	} else {
+		writeL();
+	}
 }
 
 // pat added: write an Optional Field controlled by an initial 0/1 field.
-void MsgCommonWrite::writeOptField01(uint64_t value, unsigned len, int present, const char*)
+void MsgCommonWrite::writeOptField01(uint64_t value, unsigned len, int present, const char *)
 {
-	if (present) { write1(); writeField(value,len); } else { write0(); }
+	if (present) {
+		write1();
+		writeField(value, len);
+	} else {
+		write0();
+	}
 }
 
 void MsgCommonWrite::writeH()
 {
-	unsigned fillBit = fillPattern[wp%8];	// wp is in MsgCommon
-	writeField(!fillBit,1);
+	unsigned fillBit = fillPattern[wp % 8]; // wp is in MsgCommon
+	writeField(!fillBit, 1);
 }
-
 
 void MsgCommonWrite::writeL()
 {
-	unsigned fillBit = fillPattern[wp%8];	// wp is in MsgCommon
-	writeField(fillBit,1);
+	unsigned fillBit = fillPattern[wp % 8]; // wp is in MsgCommon
+	writeField(fillBit, 1);
 }
 
-void MsgCommonWrite::writeBitMap(bool*bitmap,unsigned bitmaplen, const char*name)
+void MsgCommonWrite::writeBitMap(bool *bitmap, unsigned bitmaplen, const char *name)
 {
-	for (unsigned i=0; i<bitmaplen; i++) {
-		writeField(bitmap[i],1,name);
+	for (unsigned i = 0; i < bitmaplen; i++) {
+		writeField(bitmap[i], 1, name);
 	}
 }
 
@@ -82,21 +91,21 @@ static void truncateredundant(char *str, int len)
 }
 #endif
 
-#define TOHEX(v) ((v) + ((v) < 10 ? '0' : ('a'-10)))
-void MsgCommonText::writeBitMap(bool*bitmap,unsigned bitmaplen, const char*name)
+#define TOHEX(v) ((v) + ((v) < 10 ? '0' : ('a' - 10)))
+void MsgCommonText::writeBitMap(bool *bitmap, unsigned bitmaplen, const char *name)
 {
-	char txtbits[bitmaplen+6], *tp = txtbits;
+	char txtbits[bitmaplen + 6], *tp = txtbits;
 	unsigned i, accum = 0;
-	for (i=0; i<bitmaplen; i++) {
-		accum = (accum<<1) + (bitmap[i] ? 1 : 0);
-		if (((i+1) & 3) == 0) {
+	for (i = 0; i < bitmaplen; i++) {
+		accum = (accum << 1) + (bitmap[i] ? 1 : 0);
+		if (((i + 1) & 3) == 0) {
 			*tp++ = TOHEX(accum);
 			accum = 0;
 		}
 	}
-	//if (i & 3) { *tp++ = TOHEX(accum); }  Our bitmap is always evenly % 4, so dont bother.
+	// if (i & 3) { *tp++ = TOHEX(accum); }  Our bitmap is always evenly % 4, so dont bother.
 	*tp = 0;
-	//truncateredundant(txtbits,bitmaplen);
+	// truncateredundant(txtbits,bitmaplen);
 	mos << " " << name << "=(" << txtbits << ")";
 }
 
@@ -104,6 +113,6 @@ void MsgCommonText::writeBitMap(bool*bitmap,unsigned bitmaplen, const char*name)
 const char *tohex(int val)
 {
 	static char buf[20];
-	sprintf(buf,"0x%x",val);
+	sprintf(buf, "0x%x", val);
 	return buf;
 }

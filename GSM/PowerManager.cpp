@@ -2,7 +2,8 @@
 * Copyright 2009 Free Software Foundation, Inc.
 * Copyright 2014 Range Networks, Inc.
 *
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing information for this specific distribution.
+* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
+information for this specific distribution.
 *
 * This use of this software may be subject to additional restrictions.
 * See the LEGAL file in the main directory for details.
@@ -14,13 +15,13 @@
 */
 
 #include "PowerManager.h"
+#include <ControlCommon.h>
+#include <GSMConfig.h>
 #include <Logger.h>
 #include <OpenBTSConfig.h>
-#include <GSMConfig.h>
 #include <TRXManager.h>
-#include <ControlCommon.h>
 
-#define LOG_GROUP LogGroup::GSM		// Can set Log.Level.GSM for debugging
+#define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
 extern TransceiverManager gTRX;
 
@@ -28,20 +29,19 @@ namespace GSM {
 
 PowerManager gPowerManager;
 
-
 void PowerManager::pmSetAttenDirect(int atten)
 {
 	mRadio->setPower(atten);
 	mAtten = atten;
-	LOG(INFO) << "setting power to -" << mAtten << " dB at uptime="<<gBTS.uptime();
+	LOG(INFO) << "setting power to -" << mAtten << " dB at uptime=" << gBTS.uptime();
 }
 
 void PowerManager::pmSetAtten(int atten)
 {
-	if (atten != mAtten) { pmSetAttenDirect(atten); }
+	if (atten != mAtten) {
+		pmSetAttenDirect(atten);
+	}
 }
-
-
 
 void PowerManager::pmStart()
 {
@@ -50,6 +50,4 @@ void PowerManager::pmStart()
 	pmSetAttenDirect(gConfig.getNum("GSM.Radio.PowerManager.MaxAttenDB"));
 }
 
-};
-
-// vim: ts=4 sw=4
+}; // namespace GSM

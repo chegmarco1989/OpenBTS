@@ -22,15 +22,15 @@
 #ifndef RADIOVECTOR_H
 #define RADIOVECTOR_H
 
-#include "sigProcLib.h"
 #include "GSMCommon.h"
+#include "sigProcLib.h"
 
 class radioVector : public signalVector {
 public:
-	radioVector(const signalVector& wVector, GSM::Time& wTime);
+	radioVector(const signalVector &wVector, GSM::Time &wTime);
 	GSM::Time getTime() const;
-	void setTime(const GSM::Time& wTime);
-	bool operator>(const radioVector& other) const;
+	void setTime(const GSM::Time &wTime);
+	bool operator>(const radioVector &other) const;
 
 private:
 	GSM::Time mTime;
@@ -59,8 +59,8 @@ private:
 class VectorQueue : public InterthreadPriorityQueue<radioVector> {
 public:
 	GSM::Time nextTime() const;
-	radioVector* getStaleBurst(const GSM::Time& targTime);
-	radioVector* getCurrentBurst(const GSM::Time& targTime);
+	radioVector *getStaleBurst(const GSM::Time &targTime);
+	radioVector *getCurrentBurst(const GSM::Time &targTime);
 };
 
 #endif /* RADIOVECTOR_H */

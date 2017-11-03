@@ -3,7 +3,8 @@
 * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
 * Copyright 2014 Range Networks, Inc.
 *
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing information for this specific distribution.
+* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
+information for this specific distribution.
 *
 * This use of this software may be subject to additional restrictions.
 * See the LEGAL file in the main directory for details.
@@ -14,17 +15,12 @@
 
 */
 
-
-
 #ifndef GSMTDMA_H
 #define GSMTDMA_H
 
-
 #include "GSMCommon.h"
 
-
 namespace GSM {
-
 
 /**
 	A description of a channel's multiplexing pattern.
@@ -43,27 +39,22 @@ namespace GSM {
 */
 class TDMAMapping {
 
-	public:
-
+public:
 	/// The longest "repeat length" of any channel we support is 104 for the SACCH/TF.
 	static const unsigned mMaxRepeatLength = 104;
 
-	private:
+private:
+	TypeAndOffset mTypeAndOffset;		    ///< col 1, 2, encoded as per GSM 04.08 10.5.2.5
+	bool mDownlink;				    ///< col 3, true for downlink channels
+	bool mUplink;				    ///< col 3, true for uplink channels
+	char mAllowedSlots;			    ///< col 4, an 8-bit mask
+	bool mC0Only;				    ///< col 5, true if channel is limited to C0
+	unsigned mRepeatLength;			    ///< col 7
+	unsigned mNumFrames;			    ///< number of occupied frames in col 8
+	const unsigned *mFrameMapping;		    ///< col 8
+	unsigned mReverseMapping[mMaxRepeatLength]; ///< index reversal of mapping, -1 means unused
 
-	TypeAndOffset mTypeAndOffset;				///< col 1, 2, encoded as per GSM 04.08 10.5.2.5
-	bool mDownlink;								///< col 3, true for downlink channels
-	bool mUplink;								///< col 3, true for uplink channels
-	char mAllowedSlots;							///< col 4, an 8-bit mask
-	bool mC0Only;								///< col 5, true if channel is limited to C0
-	unsigned mRepeatLength;						///< col 7
-	unsigned mNumFrames;						///< number of occupied frames in col 8
-	const unsigned *mFrameMapping;				///< col 8
-	unsigned mReverseMapping[mMaxRepeatLength];	///< index reversal of mapping, -1 means unused
-
-
-	public:
-
-
+public:
 	/**
 		Construct a TDMAMapping, encoding one line of GSM 05.02 Clause 7 Tables 1-4.
 		@param wTypeAndOffset Encoding of "Channel designnation".  See GSM 04.08 10.5.2.5.
@@ -73,17 +64,14 @@ class TDMAMapping {
 		@param wNumFrames Number of occupied TDMA frames in frame mapping.
 		@param wFrameMapping "Interleaved Block TDMA Frame Mapping" -- MUST PERSIST!!
 	*/
-	TDMAMapping(TypeAndOffset wTypeAndOffset,
-		bool wDownlink, bool wUplink, char wAllowedSlots, bool wC0Only,
-		unsigned wRepeatLength, unsigned wNumFrames, const unsigned *wFrameMapping);
+	TDMAMapping(TypeAndOffset wTypeAndOffset, bool wDownlink, bool wUplink, char wAllowedSlots, bool wC0Only,
+		    unsigned wRepeatLength, unsigned wNumFrames, const unsigned *wFrameMapping);
 
 	/** Given a count of frames sent, return the corresponding frame number. */
-	unsigned frameMapping(unsigned count) const
-		{ return mFrameMapping[count % mNumFrames]; }
+	unsigned frameMapping(unsigned count) const { return mFrameMapping[count % mNumFrames]; }
 
 	/** Given a frame number, return the corresponding count, modulo patten length. */
-	int reverseMapping(unsigned FN) const
-		{ return mReverseMapping[FN % mRepeatLength]; }
+	int reverseMapping(unsigned FN) const { return mReverseMapping[FN % mRepeatLength]; }
 
 	/**@name Simple accessors. */
 	//@{
@@ -101,19 +89,16 @@ class TDMAMapping {
 	//@}
 
 	///< Return true if this channel is allowed on this slot.
-	bool allowedSlot(unsigned slot) const
-		{ return mAllowedSlots & (1<<slot); }
+	bool allowedSlot(unsigned slot) const { return mAllowedSlots & (1 << slot); }
 };
-
-
 
 /**@name Mux parameters for standard channels, from GSM 05.03 Clause 7 Tables 1-4. */
 //@{
 /**@name Beacon channels */
 //@{
-extern const TDMAMapping gFCCHMapping;		///< GSM 05.02 Clause 7 Table 3 Line 1 B0-B4
-extern const TDMAMapping gSCHMapping;		///< GSM 05.02 Clause 7 Table 3 Line 2 B0-B4
-extern const TDMAMapping gBCCHMapping;		///< GSM 05.02 Clause 7 Table 3 Line 3
+extern const TDMAMapping gFCCHMapping; ///< GSM 05.02 Clause 7 Table 3 Line 1 B0-B4
+extern const TDMAMapping gSCHMapping;  ///< GSM 05.02 Clause 7 Table 3 Line 2 B0-B4
+extern const TDMAMapping gBCCHMapping; ///< GSM 05.02 Clause 7 Table 3 Line 3
 /// GSM 05.02 Clause 7 Table 3 Line 7 B0-B50, excluding C-V SDCCH parts (SDCCH/4 and SCCH/C4)
 extern const TDMAMapping gRACHC5Mapping;
 extern const TDMAMapping gCCCH_C5Mapping;
@@ -122,8 +107,8 @@ extern const TDMAMapping gCCCH_C5Mapping;
 //@{
 ///@name For Combination V
 //@{
-extern const TDMAMapping gSDCCH_4_0DMapping;	///< GSM 05.02 Clause 7 Table 3 Line 10/0D
-extern const TDMAMapping gSDCCH_4_0UMapping;	///< GSM 05.02 Clause 7 Table 3 Line 10/0U
+extern const TDMAMapping gSDCCH_4_0DMapping; ///< GSM 05.02 Clause 7 Table 3 Line 10/0D
+extern const TDMAMapping gSDCCH_4_0UMapping; ///< GSM 05.02 Clause 7 Table 3 Line 10/0U
 extern const TDMAMapping gSDCCH_4_1DMapping;
 extern const TDMAMapping gSDCCH_4_1UMapping;
 extern const TDMAMapping gSDCCH_4_2DMapping;
@@ -208,30 +193,23 @@ extern const TDMAMapping gLoopbackTestHalfUMapping;
 extern const TDMAMapping gLoopbackTestHalfDMapping;
 //@}
 
-
 /** Combined uplink/downlink information. */
 class MappingPair {
 
-	private:
+private:
+	const TDMAMapping &mDownlink;
+	const TDMAMapping &mUplink;
 
-	const TDMAMapping& mDownlink;
-	const TDMAMapping& mUplink;
+public:
+	MappingPair(const TDMAMapping &wDownlink, const TDMAMapping &wUplink) : mDownlink(wDownlink), mUplink(wUplink)
+	{
+	}
 
-	public:
+	MappingPair(const TDMAMapping &wMapping) : mDownlink(wMapping), mUplink(wMapping) {}
 
-	MappingPair(const TDMAMapping& wDownlink, const TDMAMapping& wUplink)
-		:mDownlink(wDownlink), mUplink(wUplink)
-	{}
-
-	MappingPair(const TDMAMapping& wMapping)
-		:mDownlink(wMapping), mUplink(wMapping)
-	{}
-
-	const TDMAMapping& downlink() const { return mDownlink; }
-	const TDMAMapping& uplink() const { return mUplink; }
-
+	const TDMAMapping &downlink() const { return mDownlink; }
+	const TDMAMapping &uplink() const { return mUplink; }
 };
-
 
 /**@name Common placement pairs. */
 //@{
@@ -279,28 +257,19 @@ extern const MappingPair gSACCH_FT_T7Pair;
 //@}
 //@}
 
-
-
 /** A CompleteMapping includes uplink, downlink and the SACCH. */
 class CompleteMapping {
 
-	private:
+private:
+	const MappingPair &mLCH;
+	const MappingPair &mSACCH;
 
-	const MappingPair& mLCH;
-	const MappingPair& mSACCH;
+public:
+	CompleteMapping(const MappingPair &wLCH, const MappingPair &wSACCH) : mLCH(wLCH), mSACCH(wSACCH) {}
 
-	public:
-
-	CompleteMapping(const MappingPair& wLCH, const MappingPair& wSACCH)
-		:mLCH(wLCH), mSACCH(wSACCH)
-	{}
-
-	const MappingPair& LCH() const { return mLCH; }
-	const MappingPair& SACCH() const { return mSACCH; }
-
+	const MappingPair &LCH() const { return mLCH; }
+	const MappingPair &SACCH() const { return mSACCH; }
 };
-
-
 
 /**@name Complete placements for common channel types. */
 //@{
@@ -338,10 +307,6 @@ extern const CompleteMapping gTCHF_T[8];
 //@}
 //@}
 
-
-}; 	// namespace GSM
-
+}; // namespace GSM
 
 #endif
-
-// vim: ts=4 sw=4

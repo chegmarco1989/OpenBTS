@@ -1,4 +1,4 @@
-/* 
+/*
 * Copyright 2013, 2014 Range Networks, Inc.
 *
 * This software is distributed under multiple licenses;
@@ -16,23 +16,25 @@
 #ifndef _L3SMSCONTROL_H_
 #define _L3SMSCONTROL_H_
 
-#include "L3LogicalChannel.h"
 #include "ControlCommon.h"
+#include "GSML3MMMessages.h"
+#include "L3LogicalChannel.h"
 
 namespace Control {
 
 // 3GPP 4.11 5.2. These are the SMS states.  It is nearly empty.  The only one we care about is awaiting the final ack.
 enum SmsState {
-	SmsNonexistent,	// Not an SMS state; we use to mean there is no SMS transaction.
+	SmsNonexistent, // Not an SMS state; we use to mean there is no SMS transaction.
 	MoSmsIdle,
 	MoSmsWaitForAck,
-	// In the spec this is a catch-all for any other state.  For us this is a transitory state we dont care about because
-	// the TranEntry will be removed momentarily.
+	// In the spec this is a catch-all for any other state.  For us this is a transitory state we dont care about
+	// because the TranEntry will be removed momentarily.
 	MoSmsMMConnection,
 };
 
 void startMOSMS(const GSM::L3MMMessage *l3msg, MMContext *dcch);
 void initMTSMS(TranEntry *tran);
 
-};
+}; // namespace Control
+
 #endif

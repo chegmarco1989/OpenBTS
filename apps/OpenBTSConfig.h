@@ -21,11 +21,12 @@
 
 // pat 3-2014: Added a better way to get these config values.
 class OpenBTSConfig : public ConfigurationTable {
-	public:
-	OpenBTSConfig(const char* filename, const char *wCmdName, ConfigurationKeyMap wSchema) :
-		ConfigurationTable(filename, wCmdName, wSchema)
-		{}
-    	OpenBTSConfig(void) {}; // used by CLI
+public:
+	OpenBTSConfig(const char *filename, const char *wCmdName, ConfigurationKeyMap wSchema)
+		: ConfigurationTable(filename, wCmdName, wSchema)
+	{
+	}
+	OpenBTSConfig(void){}; // used by CLI
 
 	void configUpdateKeys();
 
@@ -38,14 +39,25 @@ class OpenBTSConfig : public ConfigurationTable {
 			int Margin;
 			int Ny1;
 
-			struct History { int Max; } History;
-			struct Noise { int Factor; } Noise;
+			struct History {
+				int Max;
+			} History;
+			struct Noise {
+				int Factor;
+			} Noise;
 
-			struct RXLEV_DL { float Target; int History, Margin, PenaltyTime; } RXLEV_DL;
+			struct RXLEV_DL {
+				float Target;
+				int History, Margin, PenaltyTime;
+			} RXLEV_DL;
 		} Handover;
 		struct {
-			struct Power { int Min, Max, Damping; } Power;
-			struct TA { int Damping, Max; } TA;
+			struct Power {
+				int Min, Max, Damping;
+			} Power;
+			struct TA {
+				int Damping, Max;
+			} TA;
 		} MS;
 		struct {
 			int T3103, T3105, T3109, T3113, T3212;
@@ -57,4 +69,5 @@ class OpenBTSConfig : public ConfigurationTable {
 };
 
 extern OpenBTSConfig gConfig;
+
 #endif

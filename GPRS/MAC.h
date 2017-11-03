@@ -15,23 +15,25 @@
 
 /**@file Common-use GSM declarations, most from the GSM 04.xx and 05.xx series. */
 
-
 #ifndef GPRSL2MAC_H
 #define GPRSL2MAC_H
 
-#include "MemoryLeak.h"
+#include <list>
+
 #include "GPRSRLC.h"
 #include "GSML1FEC.h"
 #include "GSMTDMA.h"
-#include "GSMTransfer.h"	// For GSM::L2Frame
+#include "GSMTransfer.h" // For GSM::L2Frame
 #include "Interthread.h"
+#include "MemoryLeak.h"
 //#include "GSMCommon.h"	// For ChannelType
-#include "GSML3RRElements.h"	// For RequestReference
-#include "TBF.h"
+#include "GSML3RRElements.h" // For RequestReference
 #include "RList.h"
+#include "TBF.h"
 #include "Utils.h"
-#include <list>
+
 namespace GPRS {
+
 extern void mac_debug();
 
 // (pat) About BSN (radio block sequence numbers):
@@ -53,10 +55,10 @@ const int BSNLagTime = 4;
 
 extern bool gFixTFIBug;
 extern bool gFixSyncUseClock; // For debugging: Use wall time for service loop synchronization
-							// instead of GSM frames.  TODO: Get rid of this.
-extern int gFixIdleFrame;	// Works around this bug - see code.
-extern int gFixDRX;		// Works around DRX mode bug.  The value is the number of assignments
-					// that are unanswered before we assume the MS is in DRX mode.
+			      // instead of GSM frames.  TODO: Get rid of this.
+extern int gFixIdleFrame;     // Works around this bug - see code.
+extern int gFixDRX;	   // Works around DRX mode bug.  The value is the number of assignments
+			      // that are unanswered before we assume the MS is in DRX mode.
 
 // Set to 1 to request a poll in the ImmediateAssignment on CCCH.
 // We still have to wait for the poll time anyway, so this is here
@@ -64,9 +66,8 @@ extern int gFixDRX;		// Works around DRX mode bug.  The value is the number of a
 extern bool gFixIAUsePoll;
 extern bool gFixConvertForeignTLLI;
 
-
-typedef RList<PDCHL1FEC*> PDCHL1FECList_t;
-typedef RList<MSInfo*> MSInfoList_t;
+typedef RList<PDCHL1FEC *> PDCHL1FECList_t;
+typedef RList<MSInfo *> MSInfoList_t;
 
 struct Stats_t {
 	Statistic<double> macServiceLoopTime;
@@ -76,8 +77,6 @@ struct Stats_t {
 	UInt_z countRach;
 };
 extern struct Stats_t Stats;
-
-
 
 // For now, there is only one pool of TFIs shared by all channels.
 // It should be per-ARFCN, but I expect there to only be one.
@@ -90,7 +89,7 @@ extern struct Stats_t Stats;
 // The easiest way to do that is to have a single tfilist for the entire system.
 class TBF;
 struct TFIList {
-	TBF *mTFIs[2][32];	// One list for uplink, one list for downlink.
+	TBF *mTFIs[2][32]; // One list for uplink, one list for downlink.
 
 	// 12-22-2011: It looked like the Blackberry abandoned an uplink TBF when
 	// a downlink TBF was established using the same TFI.   This seems like a horrible
@@ -100,20 +99,23 @@ struct TFIList {
 	// problem with MSs and we need this fix in permanently.
 	// Update: The TFI is reserved during the time after a downlink ends, so the MS
 	// may have been justifiably upset about seeing it reissued for an uplink too soon.
-	RLCDir::type fixdir(RLCDir::type dir) {
-		return gFixTFIBug ? RLCDir::Up : dir;
-	}
+	RLCDir::type fixdir(RLCDir::type dir) { return gFixTFIBug ? RLCDir::Up : dir; }
 
 	TFIList();
 
 	TBF *getTFITBF(RLCDirType dir, int tfi) { return mTFIs[fixdir(dir)][tfi]; }
-	void setTFITBF(int tfi,RLCDirType dir,TBF *tbf) { mTFIs[fixdir(dir)][tfi] = tbf; }
+	void setTFITBF(int tfi, RLCDirType dir, TBF *tbf) { mTFIs[fixdir(dir)][tfi] = tbf; }
 	int findFreeTFI(RLCDirType dir);
-	void tfiDump(std::ostream&os);
+	void tfiDump(std::ostream &os);
 };
 extern struct TFIList *gTFIs;
 #if MAC_IMPLEMENTATION
-TFIList::TFIList() { for (int i=0;i<32;i++) { mTFIs[0][i] = mTFIs[1][i] = NULL; } }
+TFIList::TFIList()
+{
+	for (int i = 0; i < 32; i++) {
+		mTFIs[0][i] = mTFIs[1][i] = NULL;
+	}
+}
 int TFIList::findFreeTFI(RLCDirType dir)
 {
 	static int lasttfi = 0;
@@ -123,8 +125,12 @@ int TFIList::findFreeTFI(RLCDirType dir)
 	// Temporary work around is to round-robin the tfis.
 	for (int i = 0; i < 32; i++) {
 		lasttfi++;
-		if (lasttfi == 32) { lasttfi = 0; }
-		if (!mTFIs[dir][lasttfi]) { return lasttfi; }
+		if (lasttfi == 32) {
+			lasttfi = 0;
+		}
+		if (!mTFIs[dir][lasttfi]) {
+			return lasttfi;
+		}
 	}
 #if 0
 	// DEBUG: start at 1 instead of 0
@@ -140,7 +146,7 @@ int TFIList::findFreeTFI(RLCDirType dir)
 	return -1;
 }
 
-void TFIList::tfiDump(std::ostream&os)
+void TFIList::tfiDump(std::ostream &os)
 {
 	int dir, tfi;
 	for (dir = 0; dir <= (gFixTFIBug ? 0 : 1); dir++) {
@@ -150,7 +156,9 @@ void TFIList::tfiDump(std::ostream&os)
 		}
 		for (tfi = 0; tfi < 32; tfi++) {
 			TBF *tbf = mTFIs[dir][tfi];
-			if (tbf) { os << " " << tfi << "=>" << tbf; }
+			if (tbf) {
+				os << " " << tfi << "=>" << tbf;
+			}
 		}
 	}
 	os << ")\n";
@@ -178,55 +186,52 @@ const int USFMIN = 1;
 const int USFMAX = 6;
 const int USFTotal = 8;
 #define USF_VALID(usf) ((usf) >= USFMIN && (usf) <= USFMAX)
-class USFList
-{
-	//PDCHL1FEC *mlchan;			// The channel these USFs are being used on.
+class USFList {
+	// PDCHL1FEC *mlchan;			// The channel these USFs are being used on.
 	// We use the usf as the index, so mlUSFs[0] is unused.
 	struct UsfInfo {
-		MSInfo *muMS; 				// The MS assigned this USF on this channel.
-		GprsTimer muDeadTime;		// When a TBF dies reserve the USF for this ms until this expires.
+		MSInfo *muMS;	 // The MS assigned this USF on this channel.
+		GprsTimer muDeadTime; // When a TBF dies reserve the USF for this ms until this expires.
 	};
-	UsfInfo mlUSFs[USFTotal]; 		// Some slots in this array are unused.
+	UsfInfo mlUSFs[USFTotal]; // Some slots in this array are unused.
 
-	//int mRandomUSF;			// Used to pick one of the USFs.
+	// int mRandomUSF;			// Used to pick one of the USFs.
 
 	// When the channel is running, we save the usf that is sent on each downlink block,
 	// so that we can correlate the uplink responses independently of their content.
 	// We save them in an array indexed by bsn, length only has to cover the difference
 	// between uplink and downlink BSNs plus some slop, so 32 is way overkill.
-	unsigned char sRememberUsf[32];	// The usf transmitted in the downlink block.
+	unsigned char sRememberUsf[32]; // The usf transmitted in the downlink block.
 	unsigned sRememberUsfBsn[32];
 
-	public:
+public:
 	USFList();
 
 	// Return the usf that was specified on the downlink burst, given the bsn from the uplink burst.
 	int getUsf(unsigned upbsn);
 
 	// Remember the usf transmitted on specified downlink burst.  OK to pass 0 for usf.
-	void setUsf(unsigned downusf, unsigned downbsn);		// Save usf for current downlink burst.
+	void setUsf(unsigned downusf, unsigned downbsn); // Save usf for current downlink burst.
 
 	// Which MS is using this USF?
 	MSInfo *getUSFMS(int usf);
 
 	int allocateUSF(MSInfo *ms);
-	int freeUSF(MSInfo *ms,bool wReserve);
-	//int getRandomUSF();
-	void usfDump(std::ostream&os);
+	int freeUSF(MSInfo *ms, bool wReserve);
+	// int getRandomUSF();
+	void usfDump(std::ostream &os);
 };
 
 extern void serviceRach();
 
-
 // There is only one of these.
 // It holds the lists used to find all the other stuff.
-class L2MAC
-{
+class L2MAC {
 	Thread macThread;
 	// The entire MAC runs in a single thread.
 	// This Mutex is used at startup to make sure we only start one.
 	// Also used to lock the serviceloop so the CLI does not modify MS or TBF lists simultaneously.
-	public:
+public:
 	mutable Mutex macLock;
 
 	// The RACH bursts come in unsychronized to the rest of the GPRS code.
@@ -241,28 +246,25 @@ class L2MAC
 	InterthreadQueue<GSM::RachInfo> macRachQ;
 
 	// We are doing a linear search through these lists, but there should only be a few of them.
-	PDCHL1FECList_t macPDCHs;	// channels assigned to GPRS.
-	PDCHL1FECList_t macPacchs;	// The subset of macPDCHs that we assign as PACCH.
-	//Mutex macTbfListLock;
-	TBFList_t macTBFs;	// active TBFs.
-	MSInfoList_t macMSs;	// The MS we know about.
+	PDCHL1FECList_t macPDCHs;  // channels assigned to GPRS.
+	PDCHL1FECList_t macPacchs; // The subset of macPDCHs that we assign as PACCH.
+	// Mutex macTbfListLock;
+	TBFList_t macTBFs;   // active TBFs.
+	MSInfoList_t macMSs; // The MS we know about.
 
 	// For debugging, we keep expired TBF and MS around for post-mortem examination:
 	TBFList_t macExpiredTBFs;
 	MSInfoList_t macExpiredMSs;
 
-#define RN_MAC_FOR_ALL_PDCH(ch) RN_FOR_ALL(PDCHL1FECList_t,gL2MAC.macPDCHs,ch)
-#define RN_MAC_FOR_ALL_PACCH(ch) RN_FOR_ALL(PDCHL1FECList_t,gL2MAC.macPacchs,ch)
-#define RN_MAC_FOR_ALL_MS(ms) for (RListIterator<MSInfo*> itr(gL2MAC.macMSs); itr.next(ms); )
-#define RN_MAC_FOR_ALL_TBF(tbf) for (RListIterator<TBF*> itr(gL2MAC.macTBFs); itr.next(tbf); ) 
+#define RN_MAC_FOR_ALL_PDCH(ch) RN_FOR_ALL(PDCHL1FECList_t, gL2MAC.macPDCHs, ch)
+#define RN_MAC_FOR_ALL_PACCH(ch) RN_FOR_ALL(PDCHL1FECList_t, gL2MAC.macPacchs, ch)
+#define RN_MAC_FOR_ALL_MS(ms) for (RListIterator<MSInfo *> itr(gL2MAC.macMSs); itr.next(ms);)
+#define RN_MAC_FOR_ALL_TBF(tbf) for (RListIterator<TBF *> itr(gL2MAC.macTBFs); itr.next(tbf);)
 
-	L2MAC()
-	{
-		gTFIs = new TFIList();
-	}
+	L2MAC() { gTFIs = new TFIList(); }
 	~L2MAC() { delete gTFIs; }
 
-	public:
+public:
 	unsigned macN3101Max;
 	unsigned macN3103Max;
 	unsigned macN3105Max;
@@ -272,7 +274,7 @@ class L2MAC
 	unsigned macT3168Value;
 	unsigned macT3195Value;
 	unsigned macMSIdleMax;
-	unsigned macChIdleMax;	
+	unsigned macChIdleMax;
 	unsigned macChCongestionMax;
 	unsigned macDownlinkPersist;
 	unsigned macDownlinkKeepAlive;
@@ -281,40 +283,40 @@ class L2MAC
 	float macChCongestionThreshold;
 	Float_z macDownlinkUtilization;
 
-	Bool_z macRunning;		// The macServiceLoop is running.
+	Bool_z macRunning; // The macServiceLoop is running.
 	time_t macStartTime;
-	Bool_z macStopFlag;		// Set this to terminate the service thread.
-	Bool_z macSingleStepMode;	// For debugging.
+	Bool_z macStopFlag;       // Set this to terminate the service thread.
+	Bool_z macSingleStepMode; // For debugging.
 
 	MSInfo *macFindMSByTlli(uint32_t tlli, int create = 0);
 	void macAddMS(MSInfo *ms);
-	void macForgetMS(MSInfo *ms,bool forever);
+	void macForgetMS(MSInfo *ms, bool forever);
 
 	// When deleting tbfs, macForgetTBF could be called on a tbf already removed
 	// from the list, which is ok.
 	void macAddTBF(TBF *tbf);
-	void macForgetTBF(TBF *tbf,bool forever);
+	void macForgetTBF(TBF *tbf, bool forever);
 
 	void macServiceLoop();
-	PDCHL1FEC *macPickChannel();	// pick the least busy channel;
-	PDCHL1FEC *macFindChannel(unsigned arfcn, unsigned tn);	// find specified channel, or null
+	PDCHL1FEC *macPickChannel();				// pick the least busy channel;
+	PDCHL1FEC *macFindChannel(unsigned arfcn, unsigned tn); // find specified channel, or null
 	unsigned macFindChannels(unsigned arfcn);
-	bool macAddChannel();		// Add a GSM RR channel to GPRS use.
-	bool macFreeChannel();		// Restore a GPRS channel back to GSM RR use.
-	void macForgetCh(PDCHL1FEC*ch);
+	bool macAddChannel();  // Add a GSM RR channel to GPRS use.
+	bool macFreeChannel(); // Restore a GPRS channel back to GSM RR use.
+	void macForgetCh(PDCHL1FEC *ch);
 	void macConfigInit();
-	bool macStart();	// Fire it up.
-	void macStop(bool channelstoo);		// Try to kill it.
-	int macActiveChannels();		// Is GPRS running, ie, are there channels allocated?
-	int macActiveChannelsC(unsigned cn);		// Number of channels on specified 0-based ARFCN
+	bool macStart();		     // Fire it up.
+	void macStop(bool channelstoo);      // Try to kill it.
+	int macActiveChannels();	     // Is GPRS running, ie, are there channels allocated?
+	int macActiveChannelsC(unsigned cn); // Number of channels on specified 0-based ARFCN
 	float macComputeUtilization();
 	void macCheckChannels();
 	void macServiceRachQ();
 };
 extern L2MAC gL2MAC;
 
-//const int TFIInvalid = -1;
-//const int TFIUnknown = -2;
+// const int TFIInvalid = -1;
+// const int TFIUnknown = -2;
 
 // The master clock is not exactly synced up with the radio clock.
 // It is corrected at intervals.  This means there is a variable delay
@@ -326,7 +328,7 @@ extern L2MAC gL2MAC;
 // increasing this value until they start getting answered.
 // We could probably set this back to 0 when we observe the time() run backwards,
 // which means the clock is synced back up.
-extern int ExtraClockDelay;	// in blocks.
+extern int ExtraClockDelay; // in blocks.
 
 // This specifies a Radio Block reservation in an uplink channel.
 // Reservations are used for:
@@ -369,20 +371,20 @@ struct RLCBlockReservation : public Text2Str {
 		None,
 		ForRACH,
 		ForPoll, // For the poll response to a downlink immediate assignment when
-				// the MS is in packet idle mode.  see sendAssignment()
-		ForRRBP	// This has many subtypes of type MsgTransactionType
+			 // the MS is in packet idle mode.  see sendAssignment()
+		ForRRBP  // This has many subtypes of type MsgTransactionType
 	};
-	type mrType;		// Primary type
-	MsgTransactionType mrSubType;	// Subtype, only valid if mrType is ForRRBP
-	RLCBSN_t mrBSN;		// The block number that has been reserved.
-	TBF *mrTBF;			// tbf if applicable.  (Not known for MS initiated RACH.)
+	type mrType;		      // Primary type
+	MsgTransactionType mrSubType; // Subtype, only valid if mrType is ForRRBP
+	RLCBSN_t mrBSN;		      // The block number that has been reserved.
+	TBF *mrTBF;		      // tbf if applicable.  (Not known for MS initiated RACH.)
 	// TODO: Is it stupid to save mrRadData?  We will get new data when the MS responds.
-	GSM::RadData mrRadData;		// Saved from a RACH to be put in MS when it responds.
+	GSM::RadData mrRadData; // Saved from a RACH to be put in MS when it responds.
 	static const char *name(RLCBlockReservation::type type);
-	void text(std::ostream&) const;
+	void text(std::ostream &) const;
 };
-std::ostream& operator<<(std::ostream& os, RLCBlockReservation::type &type);
-std::ostream& operator<<(std::ostream& os, RLCBlockReservation &res);
+std::ostream &operator<<(std::ostream &os, RLCBlockReservation::type &type);
+std::ostream &operator<<(std::ostream &os, RLCBlockReservation &res);
 
 #if MAC_IMPLEMENTATION
 const char *RLCBlockReservation::name(RLCBlockReservation::type mode)
@@ -392,10 +394,11 @@ const char *RLCBlockReservation::name(RLCBlockReservation::type mode)
 		CASENAME(ForRACH)
 		CASENAME(ForPoll)
 		CASENAME(ForRRBP)
-		default: return "unrecognized";	// Not reached, but makes gcc happy.
+	default:
+		return "unrecognized"; // Not reached, but makes gcc happy.
 	}
 }
-std::ostream& operator<<(std::ostream& os, RLCBlockReservation::type &type)
+std::ostream &operator<<(std::ostream &os, RLCBlockReservation::type &type)
 {
 	os << RLCBlockReservation::name(type);
 	return os;
@@ -403,11 +406,13 @@ std::ostream& operator<<(std::ostream& os, RLCBlockReservation::type &type)
 void RLCBlockReservation::text(std::ostream &os) const
 {
 	os << "res=(";
-	os << LOGVAR2("bsn",mrBSN) << " " << name(mrType);
-	if (mrTBF) { os << " " << mrTBF; }
-	os <<")";
+	os << LOGVAR2("bsn", mrBSN) << " " << name(mrType);
+	if (mrTBF) {
+		os << " " << mrTBF;
+	}
+	os << ")";
 }
-std::ostream& operator<<(std::ostream& os, RLCBlockReservation &res)
+std::ostream &operator<<(std::ostream &os, RLCBlockReservation &res)
 {
 	res.text(os);
 	return os;
@@ -443,13 +448,12 @@ std::ostream& operator<<(std::ostream& os, RLCBlockReservation &res)
 // blocks are utilized for current uplink data transfers using dynamic allocation using USF.
 // Using this method, the reservations are also monotonically increasing in each
 // domain (RRBP and non-RRBP) which makes it easy.
-class L1UplinkReservation
-{
-	private:
+class L1UplinkReservation {
+private:
 	// TODO: mLock no longer needed because RACH processing synchronous now.
-	Mutex mLock;	// The reservation controller can be called from GSM threads, so protect it.
+	Mutex mLock; // The reservation controller can be called from GSM threads, so protect it.
 
-	public:
+public:
 	// There should only be a few reservations at a time, probably limited to
 	// around one per actively attached MS.
 	// Update 8-8-2012: well, the MS can be in two sub-modes of transmit mode simultaneously,
@@ -460,30 +464,31 @@ class L1UplinkReservation
 	// waiting for CCCH downlink spots up to a maximum (defined by a config option)
 	// in AccessGrantResponder(), but currently 1.5 seconds.
 	// There is no penalty for making this array larger, so just go ahead and overkill it.
-	static const int mReservationSize = (2*500);
+	static const int mReservationSize = (2 * 500);
 	RLCBlockReservation mReservations[mReservationSize];
 
 	L1UplinkReservation();
 
-	public:
-	RLCBSN_t makeReservationInt(RLCBlockReservation::type restype, RLCBSN_t afterBSN,
-		TBF *tbf, GSM::RadData *rd, int *prrbp, MsgTransactionType mttype);
+public:
+	RLCBSN_t makeReservationInt(RLCBlockReservation::type restype, RLCBSN_t afterBSN, TBF *tbf, GSM::RadData *rd,
+				    int *prrbp, MsgTransactionType mttype);
 
-	RLCBSN_t makeCCCHReservation(GSM::CCCHLogicalChannel *AGCH,
-		RLCBlockReservation::type type, TBF *tbf, GSM::RadData *rd, bool forDRX, MsgTransactionType mttype);
+	RLCBSN_t makeCCCHReservation(GSM::CCCHLogicalChannel *AGCH, RLCBlockReservation::type type, TBF *tbf,
+				     GSM::RadData *rd, bool forDRX, MsgTransactionType mttype);
 	RLCBSN_t makeRRBPReservation(TBF *tbf, int *prrbp, MsgTransactionType ttype);
 
 	// Get the reservation for the specified block timeslot.
 	// Return true if found, and return TFI in *TFI.
 	// bsn can be in the past or future.
 	RLCBlockReservation *getReservation(RLCBSN_t bsn);
-	
+
 	void clearReservation(RLCBSN_t bsn, TBF *tbf);
-	RLCBlockReservation::type recvReservation(RLCBSN_t bsn, TBF**restbf, GSM::RadData *prd,PDCHL1FEC *ch);
-	void dumpReservations(std::ostream&os);
+	RLCBlockReservation::type recvReservation(RLCBSN_t bsn, TBF **restbf, GSM::RadData *prd, PDCHL1FEC *ch);
+	void dumpReservations(std::ostream &os);
 };
 
-extern bool setMACFields(MACDownlinkHeader *block, PDCHL1FEC *pdch, TBF *tbf, int makeres,MsgTransactionType mttype,unsigned *pcounter);
+extern bool setMACFields(MACDownlinkHeader *block, PDCHL1FEC *pdch, TBF *tbf, int makeres, MsgTransactionType mttype,
+			 unsigned *pcounter);
 extern int configGetNumQ(const char *name, int defaultvalue);
 extern int configGprsMultislotMaxUplink();
 extern int configGprsMultislotMaxDownlink();
@@ -493,7 +498,7 @@ extern int configGprsMultislotMaxDownlink();
 // or reserved for some other purpose.
 // There are only 7 USFs available, so we have to share.
 // TODO: MOVE TO UPLINK RESERVATION:
-//class L1USFTable
+// class L1USFTable
 //{
 //	TBF *mUSFTable[8];
 //	public:
@@ -503,6 +508,6 @@ extern int configGprsMultislotMaxDownlink();
 //	L1USFTable() { for (int i = mUSFTableSize-1; i>= 0; i--) { mUSFTable[i] = 0; } }
 //};
 
-};	// namespace GPRS
+}; // namespace GPRS
 
 #endif

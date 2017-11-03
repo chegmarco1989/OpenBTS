@@ -15,25 +15,21 @@
 
 */
 
-
 #ifndef PERRINGMESSAGES_H
 #define PERRINGMESSAGES_H
 
+#include <Globals.h>
 #include <Interthread.h>
 #include <Sockets.h>
 #include <Timeval.h>
-#include <Globals.h>
 #include <Utils.h>
 //#include <ControlTransfer.h>
 #include <GSML3RRElements.h>
 
-
 namespace Control {
 class TranEntry;
 class HandoverEntry;
-};
-
-
+}; // namespace Control
 
 namespace Peering {
 
@@ -41,28 +37,20 @@ typedef InterthreadQueue<char> _PeerMessageFIFO;
 
 class PeerMessageFIFO : public _PeerMessageFIFO {
 
-	private:
-
+private:
 	Timeval mExpiration;
 
-	public:
-
-	PeerMessageFIFO()
-		:_PeerMessageFIFO(),
-		mExpiration(gConfig.getNum("GSM.Timer.T3103")*2)
-	{ }
+public:
+	PeerMessageFIFO() : _PeerMessageFIFO(), mExpiration(gConfig.getNum("GSM.Timer.T3103") * 2) {}
 
 	~PeerMessageFIFO() { clear(); }
 
 	bool expired() const { return mExpiration.passed(); }
-
 };
 
+class PeerMessageFIFOMap : public InterthreadMap<unsigned, PeerMessageFIFO> {
 
-class PeerMessageFIFOMap : public InterthreadMap<unsigned,PeerMessageFIFO> {
-
-	public:
-
+public:
 	void addFIFO(unsigned transactionID);
 
 	void removeFIFO(unsigned transactionID);
@@ -71,20 +59,15 @@ class PeerMessageFIFOMap : public InterthreadMap<unsigned,PeerMessageFIFO> {
 	char *readFIFO(unsigned transactionID, unsigned timeout);
 
 	/** Makes a copy of the string into the FIFO with strdup. */
-	void writeFIFO(unsigned transactionID, const char* msg);
-
+	void writeFIFO(unsigned transactionID, const char *msg);
 };
-
-
-
 
 class PeerInterface {
 
-	private:
-
+private:
 	UDPSocket mSocket;
 	char mReadBuffer[2048];
-	PeerMessageFIFOMap mFIFOMap;		///< one FIFO per active handover transaction
+	PeerMessageFIFOMap mFIFOMap; ///< one FIFO per active handover transaction
 
 	Mutex mLock;
 
@@ -100,16 +83,15 @@ class PeerInterface {
 		@erturn true on ack, false on timeout
 	*/
 	// (pat) Made this private and put the methods that use it in Peering.cpp
-	bool sendUntilAck(const Control::HandoverEntry*, const char* message);
+	bool sendUntilAck(const Control::HandoverEntry *, const char *message);
 	/**
 		Send a message on the peering interface.
 		@param IP The IP address of the remote peer.
 		@param The message to send.
 	*/
-	void sendMessage(const struct ::sockaddr_in* peer, const char* message);
+	void sendMessage(const struct ::sockaddr_in *peer, const char *message);
 
-	public:
-
+public:
 	/** Initialize the interface.  */
 	PeerInterface();
 
@@ -117,55 +99,51 @@ class PeerInterface {
 	void start();
 
 	/** service loops. */
-	void* serviceLoop1(void*);
-	void* serviceLoop2(void*);
+	void *serviceLoop1(void *);
+	void *serviceLoop2(void *);
 
-	void sendNeighborParamsRequest(const struct ::sockaddr_in* peer);
+	void sendNeighborParamsRequest(const struct ::sockaddr_in *peer);
 
 	/** Remove a FIFO with the given transaction ID. */
 	void removeFIFO(unsigned transactionID) { mFIFOMap.removeFIFO(transactionID); }
-
-
 
 	void drive();
 
 	/**
 		Parse and dispatch an inbound message.
 	*/
-	void parse(const struct ::sockaddr_in* peer, const char* message);
-
+	void parse(const struct ::sockaddr_in *peer, const char *message);
 
 	/**
 		Parse and process an inbound message.
 		@param peer The source address.
 		@param message The message text.
 	*/
-	void process(const struct ::sockaddr_in* peer, const char* message);
+	void process(const struct ::sockaddr_in *peer, const char *message);
 
 	//@{
 
 	/** Process the NEIGHBOR_PARMS message/response. */
-	void processNeighborParams(const struct ::sockaddr_in* peer, const char* message);	// Pre-3-2014 message format.
+	void processNeighborParams(const struct ::sockaddr_in *peer, const char *message); // Pre-3-2014 message format.
 
 	/** Process REQ HANDOVER. */
-	void processHandoverRequest(const struct ::sockaddr_in* peer, const char* message);
+	void processHandoverRequest(const struct ::sockaddr_in *peer, const char *message);
 
 	/** Process RSP HANDOVER. */
-	void processHandoverResponse(const struct ::sockaddr_in* peer, const char* message);
+	void processHandoverResponse(const struct ::sockaddr_in *peer, const char *message);
 
 	/** Process IND HANDOVER_COMPLETE */
-	void processHandoverComplete(const struct sockaddr_in* peer, const char* message);
+	void processHandoverComplete(const struct sockaddr_in *peer, const char *message);
 
 	/** Process IND HANDOVER_FAILURE */
-	void processHandoverFailure(const struct sockaddr_in* peer, const char* message);
+	void processHandoverFailure(const struct sockaddr_in *peer, const char *message);
 
-	public:
-
+public:
 	/** Send IND HANDOVER_COMPLETE */
-	void sendHandoverComplete(const Control::HandoverEntry* hop);
+	void sendHandoverComplete(const Control::HandoverEntry *hop);
 
 	/** Send IND HANDOVER_FAILURE */
-	void sendHandoverFailure(const Control::HandoverEntry *hop,GSM::RRCause cause,unsigned holdoff);
+	void sendHandoverFailure(const Control::HandoverEntry *hop, GSM::RRCause cause, unsigned holdoff);
 
 	/** Send REQ HANDOVER */
 	bool sendHandoverRequest(string peer, const RefCntPointer<Control::TranEntry> tran, string cause);
@@ -173,13 +151,10 @@ class PeerInterface {
 	//@}
 };
 
+extern string sockaddr2string(const struct sockaddr_in *peer, bool noempty);
 
-extern string sockaddr2string(const struct sockaddr_in* peer, bool noempty);
-
-}; //namespace
+}; // namespace Peering
 
 extern Peering::PeerInterface gPeerInterface;
 
 #endif
-
-

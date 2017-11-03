@@ -19,120 +19,116 @@
 
 */
 
-#define LOG_GROUP LogGroup::GSM		// Can set Log.Level.GSM for debugging
-
-
-
+#define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
 #include <time.h>
+
 #include "GSML3MMElements.h"
 #include <Logger.h>
 #include <Timeval.h>
 
-
 using namespace std;
 using namespace GSM;
 
+void L3CMServiceType::parseV(const L3Frame &src, size_t &rp) { mType = (CMServiceTypeCode)src.readField(rp, 4); }
 
-void L3CMServiceType::parseV(const L3Frame& src, size_t &rp)
-{
-	mType = (CMServiceTypeCode)src.readField(rp,4);
-}
-
-
-ostream& GSM::operator<<(ostream& os, CMServiceTypeCode code)
+ostream &GSM::operator<<(ostream &os, CMServiceTypeCode code)
 {
 	switch (code) {
-		case L3CMServiceType::MobileOriginatedCall: os << "MOC"; return os;
-		case L3CMServiceType::EmergencyCall: os << "Emergency"; return os;
-		case L3CMServiceType::ShortMessage: os << "SMS"; return os;
-		case L3CMServiceType::SupplementaryService: os << "SS"; return os;
-		case L3CMServiceType::VoiceCallGroup: os << "VGCS"; return os;
-		case L3CMServiceType::VoiceBroadcast: os << "VBS"; return os;
-		case L3CMServiceType::LocationService: os << "LCS"; return os;
-		case L3CMServiceType::MobileTerminatedCall: os << "MTC"; return os;
-		case L3CMServiceType::MobileTerminatedShortMessage: os << "MTSMS"; return os;
-		case L3CMServiceType::LocationUpdateRequest: os << "LUR"; return os;
-		case L3CMServiceType::HandoverCall: os << "Handover"; return os;
-		case L3CMServiceType::TestCall: os << "testcall"; return os;
-		case L3CMServiceType::UndefinedType: break;
-		//default: os << "?" << (int)code << "?";
+	case L3CMServiceType::MobileOriginatedCall:
+		os << "MOC";
+		return os;
+	case L3CMServiceType::EmergencyCall:
+		os << "Emergency";
+		return os;
+	case L3CMServiceType::ShortMessage:
+		os << "SMS";
+		return os;
+	case L3CMServiceType::SupplementaryService:
+		os << "SS";
+		return os;
+	case L3CMServiceType::VoiceCallGroup:
+		os << "VGCS";
+		return os;
+	case L3CMServiceType::VoiceBroadcast:
+		os << "VBS";
+		return os;
+	case L3CMServiceType::LocationService:
+		os << "LCS";
+		return os;
+	case L3CMServiceType::MobileTerminatedCall:
+		os << "MTC";
+		return os;
+	case L3CMServiceType::MobileTerminatedShortMessage:
+		os << "MTSMS";
+		return os;
+	case L3CMServiceType::LocationUpdateRequest:
+		os << "LUR";
+		return os;
+	case L3CMServiceType::HandoverCall:
+		os << "Handover";
+		return os;
+	case L3CMServiceType::TestCall:
+		os << "testcall";
+		return os;
+	case L3CMServiceType::UndefinedType:
+		break;
+		// default: os << "?" << (int)code << "?";
 	}
 	os << "invalid:" << (int)code;
 	return os;
 }
 
-void L3CMServiceType::text(ostream& os) const
-{
-	os << mType;
-}
+void L3CMServiceType::text(ostream &os) const { os << mType; }
 
-void L3RejectCauseIE::writeV( L3Frame& dest, size_t &wp ) const
-{
-	dest.writeField(wp, mRejectCause, 8);
-}
+void L3RejectCauseIE::writeV(L3Frame &dest, size_t &wp) const { dest.writeField(wp, mRejectCause, 8); }
 
+void L3RejectCauseIE::parseV(const L3Frame &src, size_t &rp) { mRejectCause = (MMRejectCause)src.readField(rp, 8); }
 
-void L3RejectCauseIE::parseV(const L3Frame& src, size_t &rp)
-{
-        mRejectCause = (MMRejectCause) src.readField(rp,8);
-}
+void L3RejectCauseIE::text(ostream &os) const { os << "0x" << hex << mRejectCause << dec; }
 
-void L3RejectCauseIE::text(ostream& os) const
-{	
-	os <<"0x"<< hex << mRejectCause << dec;	
-}
-
-
-
-
-
-void L3NetworkName::writeV(L3Frame& dest, size_t &wp) const
+void L3NetworkName::writeV(L3Frame &dest, size_t &wp) const
 {
 	unsigned sz = strlen(mName);
 	// header byte
 	if (mAlphabet == ALPHABET_UCS2) {
 		// Ext: 1b, coding scheme: 001b (UCS2), CI, trailing spare bits: 000b (0)
-		dest.writeField(wp,1,1);	// ext bit
-		dest.writeField(wp,1,3);	// coding scheme USC2
-		dest.writeField(wp,mCI,1);	// show country name?
-		dest.writeField(wp,0,3);	// spare bits in last octet
+		dest.writeField(wp, 1, 1);   // ext bit
+		dest.writeField(wp, 1, 3);   // coding scheme USC2
+		dest.writeField(wp, mCI, 1); // show country name?
+		dest.writeField(wp, 0, 3);   // spare bits in last octet
 		// the characters
-		for (unsigned i=0; i<sz; i++) {
-			dest.writeField(wp,mName[i],16);
+		for (unsigned i = 0; i < sz; i++) {
+			dest.writeField(wp, mName[i], 16);
 		}
 	} else {
 		// Ext: 1b, coding scheme: 000b (GSM 03.38 coding scheme),
-		int nameBits = sz*7;
-		int nameBytes = nameBits/8;
-		if (nameBits%8) nameBytes++;
-		int msgBits = nameBytes*8;
-		int spareBits = msgBits-nameBits;
-		dest.writeField(wp,1,1);				// ext bit
-		dest.writeField(wp,0,3);				// coding scheme USC2
-		dest.writeField(wp,mCI,1);				// show country name?
-		dest.writeField(wp,spareBits,3);		// spare bits in last octet
+		int nameBits = sz * 7;
+		int nameBytes = nameBits / 8;
+		if (nameBits % 8)
+			nameBytes++;
+		int msgBits = nameBytes * 8;
+		int spareBits = msgBits - nameBits;
+		dest.writeField(wp, 1, 1);	 // ext bit
+		dest.writeField(wp, 0, 3);	 // coding scheme USC2
+		dest.writeField(wp, mCI, 1);       // show country name?
+		dest.writeField(wp, spareBits, 3); // spare bits in last octet
 		// Temporary vector "chars" so we can do LSB8MSB() after encoding.
-		BitVector2 chars(dest.segment(wp,msgBits));
+		BitVector2 chars(dest.segment(wp, msgBits));
 		size_t twp = 0;
 		// the characters: 7 bit, GSM 03.38 6.1.2.2, 6.2.1
-		for (unsigned i=0; i<sz; i++) {
-			chars.writeFieldReversed(twp,encodeGSMChar(mName[i]),7);
+		for (unsigned i = 0; i < sz; i++) {
+			chars.writeFieldReversed(twp, encodeGSMChar(mName[i]), 7);
 		}
-		chars.writeField(twp,0,spareBits);
+		chars.writeField(twp, 0, spareBits);
 		chars.LSB8MSB();
 		wp += twp;
 	}
 }
 
+void L3NetworkName::text(std::ostream &os) const { os << mName; }
 
-void L3NetworkName::text(std::ostream& os) const
-{
-	os << mName;
-}
-
-
-void L3TimeZoneAndTime::writeV(L3Frame& dest, size_t& wp) const
+void L3TimeZoneAndTime::writeV(L3Frame &dest, size_t &wp) const
 {
 	// See GSM 03.40 9.2.3.11.
 
@@ -140,9 +136,9 @@ void L3TimeZoneAndTime::writeV(L3Frame& dest, size_t& wp) const
 	struct tm fields;
 	const time_t seconds = mTime.sec();
 	if (mType == LOCAL_TIME) {
-		localtime_r(&seconds,&fields);
+		localtime_r(&seconds, &fields);
 	} else {
-		gmtime_r(&seconds,&fields);
+		gmtime_r(&seconds, &fields);
 	}
 	// Write the fields in BCD format.
 	// year
@@ -175,23 +171,22 @@ void L3TimeZoneAndTime::writeV(L3Frame& dest, size_t& wp) const
 		// information for some reason and we have to use localtime_r()
 		// to reptrieve this information.
 		struct tm fields_local;
-		localtime_r(&seconds,&fields_local);
+		localtime_r(&seconds, &fields_local);
 		zone = fields_local.tm_gmtoff;
 	}
-	zone = zone / (15*60);
+	zone = zone / (15 * 60);
 	unsigned zoneSign = (zone < 0);
 	zone = abs(zone);
 	dest.writeField(wp, zone % 10, 4);
 	dest.writeField(wp, zoneSign, 1);
 	dest.writeField(wp, zone / 10, 3);
 
-	LOG(DEBUG) << "year=" << year << " month=" << month << " day=" << fields.tm_mday
-	           << " hour=" << fields.tm_hour << " min=" << fields.tm_min << " sec=" << fields.tm_sec
-	           << " zone=" << (zoneSign?"-":"+") << zone;
+	LOG(DEBUG) << "year=" << year << " month=" << month << " day=" << fields.tm_mday << " hour=" << fields.tm_hour
+		   << " min=" << fields.tm_min << " sec=" << fields.tm_sec << " zone=" << (zoneSign ? "-" : "+")
+		   << zone;
 }
-	
-	
-void L3TimeZoneAndTime::parseV(const L3Frame& src, size_t& rp)
+
+void L3TimeZoneAndTime::parseV(const L3Frame &src, size_t &rp)
 {
 	// See GSM 03.40 9.2.3.11.
 
@@ -199,60 +194,47 @@ void L3TimeZoneAndTime::parseV(const L3Frame& src, size_t& rp)
 	// then covert to Unix seconds.
 	struct tm fields;
 	// year
-	fields.tm_year = 2000 + src.readField(rp,4) + src.readField(rp,4)*10;
+	fields.tm_year = 2000 + src.readField(rp, 4) + src.readField(rp, 4) * 10;
 	// month
-	fields.tm_mon = 1 + src.readField(rp,4) + src.readField(rp,4)*10;
+	fields.tm_mon = 1 + src.readField(rp, 4) + src.readField(rp, 4) * 10;
 	// day
-	fields.tm_mday = src.readField(rp,4) + src.readField(rp,4)*10;
+	fields.tm_mday = src.readField(rp, 4) + src.readField(rp, 4) * 10;
 	// hour
-	fields.tm_hour = src.readField(rp,4) + src.readField(rp,4)*10;
+	fields.tm_hour = src.readField(rp, 4) + src.readField(rp, 4) * 10;
 	// minute
-	fields.tm_min = src.readField(rp,4) + src.readField(rp,4)*10;
+	fields.tm_min = src.readField(rp, 4) + src.readField(rp, 4) * 10;
 	// second
-	fields.tm_sec = src.readField(rp,4) + src.readField(rp,4)*10;
+	fields.tm_sec = src.readField(rp, 4) + src.readField(rp, 4) * 10;
 	// zone
-	unsigned zone = src.readField(rp,4);
-	unsigned zoneSign = src.readField(rp,1);
-	zone += 10*src.readField(rp,4);
-	if (zoneSign) zone = -zone;
+	unsigned zone = src.readField(rp, 4);
+	unsigned zoneSign = src.readField(rp, 1);
+	zone += 10 * src.readField(rp, 4);
+	if (zoneSign)
+		zone = -zone;
 	fields.tm_gmtoff = zone * 15 * 60;
 	// convert
-	mTime = Timeval(timegm(&fields),0);
+	mTime = Timeval(timegm(&fields), 0);
 }
 
-void L3TimeZoneAndTime::text(ostream& os) const
+void L3TimeZoneAndTime::text(ostream &os) const
 {
-	//char timeStr[26];
+	// char timeStr[26];
 	const time_t seconds = mTime.sec();
-        std::string timeStr("");
-        Timeval::isoTime(seconds, timeStr, true);
-	//ctime_r(&seconds,timeStr);
-	//timeStr[24]='\0';
+	std::string timeStr("");
+	Timeval::isoTime(seconds, timeStr, true);
+	// ctime_r(&seconds,timeStr);
+	// timeStr[24]='\0';
 	os << timeStr << " (local)";
 }
 
-
-
-void L3RAND::writeV(L3Frame& dest, size_t &wp) const
+void L3RAND::writeV(L3Frame &dest, size_t &wp) const
 {
-	dest.writeField(wp,mRUpper,64);
-	dest.writeField(wp,mRLower,64);
+	dest.writeField(wp, mRUpper, 64);
+	dest.writeField(wp, mRLower, 64);
 }
 
-void L3RAND::text(ostream& os) const
-{
-	os << hex << "0x" << mRUpper << mRLower << dec;
-}
+void L3RAND::text(ostream &os) const { os << hex << "0x" << mRUpper << mRLower << dec; }
 
-void L3SRES::parseV(const L3Frame& src, size_t &rp)
-{
-	mValue = src.readField(rp,32);
-}
+void L3SRES::parseV(const L3Frame &src, size_t &rp) { mValue = src.readField(rp, 32); }
 
-void L3SRES::text(ostream& os) const
-{
-	os << hex << "0x" << mValue << dec;
-}
-
-
-// vim: ts=4 sw=4
+void L3SRES::text(ostream &os) const { os << hex << "0x" << mValue << dec; }

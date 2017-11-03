@@ -1,7 +1,8 @@
 /*
 * Copyright 2008, 2014 Free Software Foundation, Inc.
 *
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing information for this specific distribution.
+* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
+information for this specific distribution.
 *
 * This use of this software may be subject to additional restrictions.
 * See the LEGAL file in the main directory for details.
@@ -12,16 +13,21 @@
 
 */
 
-#include "L3Enums.h"
 #include <map>
 #include <string>
-#define CASENAME(x) case x: return #x;
+
+#include "L3Enums.h"
+
+#define CASENAME(x) \
+	case x: \
+		return #x;
 
 namespace GSM {
-using std::string;
-using std::map;
 
-std::map<std::string,int> gCauseNameMap;
+using std::map;
+using std::string;
+
+std::map<std::string, int> gCauseNameMap;
 
 // The load order in the makefile is such that L3Enums.cpp does not get loaded,
 // so force it to load by calling this dummy function from this directory.
@@ -213,19 +219,25 @@ const char *L3Cause::CustomCause2Str(L3Cause::CustomCause cause)
 const char *L3Cause::AnyCause2Str(AnyCause cause)
 {
 	switch (cause.getLocus()) {
-		case LocusCC: return CCCause2Str(cause.ccCause);
-		case LocusMM: return L3RejectCause::rejectCause2Str((L3RejectCause::RejectCause) cause.getNonLocus());
-		case LocusBSS: return BSSCause2Str((BSSCause) cause.value);
-		case LocusCustom: return CustomCause2Str((CustomCause) cause.value);
+	case LocusCC:
+		return CCCause2Str(cause.ccCause);
+	case LocusMM:
+		return L3RejectCause::rejectCause2Str((L3RejectCause::RejectCause)cause.getNonLocus());
+	case LocusBSS:
+		return BSSCause2Str((BSSCause)cause.value);
+	case LocusCustom:
+		return CustomCause2Str((CustomCause)cause.value);
 	}
 	return "<unrecognized cause>";
 }
 
 void L3Cause::createCauseMap()
 {
-	if (gCauseNameMap.size()) { return; }	// Created previously.
+	if (gCauseNameMap.size()) {
+		return;
+	} // Created previously.
 	AnyCause acause;
-	for (acause.value = 0; acause.value < LocusCustom+0xff; acause.value++) {
+	for (acause.value = 0; acause.value < LocusCustom + 0xff; acause.value++) {
 		const char *name = AnyCause2Str(acause);
 		if (name[0] != '<') {
 			gCauseNameMap[string(name)] = acause.value;
@@ -238,8 +250,10 @@ void L3Cause::createCauseMap()
 // Return 0 if not found.
 int CauseName2Cause(string causeName)
 {
-	if (gCauseNameMap.size() == 0) { L3Cause::createCauseMap(); }
-	map<string,int>::const_iterator it = gCauseNameMap.find(causeName);
+	if (gCauseNameMap.size() == 0) {
+		L3Cause::createCauseMap();
+	}
+	map<string, int>::const_iterator it = gCauseNameMap.find(causeName);
 	if (it != gCauseNameMap.end()) {
 		return it->second;
 	} else {
@@ -247,4 +261,4 @@ int CauseName2Cause(string causeName)
 	}
 }
 
-};
+}; // namespace GSM

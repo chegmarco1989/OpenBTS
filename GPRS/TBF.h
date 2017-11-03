@@ -16,19 +16,21 @@
 #ifndef TBF_H
 #define TBF_H
 
-//#include <Interthread.h>
 //#include <list>
 
+//#include <Interthread.h>
 #include "GPRSInternal.h"
 #include "GPRSRLC.h"
 #include "RLCHdr.h"
 //#include "RList.h"
 //#include "BSSG.h"
-#include "Utils.h"
 #include "MSInfo.h"
+#include "Utils.h"
 
 namespace GPRS {
+
 class MSInfo;
+
 struct RLCMsgChannelRequestDescriptionIE;
 
 // TBF - Temporary Block Flow.
@@ -119,119 +121,130 @@ struct RLCMsgChannelRequestDescriptionIE;
 //		o MS sends ControlAcknowledgement or other message in response to poll,
 //		TBF moves to DataTransmit state.
 //		or: MS does not send response - if retries not expired goto label4
-//		
-class TBFState
-{
-	public:
+//
+
+class TBFState {
+public:
 	enum type {
 		Unused, // 0 Reserved.
 
 		DataReadyToConnect,
-			// Waiting to call tbf->mtAttach...() successfully.
-			// It is waiting on resources like TFI or USF.
-			// We (currently) only allow one downlink TBF per MS, although the MS can send multiple
-			// simultaneous uplink TBFs, and nothing we can do about that.
-			// When it connects (gets the resources reserved),
-			// it calls MsgTransaction->sendMsg, which enqueues the message
-			// (for either PACCH or CCCH), increments mSendTrys.
-			// TBF state changes to DataWaiting1.
+		// Waiting to call tbf->mtAttach...() successfully.
+		// It is waiting on resources like TFI or USF.
+		// We (currently) only allow one downlink TBF per MS, although the MS can send multiple
+		// simultaneous uplink TBFs, and nothing we can do about that.
+		// When it connects (gets the resources reserved),
+		// it calls MsgTransaction->sendMsg, which enqueues the message
+		// (for either PACCH or CCCH), increments mSendTrys.
+		// TBF state changes to DataWaiting1.
 
-			// If the MS is in packet-idle mode, need to send the message on CCCH,
-			// otherwise on PACCH.  See MSMode.
+		// If the MS is in packet-idle mode, need to send the message on CCCH,
+		// otherwise on PACCH.  See MSMode.
 
 		DataWaiting1,
-			// Waiting on MsgTransaction for MS to respond to uplink/downlink message,
-			// Reply is in the form of RRBP granted PacketControlAcknowledgement.
-			// If it is a multislot assignment that went on CCCH, we need yet
-			// another MsgTransaction to do the timeslot reconfigure, so go to DataWaiting2,
-			// otherwise go directly to DataTransmit.
-			// (Because the CCCH Immediate Assignment supports only single-slot.)
-			// Otherwise go directly to DataWaiting2.
+		// Waiting on MsgTransaction for MS to respond to uplink/downlink message,
+		// Reply is in the form of RRBP granted PacketControlAcknowledgement.
+		// If it is a multislot assignment that went on CCCH, we need yet
+		// another MsgTransaction to do the timeslot reconfigure, so go to DataWaiting2,
+		// otherwise go directly to DataTransmit.
+		// (Because the CCCH Immediate Assignment supports only single-slot.)
+		// Otherwise go directly to DataWaiting2.
 
 		DataWaiting2,
-			// Send the Packet Timing Advance required for downlink immediate assignment on CCCH.
-			// Multislot TODO
-			// Send the Multislot assignment.
-			// Reply is in the form of RRBP granted PacketControlAcknowledgement.
-			// On reply, go to state DataTransmit.
-			// if gBSNNext <= mtExpectedAckBSN:
-			//		We are waiting for the MS to send the response.  Do nothing.
-			// else:
-			//		if the MS did not set mAckYet (by sending us a message,
-			//			probably Packet Control Acknowledgment):
-			//			if too many mSendTrys, give up, goto stateDead.
-			//			else resend the message and stay in this state.
-			//		else the MS did set mAck:
-			//			If the message is:
-			//			Packet TBF release, kill this TBF.
-			//			FinalAckNack: All uplink data successful, kill this TBF.
-			//			Otherwise it is data up/down: activate the TBF, goto stateActive
+		// Send the Packet Timing Advance required for downlink immediate assignment on CCCH.
+		// Multislot TODO
+		// Send the Multislot assignment.
+		// Reply is in the form of RRBP granted PacketControlAcknowledgement.
+		// On reply, go to state DataTransmit.
+		// if gBSNNext <= mtExpectedAckBSN:
+		//		We are waiting for the MS to send the response.  Do nothing.
+		// else:
+		//		if the MS did not set mAckYet (by sending us a message,
+		//			probably Packet Control Acknowledgment):
+		//			if too many mSendTrys, give up, goto stateDead.
+		//			else resend the message and stay in this state.
+		//		else the MS did set mAck:
+		//			If the message is:
+		//			Packet TBF release, kill this TBF.
+		//			FinalAckNack: All uplink data successful, kill this TBF.
+		//			Otherwise it is data up/down: activate the TBF, goto stateActive
 
 		DataReassign,
-			// Not currently used.
+		// Not currently used.
 
 		DataTransmit,
-			// MS and BTS are in PacketTransfer Mode
-			// A data transfer TBF is trying to do its thing using the RLCEngine.
-			// If it is a packet uplink assignment, set some timer, and we start setting USF
-			// in downlink blocks to allow the MS to send us uplink blocks.
-			// If it is a packet downlink assignment, start some timer and the serviceloop
-			// will start sending downlink blocks when there is nothing else to do.
-			// If it is packet TBF release, destroy this TBF.
-			// Periodically the RLCEngine will send AckNack blocks in unacknowledged mode.
-			// (Only the final AckNack message is sent in acknowledged mode.)
+		// MS and BTS are in PacketTransfer Mode
+		// A data transfer TBF is trying to do its thing using the RLCEngine.
+		// If it is a packet uplink assignment, set some timer, and we start setting USF
+		// in downlink blocks to allow the MS to send us uplink blocks.
+		// If it is a packet downlink assignment, start some timer and the serviceloop
+		// will start sending downlink blocks when there is nothing else to do.
+		// If it is packet TBF release, destroy this TBF.
+		// Periodically the RLCEngine will send AckNack blocks in unacknowledged mode.
+		// (Only the final AckNack message is sent in acknowledged mode.)
 
 		DataFinal,
-			// Only used for uplink TBFs now.
-			// We have received all the uplink data, but we are waiting
-			// for the MS to respond to the uplinkacknack message.
-			// It wont stop sending data until it gets it, so we make sure.
+		// Only used for uplink TBFs now.
+		// We have received all the uplink data, but we are waiting
+		// for the MS to respond to the uplinkacknack message.
+		// It wont stop sending data until it gets it, so we make sure.
 
 		TbfRelease,
-			// TBF is undergoing PacketTBFRelease procedure as the result of an abnormal termination.
-			// We send the PacketTBFRelease message and then wait in this state until we get the acknowledgement.
-			// When the get the response we will retry the TBF.
+		// TBF is undergoing PacketTBFRelease procedure as the result of an abnormal termination.
+		// We send the PacketTBFRelease message and then wait in this state until we get the acknowledgement.
+		// When the get the response we will retry the TBF.
 
 		Finished,
-			// TBF is completely finished, but we keep it around until
-			// all its reservations expire before detaching.
+		// TBF is completely finished, but we keep it around until
+		// all its reservations expire before detaching.
 
 		Dead,
-			// Similar to Finished, but this TBF is dead because
-			// we lost contact with the MS or some timer expired.
-			// It is *not* detached yet, ie, it hangs on to its resources.
-			// We cannot reuse the resources for 5 (config parameter) seconds.
-			// We could also act preemptively to send TBF destruction messages, which if answered
-			// would allow us to get rid of the TBF, not that we care that much.
+		// Similar to Finished, but this TBF is dead because
+		// we lost contact with the MS or some timer expired.
+		// It is *not* detached yet, ie, it hangs on to its resources.
+		// We cannot reuse the resources for 5 (config parameter) seconds.
+		// We could also act preemptively to send TBF destruction messages, which if answered
+		// would allow us to get rid of the TBF, not that we care that much.
 		Deleting
-			// This state is entered via mtDetach().
-			// This resources for this TBF have been (or are in the midst of being) released.
-			// We use this ephemeral state to make deletion simpler.
-		};
+		// This state is entered via mtDetach().
+		// This resources for this TBF have been (or are in the midst of being) released.
+		// We use this ephemeral state to make deletion simpler.
+	};
 	static const char *name(int value);
 };
-std::ostream& operator<<(std::ostream& os, const TBFState::type &type);
+std::ostream &operator<<(std::ostream &os, const TBFState::type &type);
 
 #if TBF_IMPLEMENTATION
 const char *TBFState::name(int value)
 {
 	switch ((type)value) {
-	case Unused: return "TBFState::Unused";
-	case DataReadyToConnect: return "TBFState::DataReadyToConnect";
-	case DataWaiting1: return "TBFState::DataWaiting1";
-	case DataWaiting2: return "TBFState::DataWaiting2";
-	case DataReassign: return "TBFState::DataReassign";
-	case DataTransmit: return "TBFState::DataTransmit";
-	//case DataStalled: return "TBFState:DataStalled";
-	case TbfRelease: return "TBFState::TbfRelease";
-	case Finished: return "TBFState::Finished";
-	case DataFinal: return "TBFState::DataFinal";
-	case Dead: return "TBFState::Dead";
-	case Deleting: return "TBFState::Deleting";
+	case Unused:
+		return "TBFState::Unused";
+	case DataReadyToConnect:
+		return "TBFState::DataReadyToConnect";
+	case DataWaiting1:
+		return "TBFState::DataWaiting1";
+	case DataWaiting2:
+		return "TBFState::DataWaiting2";
+	case DataReassign:
+		return "TBFState::DataReassign";
+	case DataTransmit:
+		return "TBFState::DataTransmit";
+	// case DataStalled: return "TBFState:DataStalled";
+	case TbfRelease:
+		return "TBFState::TbfRelease";
+	case Finished:
+		return "TBFState::Finished";
+	case DataFinal:
+		return "TBFState::DataFinal";
+	case Dead:
+		return "TBFState::Dead";
+	case Deleting:
+		return "TBFState::Deleting";
 	}
-	return "TBFState undefined!";	// Makes gcc happy
+	return "TBFState undefined!"; // Makes gcc happy
 }
-std::ostream& operator<<(std::ostream& os, const TBFState::type &type)
+std::ostream &operator<<(std::ostream &os, const TBFState::type &type)
 {
 	os << TBFState::name(type);
 	return os;
@@ -247,20 +260,20 @@ std::ostream& operator<<(std::ostream& os, const TBFState::type &type)
 // Most of these states are used only by uplink or downlink tbfs but not both;
 // the inapplicable states are never used.
 enum MsgTransactionType {
-	MsgTransNone,		// Means nothing pending.
-	MsgTransAssign1,	// For ack to first assignment msg (on ccch or pacch.)
-	MsgTransAssign2,	// For ack to optional second assignment msg (always on pacch.)
-	MsgTransReassign,	// For ack to reassignment if required.
-	MsgTransDataFinal,	// For ack to final transmitted block. Used for both up and downlink.
-						// In downlink, the block with the FBI indicator. N3103 in uplink, N3105 in downlink
-	MsgTransTransmit,	// For acknack message during DataTransmit mode. Used for both uplink and downlink
-						// In downlink N3105, in uplink for the non-final-ack.
+	MsgTransNone,      // Means nothing pending.
+	MsgTransAssign1,   // For ack to first assignment msg (on ccch or pacch.)
+	MsgTransAssign2,   // For ack to optional second assignment msg (always on pacch.)
+	MsgTransReassign,  // For ack to reassignment if required.
+	MsgTransDataFinal, // For ack to final transmitted block. Used for both up and downlink.
+			   // In downlink, the block with the FBI indicator. N3103 in uplink, N3105 in downlink
+	MsgTransTransmit,  // For acknack message during DataTransmit mode. Used for both uplink and downlink
+			   // In downlink N3105, in uplink for the non-final-ack.
 	// There are two different transaction states for Assign messages because we may send two:
 	// if the first is on CCCH and we want multislot mode, we have to send a second
 	// assignment on pacch.
-	MsgTransTA,			// For ack to Timing Advance msg.
-	MsgTransTbfRelease,	// For ack to TbfRelease msg.
-	MsgTransMax			// Not a transaction - indicates number of Transaction Types.
+	MsgTransTA,	 // For ack to Timing Advance msg.
+	MsgTransTbfRelease, // For ack to TbfRelease msg.
+	MsgTransMax	 // Not a transaction - indicates number of Transaction Types.
 };
 
 // This facility is used only for messages belonging to a TBF, which includes RRBP reservations
@@ -269,87 +282,92 @@ enum MsgTransactionType {
 // meaningless anyway because they do not correspond to a TBF somewhere changing states.
 // We only track one outstanding reservation at a time for each TBF.
 // Generally we send a message and then wait for a PacketControlAcknowledgement.
-class MsgTransaction
-{	private:
-	BitSet mtMsgAckBits; 		// Type of acks received.
-	BitSet mtMsgExpectedBits;	// The types messages we are waiting for.
-	Mutex mtLock;	// The CCCH handler calls mtSetAckExpected from another thread, so we have to lock appropriately.
+class MsgTransaction {
+private:
+	BitSet mtMsgAckBits;      // Type of acks received.
+	BitSet mtMsgExpectedBits; // The types messages we are waiting for.
+	Mutex mtLock; // The CCCH handler calls mtSetAckExpected from another thread, so we have to lock appropriately.
 
-	public:
-	RLCBSN_t mtExpectedAckBSN[MsgTransMax];	// When we expect to get the acknowledgement from the MS.
+public:
+	RLCBSN_t mtExpectedAckBSN[MsgTransMax]; // When we expect to get the acknowledgement from the MS.
 	// This is supposed to be in the MS, but I moved it to the TBF because
 	// some TBFs become non-responsive individually while others are still moving,
 	// so we dont want to kill off the MS if a single TBF dies.
-	UInt_z mtN3105;		// Counts RRBP data reservations that MS ignores.
-	UInt_z mtN3103;		// Counts final downlinkacknacks RRBP that MS ignores.
-	UInt_z mtAssignCounter;	// Count Assignment Messages.
-	UInt_z mtReassignCounter;	// Count reassigment messages.
-	UInt_z mtCcchAssignCounter;	// Number of assignments sent on CCCH.
+	UInt_z mtN3105;		    // Counts RRBP data reservations that MS ignores.
+	UInt_z mtN3103;		    // Counts final downlinkacknacks RRBP that MS ignores.
+	UInt_z mtAssignCounter;     // Count Assignment Messages.
+	UInt_z mtReassignCounter;   // Count reassigment messages.
+	UInt_z mtCcchAssignCounter; // Number of assignments sent on CCCH.
 	UInt_z mtTbfReleaseCounter;
 
 	// Wait for the next message.
-	void mtMsgSetWait(MsgTransactionType mttype) {
-		{	ScopedLock lock(mtLock);
+	void mtMsgSetWait(MsgTransactionType mttype)
+	{
+		{
+			ScopedLock lock(mtLock);
 			devassert(mtExpectedAckBSN[mttype].valid());
 			mtMsgAckBits.clearBit(mttype);
 			mtMsgExpectedBits.setBit(mttype);
 		}
-		GPRSLOG(4) << "mtMsgSetWait"<<LOGVAR(mttype)<<LOGVAR(mtMsgExpectedBits);
+		GPRSLOG(4) << "mtMsgSetWait" << LOGVAR(mttype) << LOGVAR(mtMsgExpectedBits);
 	}
 	void text(std::ostream &os) const;
 
 	// Set the BSN when the TBF is expecting a message, but note that the
 	// MS may send uplink data blocks before this time.
-	void mtSetAckExpected(RLCBSN_t when, MsgTransactionType mttype) {
-		GPRSLOG(4) << "mtSetAckExpected"<<LOGVAR(when)<<LOGVAR(mttype);
+	void mtSetAckExpected(RLCBSN_t when, MsgTransactionType mttype)
+	{
+		GPRSLOG(4) << "mtSetAckExpected" << LOGVAR(when) << LOGVAR(mttype);
 		ScopedLock lock(mtLock);
 		mtExpectedAckBSN[mttype] = when;
 		mtMsgSetWait(mttype);
 	}
 
 	// Called to indicate that a message for this TBF arrived.
-	void mtRecvAck(MsgTransactionType mttype) {
-		GPRSLOG(4) << "mtRecvAck"<<LOGVAR(mttype)<<LOGVAR(mtMsgExpectedBits);
+	void mtRecvAck(MsgTransactionType mttype)
+	{
+		GPRSLOG(4) << "mtRecvAck" << LOGVAR(mttype) << LOGVAR(mtMsgExpectedBits);
 		ScopedLock lock(mtLock);
 		mtMsgAckBits.setBit(mttype);
 		mtMsgExpectedBits.clearBit(mttype);
-		mtN3105 = 0;	// Not all of these are for mtN3105, but doesnt hurt to always reset it.
+		mtN3105 = 0; // Not all of these are for mtN3105, but doesnt hurt to always reset it.
 	}
 
-	bool mtGotAck(MsgTransactionType mttype, bool clear) {
+	bool mtGotAck(MsgTransactionType mttype, bool clear)
+	{
 		bool result;
-		{	ScopedLock lock(mtLock);
+		{
+			ScopedLock lock(mtLock);
 			result = mtMsgAckBits.isSet(mttype);
 			if (result && clear) {
 				mtMsgExpectedBits.clearBit(mttype);
 				mtExpectedAckBSN[mttype] = -1;
 			}
 		}
-		GPRSLOG(4) << "mtGotAck "<<(result?"yes":"no")<<LOGVAR(mttype)<<LOGVAR(mtMsgExpectedBits);
+		GPRSLOG(4) << "mtGotAck " << (result ? "yes" : "no") << LOGVAR(mttype) << LOGVAR(mtMsgExpectedBits);
 		return result;
 	}
 
 	// Is any reservation currently outstanding?
 	bool mtMsgPending();
-	bool mtMsgPending(MsgTransactionType mttype);	// Is this msg still outstanding?
+	bool mtMsgPending(MsgTransactionType mttype); // Is this msg still outstanding?
 
-	//MsgTransaction() { }
+	// MsgTransaction() { }
 };
 
 // We will allocate a TBF both for data uplink/downlink transfers, and for single
 // messages to the MS which require an ACK, even though strictly speaking that is not a TBF.
 // A TBF is not used for a single block packet [uplink] access.
-class TBF :
-	public MsgTransaction		// Sends messages reliably.
+class TBF : public MsgTransaction // Sends messages reliably.
 {
-	private:
-	TBFState::type mtState;		// State of this TBF.  Dont set this directly, call setState().
+private:
+	TBFState::type mtState; // State of this TBF.  Dont set this directly, call setState().
 
-	public:
+public:
 	unsigned mtDebugId;
 	MSInfo *mtMS;
 	RLCDirType mtDir;
-	Int_i<-1> mtTFI;				// Assigned TFI, or -1.
+	Int_i<-1> mtTFI; // Assigned TFI, or -1.
 
 	// There is some question about whether we need ACKs (PacketControlAcknowledgement) at all.
 	// For packet downlink, without the ACK we would not notice until the MS
@@ -358,33 +376,31 @@ class TBF :
 	// and if they are bad for awhile, restart this, but we cant really be sure
 	// that the old TFI is released first.
 	// So the ACKs make the state machine much safer in both cases.
-	
 
-	Bool_z mtUnAckMode;			// a.k.a. RLCMode.  If 1, send in unacknowledged mode.
-								// Note: as of 6-2012 unacknowledged mode is not implemented.
-	Bool_z mtAttached;			// Flag for mtAttach()/mtDetach() status.
-	Bool_z mtAssignmentOnCCCH;	// Set if assignment was sent on CCCH.
-	Bool_z mtPerformReassign;	// Reissue an uplink TBF assignment to 'change priority' geesh.
-	//Bool_z mtIsRetry;			// Is this our second attempt to send this TBF?
-	Bool_z mtTASent;			// For debugging, true if we sent an extra Timing Adv message.
-	GprsTimer mtDeadTime;		// When a dead TBF can finally release resources.
-	MSStopCause::type mtCause;	// Why the TBF died.
-	//Float_z mtLowRSSI;			// Save the lowest RSSI seen for reporting purposes.
-	uint32_t mtTlli;			// The tlli of an uplink TBF.  It is != mtMS->msTlli only
-								// in the special case of a second AttachRequest occuring
-								// after the TLLI reassignment procedure.
+	Bool_z mtUnAckMode;	// a.k.a. RLCMode.  If 1, send in unacknowledged mode.
+				   // Note: as of 6-2012 unacknowledged mode is not implemented.
+	Bool_z mtAttached;	 // Flag for mtAttach()/mtDetach() status.
+	Bool_z mtAssignmentOnCCCH; // Set if assignment was sent on CCCH.
+	Bool_z mtPerformReassign;  // Reissue an uplink TBF assignment to 'change priority' geesh.
+	// Bool_z mtIsRetry;			// Is this our second attempt to send this TBF?
+	Bool_z mtTASent;	   // For debugging, true if we sent an extra Timing Adv message.
+	GprsTimer mtDeadTime;      // When a dead TBF can finally release resources.
+	MSStopCause::type mtCause; // Why the TBF died.
+	// Float_z mtLowRSSI;			// Save the lowest RSSI seen for reporting purposes.
+	uint32_t mtTlli; // The tlli of an uplink TBF.  It is != mtMS->msTlli only
+			 // in the special case of a second AttachRequest occuring
+			 // after the TLLI reassignment procedure.
 
 	// Persistence timers, used for both uplink and downlink.
-	//GprsTimer mtKeepAliveTimer;	// Time to next keep alive.
-	GprsTimer mtPersistTimer;	// How long TBF persists while idle.
+	// GprsTimer mtKeepAliveTimer;	// Time to next keep alive.
+	GprsTimer mtPersistTimer; // How long TBF persists while idle.
 
-	std::string mtDescription;	// For error reporting, what was in this TBF?
+	std::string mtDescription; // For error reporting, what was in this TBF?
 
-	Timeval mtStartTime;		// For reporting.  default init is to current time.
-
+	Timeval mtStartTime; // For reporting.  default init is to current time.
 
 	// Statistics for flow control, needed only in downlink direction.
-	//TODO: RLCBSN_t mtStartTime;	// When we started sending it.
+	// TODO: RLCBSN_t mtStartTime;	// When we started sending it.
 
 	TBF(MSInfo *wms, RLCDirType wdir);
 	// The virtual keyword tells C++ to call the derived destructors too.
@@ -393,10 +409,10 @@ class TBF :
 
 	// Can this TBF use the specified downlink?
 	// It depends on the MS allocated channels.
-	bool canUseDownlink(PDCHL1Downlink*down) { return mtMS->canUseDownlink(down); }
+	bool canUseDownlink(PDCHL1Downlink *down) { return mtMS->canUseDownlink(down); }
 
 	// Can this TBF use the specified uplink?
-	bool canUseUplink(PDCHL1Uplink*up) { return mtMS->canUseUplink(up); }
+	bool canUseUplink(PDCHL1Uplink *up) { return mtMS->canUseUplink(up); }
 
 	void mtSetState(TBFState::type wstate);
 	TBFState::type mtGetState() { return mtState; }
@@ -410,47 +426,50 @@ class TBF :
 	// Second of all, we dont really know if the MS is listening
 	// or not in DataWaiting1 mode because we have not heard back from
 	// it after the sendAssignment.  Maybe we need yet another mode.
-	bool isTransmitting() {
+	bool isTransmitting()
+	{
 		switch (mtState) {
-			case TBFState::DataWaiting2:
-			case TBFState::DataTransmit:
-			case TBFState::DataReassign:
-			//case TBFState::DataStalled:
-			case TBFState::DataFinal:
-				return true;
-			default:
-				return false;
+		case TBFState::DataWaiting2:
+		case TBFState::DataTransmit:
+		case TBFState::DataReassign:
+		// case TBFState::DataStalled:
+		case TBFState::DataFinal:
+			return true;
+		default:
+			return false;
 		}
 	}
 	// Used to determine if there is already a TBF running so we should not start another.
 	// It is very important to include DataReadyToConnect because those indicate
 	// that an assignment is already in progress, and we dont want to start another.
-	bool isActive() {	// The TBF is trying to do something.
+	bool isActive()
+	{ // The TBF is trying to do something.
 		switch (mtState) {
-			case TBFState::DataReadyToConnect:
-			case TBFState::DataWaiting1:
-			case TBFState::DataWaiting2:
-			case TBFState::DataTransmit:
-			case TBFState::DataReassign:
-			//case TBFState::DataStalled:
-			case TBFState::DataFinal:
-			case TBFState::TbfRelease:	// Counts until it is acknowledged as released.
-				return true;
-			case TBFState::Dead:
-			case TBFState::Finished:	// TBF may still wait for res, but we dont count it.
-			case TBFState::Deleting:
-			case TBFState::Unused:
-				return false;
+		case TBFState::DataReadyToConnect:
+		case TBFState::DataWaiting1:
+		case TBFState::DataWaiting2:
+		case TBFState::DataTransmit:
+		case TBFState::DataReassign:
+		// case TBFState::DataStalled:
+		case TBFState::DataFinal:
+		case TBFState::TbfRelease: // Counts until it is acknowledged as released.
+			return true;
+		case TBFState::Dead:
+		case TBFState::Finished: // TBF may still wait for res, but we dont count it.
+		case TBFState::Deleting:
+		case TBFState::Unused:
+			return false;
 		}
-		return false;	// Unreached, but makes gcc happy.
+		return false; // Unreached, but makes gcc happy.
 	}
 	bool mtServiceDownlink(PDCHL1Downlink *down);
 	bool mtSendTbfRelease(PDCHL1Downlink *down);
 	void mtServiceUnattached();
 	void mtCancel(MSStopCause::type cause, TbfCancelMode release);
-	void mtCancel(MsgTransactionType cause, TbfCancelMode release) {
+	void mtCancel(MsgTransactionType cause, TbfCancelMode release)
+	{
 		// Canceled due to expiry of MsgTransactionType timer.
-		mtCancel((MSStopCause::type) cause, release);
+		mtCancel((MSStopCause::type)cause, release);
 	}
 	void mtRetry();
 	void mtFinishSuccess();
@@ -461,25 +480,25 @@ class TBF :
 	// For uplink, the BTS specifies the encoding the MS will use in both
 	// the uplink assignment and in every uplinkacknack message.
 	// The ChannelCodingMax is used for retries to throttle back to a more secure codec.
-	ChannelCodingType mtChannelCodingMax;	// The max channel coding (0-3) allowed for this TBF.
-	ChannelCodingType mtCCMin, mtCCMax;		// Saved for reporting purposes.
-	ChannelCodingType mtChannelCoding() const; 	// Return 0 - 3 for CS-1 or CS-4 for data transfer.
+	ChannelCodingType mtChannelCodingMax;      // The max channel coding (0-3) allowed for this TBF.
+	ChannelCodingType mtCCMin, mtCCMax;	// Saved for reporting purposes.
+	ChannelCodingType mtChannelCoding() const; // Return 0 - 3 for CS-1 or CS-4 for data transfer.
 
 	// Note that this TBF is a base class of either an RLCEngineUp or RLCEngineDown,
 	// depending on the TBF direction.
 	// These functions are defined in RLCEngineUp and RLCEngineDown:
 	virtual bool engineService(PDCHL1Downlink *down) = 0;
-	virtual unsigned engineDownPDUSize() const {return 0;}
-	virtual void engineRecvDataBlock(RLCUplinkDataBlock* block, int tn) {}
+	virtual unsigned engineDownPDUSize() const { return 0; }
+	virtual void engineRecvDataBlock(RLCUplinkDataBlock *block, int tn) {}
 	virtual void engineRecvAckNack(const RLCMsgPacketDownlinkAckNack *msg) {}
 	virtual float engineDesiredUtilization() = 0;
 	virtual void engineGetStats(unsigned *pSlotsTotal, unsigned *pSlotsUsed, unsigned *pGrants) const = 0;
 	virtual int engineGetBytesPending() = 0;
 	virtual void engineDump(std::ostream &os) const = 0;
 	virtual bool stalled() const = 0;
-	//RLCDownEngine const* getDownEngine() const;	// Cant use this to change anything in RLCDownEngine
-	RLCDownEngine * getDownEngine();
-	static TBF *newUpTBF(MSInfo *ms,RLCMsgChannelRequestDescriptionIE &mCRD, uint32_t tlli, bool onRach);
+	// RLCDownEngine const* getDownEngine() const;	// Cant use this to change anything in RLCDownEngine
+	RLCDownEngine *getDownEngine();
+	static TBF *newUpTBF(MSInfo *ms, RLCMsgChannelRequestDescriptionIE &mCRD, uint32_t tlli, bool onRach);
 
 	// In a multislot configuration one of the slots is the primary slots and is
 	// used exclusively for all messages, and all other channels are used only for data.
@@ -487,35 +506,35 @@ class TBF :
 	// and is currently identical to msPacch.  It is also the first channel in the
 	// downlink list.
 	bool isPrimary(PDCHL1Downlink *down);
-	bool wantsMultislot();	// Does this tbf want to be multislot?
+	bool wantsMultislot(); // Does this tbf want to be multislot?
 
 	// Attach to a channel.  Return true if we succeeded.
 	bool mtAttach();
-	bool mtNonResponsive();		// Is this TBF non responsive?
+	bool mtNonResponsive(); // Is this TBF non responsive?
 	// Detach from the channel.  Release our resources.
-	void mtDetach();	// Internal use only - call mtCancel or mtFinishSuccess
-	void mtDeReattach();	// Internal use only - call mtCancel or mtFinishSuccess
+	void mtDetach();     // Internal use only - call mtCancel or mtFinishSuccess
+	void mtDeReattach(); // Internal use only - call mtCancel or mtFinishSuccess
 	// If forever, do not move to expired list, just kill it.
-	void mtDelete(bool forever=0);	// Internal use only - call mtCancel or mtFinishSuccess
-	//void setRadData(RadData &wRD);
-	//void talkedUp() { mtMS->talkedUp(); }
+	void mtDelete(bool forever = 0); // Internal use only - call mtCancel or mtFinishSuccess
+	// void setRadData(RadData &wRD);
+	// void talkedUp() { mtMS->talkedUp(); }
 	void talkedDown() { mtMS->talkedDown(); }
 	uint32_t mtGetTlli();
 	const char *tbfid(bool verbose);
 
-	private:
+private:
 	bool mtAllocateTFI();
 	bool mtAllocateUSF();
 	void mtFreeTFI();
 };
 extern unsigned gTBFDebugId;
 
-std::ostream& operator<<(std::ostream& os, const TBF*tbf);
+std::ostream &operator<<(std::ostream &os, const TBF *tbf);
 #if TBF_IMPLEMENTATION
-std::ostream& operator<<(std::ostream& os, const TBF*tbf)
+std::ostream &operator<<(std::ostream &os, const TBF *tbf)
 {
 	if (tbf) {
-		os << " TBF#" << tbf->mtDebugId <<" ";
+		os << " TBF#" << tbf->mtDebugId << " ";
 	} else {
 		os << " TBF(null ptr) ";
 	}
@@ -523,7 +542,8 @@ std::ostream& operator<<(std::ostream& os, const TBF*tbf)
 }
 #endif
 
-extern bool sendAssignment(PDCHL1FEC *pacch,TBF *tbf, std::ostream *os);
+extern bool sendAssignment(PDCHL1FEC *pacch, TBF *tbf, std::ostream *os);
 
-}	// namespace GPRS
+}; // namespace GPRS
+
 #endif

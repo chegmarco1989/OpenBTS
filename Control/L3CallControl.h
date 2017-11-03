@@ -1,4 +1,4 @@
-/* 
+/*
 * Copyright 2013, 2014 Range Networks, Inc.
 *
 * This software is distributed under multiple licenses;
@@ -26,6 +26,6 @@ void initMTC(TranEntry *tran);
 void initTestCall(TranEntry *tran);
 void startInboundHandoverMachine(TranEntry *tran);
 
-};	// namespace
+}; // namespace Control
 
 #endif

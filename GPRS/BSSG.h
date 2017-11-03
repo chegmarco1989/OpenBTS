@@ -15,14 +15,14 @@
 
 #ifndef BSSG_H
 #define BSSG_H
-#include "Interthread.h"
-#include "Defines.h"
-#include "ByteVector.h"
-#include "ScalarTypes.h"
+
 #include "BSSGMessages.h"
+#include "ByteVector.h"
+#include "Defines.h"
+#include "Interthread.h"
+#include "ScalarTypes.h"
 
 // BSSG.cpp handles link layer communication to the SGSN.
-
 
 namespace BSSG {
 
@@ -72,16 +72,16 @@ namespace BSSG {
 // and a few special messages that go to the BTS, like paging and MS capabilities.
 // See BSSGMessages.h
 
-const unsigned SGSNTimeout = 1000;	// In msecs
+const unsigned SGSNTimeout = 1000; // In msecs
 
 // The main interface to the SGSN.
 class BSSGMain {
-	public:
+public:
 	// Only BSSG downlink messages are put on the receive queue; other types are handled immediately.
 	// The transmit queue may have any type of BSSG/NS message.
 	InterthreadQueue<BSSGDownlinkMsg> mbsRxQ;
 	InterthreadQueue<NSMsg> mbsTxQ;
-	InterthreadQueue<NSMsg> *mbsTestQ;	// Only used for testing
+	InterthreadQueue<NSMsg> *mbsTestQ; // Only used for testing
 	Thread mbsRecvThread;
 	Thread mbsSendThread;
 	int mbsSGSockfd;
@@ -91,10 +91,10 @@ class BSSGMain {
 	Bool_z mbsResetAckReceived;
 	Bool_z mbsAliveReceived;
 	Bool_z mbsAliveAckReceived;
-	Bool_z mbsBlocked;	// We dont implement blocking, but we track the state.
+	Bool_z mbsBlocked; // We dont implement blocking, but we track the state.
 
 	// These are identifiers for the BSC and NS link, which we dont use.
-	UInt_z mbsBVCI;		// Our BTS identifire.  Must not be 0 or 1.
+	UInt_z mbsBVCI; // Our BTS identifire.  Must not be 0 or 1.
 	UInt_z mbsNSVCI;
 	UInt_z mbsNSEI;
 
@@ -110,6 +110,6 @@ void BSSGWriteLowSide(NSMsg *ulmsg);
 
 extern BSSGMain gBSSG;
 
-};
+}; // namespace BSSG
 
 #endif

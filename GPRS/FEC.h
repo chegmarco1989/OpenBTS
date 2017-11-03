@@ -18,26 +18,28 @@
 #ifndef GPRSL1FEC_H
 #define GPRSL1FEC_H
 
-#include <GSMCommon.h>
-#include <GSMConfig.h>		// for gBTS
-#include <GSML1FEC.h>
-#include <GSMTransfer.h>	// for TxBurst
-#include <GSMLogicalChannel.h> // for TCHFACCHLogicalChannel
 #include "MAC.h"
+#include <GSMCommon.h>
+#include <GSMConfig.h> // for gBTS
+#include <GSML1FEC.h>
+#include <GSMLogicalChannel.h> // for TCHFACCHLogicalChannel
+#include <GSMTransfer.h>       // for TxBurst
+
 using namespace GSM;
+
 namespace GPRS {
+
 class TBF;
 
 // GSM05.03 sec 5.1.4 re GPRS CS-4 says: 16 bit parity with generator: D16 + D12 + D5 + 1,
-static const unsigned long sCS4Generator = (1<<16) + (1<<12) + (1<<5) + 1;
+static const unsigned long sCS4Generator = (1 << 16) + (1 << 12) + (1 << 5) + 1;
 
 class PDCHL1FEC;
-class PDCHCommon
-{
-	public:
+class PDCHCommon {
+public:
 	PDCHL1FEC *mchParent;
 
-	PDCHCommon(PDCHL1FEC*wParent) { mchParent = wParent; }
+	PDCHCommon(PDCHL1FEC *wParent) { mchParent = wParent; }
 	ARFCNManager *getRadio();
 	unsigned TN();
 	unsigned ARFCN();
@@ -48,15 +50,16 @@ class PDCHCommon
 	void countBadFrame();
 	PDCHL1Uplink *uplink();
 	PDCHL1Downlink *downlink();
-	PDCHL1FEC *parent();	// If called from mchParent, returns itself.
+	PDCHL1FEC *parent(); // If called from mchParent, returns itself.
 	TBF *getTFITBF(int tfi, RLCDirType dir);
 	void setTFITBF(int tfi, RLCDirType dir, TBF *TBF);
-	
+
 	const char *getAnsweringUsfText(char *buf, RLCBSN_t bsn); // Printable USFs around BSN for debugging
 
-	char *shortId() {	// Return a short printable id for this channel.
+	char *shortId()
+	{ // Return a short printable id for this channel.
 		static char buf[20];
-		sprintf(buf,"PDCH#%u:%u",getRadio()->ARFCN(),TN());
+		sprintf(buf, "PDCH#%u:%u", getRadio()->ARFCN(), TN());
 		return buf;
 	}
 };
@@ -72,26 +75,22 @@ class PDCHCommon
 // Downstream it attaches to a single Physical channel in L1FEC via mchEncoder and mchDecoder.
 // TODO: I did this wrong.  This should be for a single ARFCN, but multiple
 // upstream/downstream timeslots.
-class PDCHL1FEC :
-	public L1UplinkReservation,
-	public PDCHCommon,
-	public USFList
-{
-	public:
+class PDCHL1FEC : public L1UplinkReservation, public PDCHCommon, public USFList {
+public:
 	PDCHL1Downlink *mchDownlink;
 	PDCHL1Uplink *mchUplink;
 
-	L1FEC *mchOldFec;		// The GSM TCH channel that this GPRS channel took over;
-						// it has the channel parameters.
+	L1FEC *mchOldFec; // The GSM TCH channel that this GPRS channel took over;
+			  // it has the channel parameters.
 
 	// Temporary: GPRS will not use anything in this LogicalChannel class, and we dont want
 	// the extra class hanging around, but currently the only way to dynamically
 	// allocate physical channels is via the associated logical channel.
 	TCHFACCHLogicalChannel *mchLogChan;
 
-	public:
+public:
 	// The TFIs are a 5 bit handle for TBFs.  The USFs are a 3 bit handle for uplink TBFs.
-	TFIList *mchTFIs;// Points to the global TFIList.  Someday will point to the per-ARFCN TFIList.
+	TFIList *mchTFIs; // Points to the global TFIList.  Someday will point to the per-ARFCN TFIList.
 
 	void debug_test();
 
@@ -103,11 +102,11 @@ class PDCHL1FEC :
 	~PDCHL1FEC();
 
 	// Attach this GPRS channel to the specified GSM channel.
-	//void mchOpen(TCHFACCHLogicalChannel *wlogchan);
+	// void mchOpen(TCHFACCHLogicalChannel *wlogchan);
 
 	void mchStart();
 	void mchStop();
-	void mchDump(std::ostream&os,bool verbose);
+	void mchDump(std::ostream &os, bool verbose);
 
 	// Return a description of PDTCH, which is the only one we care about.
 	// (We dont care about the associated SDCCH, whose frame is used in GPRS for
@@ -122,70 +121,61 @@ class PDCHL1FEC :
 	L3ChannelDescription packetChannelDescription()
 	{
 		L1FEC *lf = mchOldFec;
-		return L3ChannelDescription((TypeAndOffset) 1, lf->TN(), lf->TSC(), lf->ARFCN());
+		return L3ChannelDescription((TypeAndOffset)1, lf->TN(), lf->TSC(), lf->ARFCN());
 	}
 };
-std::ostream& operator<<(std::ostream& os, PDCHL1FEC *ch);
+std::ostream &operator<<(std::ostream &os, PDCHL1FEC *ch);
 
 // For CS-1 decoding, just uses SharedL1Decoder.
 // For CS-4 decoding: Uses the SharedL1Decoder through deinterleaving into mC.
-class GprsDecoder : public SharedL1Decoder
-{
+class GprsDecoder : public SharedL1Decoder {
 	Parity mBlockCoder_CS4;
 	BitVector mDP_CS4;
-	public:
+
+public:
 	BitVector mD_CS4;
 	short qbits[8];
-	ChannelCodingType getCS();	// Determine CS from the qbits.
+	ChannelCodingType getCS(); // Determine CS from the qbits.
 	BitVector *getResult();
-	GprsDecoder() :
-		mBlockCoder_CS4(sCS4Generator,16,431+16),
-		mDP_CS4(431+16),
-		mD_CS4(mDP_CS4.head(424))
-		{}
+	GprsDecoder() : mBlockCoder_CS4(sCS4Generator, 16, 431 + 16), mDP_CS4(431 + 16), mD_CS4(mDP_CS4.head(424)) {}
 	bool decodeCS4();
-	const char* descriptiveString() const { return "GprsDecoder"; }	// not very useful.
+	const char *descriptiveString() const { return "GprsDecoder"; } // not very useful.
 };
 
 // CS-4 has 431 input data bits, which are always 424 real data bits (53 bytes)
 // plus 7 unused bits that are set to 0, to make 431 data bits.
 // The first 3 bits are usf encoded to 12 bits, to yield 440 bits.
 // Then 16 bit parity bits yields 456 bits.
-class GprsEncoder : public SharedL1Encoder
-{
+class GprsEncoder : public SharedL1Encoder {
 	Parity mBlockCoder_CS4;
-	public:
+
+public:
 	// Uses SharedL1Encoder::mC for result vector
 	// Uses SharedL1Encoder::mI for the 4-way interleaved result vector.
-	BitVector mP_CS4;	// alias for parity part of mC
-	BitVector mU_CS4;	// alias for usf part of mC
-	BitVector mD_CS4;	// assembly area for parity.
-	GprsEncoder() :
-		SharedL1Encoder(),
-		mBlockCoder_CS4(sCS4Generator,16,431+16),
-		mP_CS4(mC.segment(440,16)),
-		mU_CS4(mC.segment(0,12)),
-		mD_CS4(mC.segment(12-3,431))
-		{}
-	void encodeCS4(const BitVector&src);
+	BitVector mP_CS4; // alias for parity part of mC
+	BitVector mU_CS4; // alias for usf part of mC
+	BitVector mD_CS4; // assembly area for parity.
+	GprsEncoder()
+		: SharedL1Encoder(), mBlockCoder_CS4(sCS4Generator, 16, 431 + 16), mP_CS4(mC.segment(440, 16)),
+		  mU_CS4(mC.segment(0, 12)), mD_CS4(mC.segment(12 - 3, 431))
+	{
+	}
+	void encodeCS4(const BitVector &src);
 	void encodeCS1(const BitVector &src);
 	// would be nice to add "GPRS"; should be at init.
-	const char* descriptiveString() const { return "GprsEncoder"; }
+	const char *descriptiveString() const { return "GprsEncoder"; }
 };
 
-
-
-class PDCHL1Uplink : public PDCHCommon
-{
-	protected:
+class PDCHL1Uplink : public PDCHCommon {
+protected:
 #if GPRS_ENCODER
-	//SharedL1Decoder mchCS1Dec;
+	// SharedL1Decoder mchCS1Dec;
 	GprsDecoder mchCS14Dec;
-#else	// This case does not compile yet.
+#else // This case does not compile yet.
 	L1Decoder mchCS1Dec;
 #endif
 
-	public:
+public:
 	static const RLCDirType mchDir = RLCDir::Up;
 	// The uplink queue:
 	// There will typically only be one guy on here, and we could probably dispense
@@ -193,7 +183,7 @@ class PDCHL1Uplink : public PDCHCommon
 	// InterthreadQueue template adds "*" so it is really a queue of BitVector*
 	InterthreadQueue<RLCRawBlock> mchUplinkData;
 
-	PDCHL1Uplink(PDCHL1FEC *wParent) : PDCHCommon(wParent) { }
+	PDCHL1Uplink(PDCHL1FEC *wParent) : PDCHCommon(wParent) {}
 
 	~PDCHL1Uplink() {}
 
@@ -201,12 +191,11 @@ class PDCHL1Uplink : public PDCHCommon
 
 	// TODO: This needs to be per-MS.
 	// void setPhy(float wRSSI, float TimingError) {
-		// This function is inapplicable to packet channels, which have multiple
-		// MS listening to the same channel.
-		//assert(0);
+	// This function is inapplicable to packet channels, which have multiple
+	// MS listening to the same channel.
+	// assert(0);
 	//}
 };
-
 
 // One of these for each PDCH (physical channel), attached to L1FEC.
 // Accepts Radio Blocks from anybody.
@@ -216,71 +205,69 @@ class PDCHL1Uplink : public PDCHCommon
 // as close as possible to the present time.
 // TODO: When we support different encodings we may have to base this on L1Encoder directly
 // and copy a bunch of routines from XCCHL1Encoder?
-static const int qCS1[8] = { 1,1,1,1,1,1,1,1 };
-static const int qCS2[8] = { 1,1,0,0,1,0,0,0 }; // GSM05.03 sec 5.1.2.5
-static const int qCS3[8] = { 0,0,1,0,0,0,0,1 }; // GSM05.03 sec 5.1.3.5
-static const int qCS4[8] = { 0,0,0,1,0,1,1,0 }; // GSM0503 sec5.1.4.5; magically identifies CS-4.
+static const int qCS1[8] = {1, 1, 1, 1, 1, 1, 1, 1};
+static const int qCS2[8] = {1, 1, 0, 0, 1, 0, 0, 0}; // GSM05.03 sec 5.1.2.5
+static const int qCS3[8] = {0, 0, 1, 0, 0, 0, 0, 1}; // GSM05.03 sec 5.1.3.5
+static const int qCS4[8] = {0, 0, 0, 1, 0, 1, 1, 0}; // GSM0503 sec5.1.4.5; magically identifies CS-4.
 
-class PDCHL1Downlink : public PDCHCommon
-{
-	protected:
+class PDCHL1Downlink : public PDCHCommon {
+protected:
 #if GPRS_ENCODER
 	GprsEncoder mchEnc;
-	//GSM::SharedL1Encoder mchCS1Enc;
-	//GSM::SharedL1Encoder mchCS4Enc;
+	// GSM::SharedL1Encoder mchCS1Enc;
+	// GSM::SharedL1Encoder mchCS4Enc;
 #else
 	GSM::L1Encoder mchCS1Enc;
 #endif
-	TxBurst mchBurst;					///< a preformatted burst template
-	//TxBurst mchFillerBurst;			// unused ///< the filler burst for this channel
+	TxBurst mchBurst; ///< a preformatted burst template
+	// TxBurst mchFillerBurst;			// unused ///< the filler burst for this channel
 	int mchTotalBursts;
-	//GSM::Time mchNextWriteTime, mchPrevWriteTime;
-	const TDMAMapping& mchMapping;
+	// GSM::Time mchNextWriteTime, mchPrevWriteTime;
+	const TDMAMapping &mchMapping;
 	BitVector mchIdleFrame;
 
 	// The mDownlinkData is used only for control messages, which can stack up.
-	//InterthreadQueue<RLCDownlinkMessage> mchDownlinkMsgQ;
+	// InterthreadQueue<RLCDownlinkMessage> mchDownlinkMsgQ;
 
-	public:
+public:
 	static const RLCDirType mchDir = RLCDir::Up;
 
-	void initBursts(L1FEC*);
-	PDCHL1Downlink(PDCHL1FEC *wParent) :
-		PDCHCommon(wParent),
-		//mchCS1Enc(ChannelCodingCS1),
+	void initBursts(L1FEC *);
+	PDCHL1Downlink(PDCHL1FEC *wParent)
+		: PDCHCommon(wParent),
+	// mchCS1Enc(ChannelCodingCS1),
 #if GPRS_ENCODER
-		//mchCS4Enc(ChannelCodingCS4),
+	// mchCS4Enc(ChannelCodingCS4),
 #endif
-		mchTotalBursts(0),
-		mchMapping(wParent->mchOldFec->encoder()->mapping()),
-		mchIdleFrame((size_t)0)
+		  mchTotalBursts(0), mchMapping(wParent->mchOldFec->encoder()->mapping()), mchIdleFrame((size_t)0)
 	{
-	 	initBursts(wParent->mchOldFec);
+		initBursts(wParent->mchOldFec);
 	}
 
 	~PDCHL1Downlink() {}
 
 	// Enqueue a downlink message.  We dont use this for downlink data - those
 	// are sent by calling the RLCEngine when this queue is empty.
-	//void enqueueMsg(RLCDownlinkMessage *);
+	// void enqueueMsg(RLCDownlinkMessage *);
 	// The PDCH must feed the radio on time.  This is the routine that does it.
 	void dlService();
 	void transmit(RLCBSN_t bsn, BitVector *mI, const int *qbits, int transceiverflags);
-	//void rollForward();
-	//void mchResync();
+	// void rollForward();
+	// void mchResync();
 	int findNeedyUSF();
 
 	// Send the L2Frame down to the radio now.
-	void send1Frame(BitVector& frame,ChannelCodingType encoding, bool idle);
-	bool send1DataFrame(RLCDownEngine *tbfdown, RLCDownlinkDataBlock *block, int makeres,MsgTransactionType mttype,unsigned *pcounter);
-	bool send1MsgFrame(TBF *tbf,RLCDownlinkMessage *msg, int makeres, MsgTransactionType mttype,unsigned *pcounter);
+	void send1Frame(BitVector &frame, ChannelCodingType encoding, bool idle);
+	bool send1DataFrame(RLCDownEngine *tbfdown, RLCDownlinkDataBlock *block, int makeres, MsgTransactionType mttype,
+			    unsigned *pcounter);
+	bool send1MsgFrame(TBF *tbf, RLCDownlinkMessage *msg, int makeres, MsgTransactionType mttype,
+			   unsigned *pcounter);
 	void sendIdleFrame(RLCBSN_t bsn);
 	void bugFixIdleFrame();
 };
 
-extern bool chCompareFunc(PDCHCommon*ch1, PDCHCommon*ch2);
+extern bool chCompareFunc(PDCHCommon *ch1, PDCHCommon *ch2);
 
 }; // namespace GPRS
-
 
 #endif

@@ -36,7 +36,7 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- * 
+ *
  * The license and distribution terms for any publicly available version or
  * derivative of this code cannot be changed.  i.e. this code cannot simply be
  * copied and put under another distribution license
@@ -45,7 +45,7 @@
  * Background: The Global System for Mobile communications is the most widely
  * deployed cellular telephony system in the world. GSM makes use of
  * four core cryptographic algorithms, neither of which has been published by
- * the GSM MOU. This failure to subject the algorithms to public review is all  
+ * the GSM MOU. This failure to subject the algorithms to public review is all
  * the more puzzling given that over 100 million GSM
  * subscribers are expected to rely on the claimed security of the system.
  *
@@ -79,67 +79,68 @@
  * A variant of A5, while not A5/1 itself, has been estimated to have a
  * work factor of well below 54 bits. See http://jya.com/crack-a5.htm for
  * background information and references.
- * 
+ *
  * With COMP128 broken and A5/1 published below, we will now turn our attention
  * to A5/2. The latter has been acknowledged by the GSM community to have
  * been specifically designed by intelligence agencies for lack of security.
  *
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "./A51.h"
+
+#include "A51.h"
+
 // We must have a gConfig now to include BitVector.
 #include "Configuration.h"
+
 ConfigurationTable gConfig;
 
 /* Test the code by comparing it against
  * a known-good test vector. */
-void test() {
+void test()
+{
 	byte key[8] = {0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x12};
 	word frame = 0x134;
-	byte goodAtoB[15] = { 0x53, 0x4E, 0xAA, 0x58, 0x2F, 0xE8, 0x15,
-	                      0x1A, 0xB6, 0xE1, 0x85, 0x5A, 0x72, 0x8C, 0x00 };
-	byte goodBtoA[15] = { 0x24, 0xFD, 0x35, 0xA3, 0x5D, 0x5F, 0xB6,
-	                      0x52, 0x6D, 0x32, 0xF9, 0x06, 0xDF, 0x1A, 0xC0 };
+	byte goodAtoB[15] = {0x53, 0x4E, 0xAA, 0x58, 0x2F, 0xE8, 0x15, 0x1A, 0xB6, 0xE1, 0x85, 0x5A, 0x72, 0x8C, 0x00};
+	byte goodBtoA[15] = {0x24, 0xFD, 0x35, 0xA3, 0x5D, 0x5F, 0xB6, 0x52, 0x6D, 0x32, 0xF9, 0x06, 0xDF, 0x1A, 0xC0};
 	byte AtoB[15], BtoA[15];
-	int i, failed=0;
+	int i, failed = 0;
 
 	A51_GSM(key, 64, frame, AtoB, BtoA);
 
 	/* Compare against the test vector. */
-	for (i=0; i<15; i++)
+	for (i = 0; i < 15; i++)
 		if (AtoB[i] != goodAtoB[i])
 			failed = 1;
-	for (i=0; i<15; i++)
+	for (i = 0; i < 15; i++)
 		if (BtoA[i] != goodBtoA[i])
 			failed = 1;
 
 	/* Print some debugging output. */
 	printf("key: 0x");
-	for (i=0; i<8; i++)
+	for (i = 0; i < 8; i++)
 		printf("%02X", key[i]);
 	printf("\n");
 	printf("frame number: 0x%06X\n", (unsigned int)frame);
 	printf("known good output:\n");
 	printf(" A->B: 0x");
-	for (i=0; i<15; i++)
+	for (i = 0; i < 15; i++)
 		printf("%02X", goodAtoB[i]);
 	printf("  B->A: 0x");
-	for (i=0; i<15; i++)
+	for (i = 0; i < 15; i++)
 		printf("%02X", goodBtoA[i]);
 	printf("\n");
 	printf("observed output:\n");
 	printf(" A->B: 0x");
-	for (i=0; i<15; i++)
+	for (i = 0; i < 15; i++)
 		printf("%02X", AtoB[i]);
 	printf("  B->A: 0x");
-	for (i=0; i<15; i++)
+	for (i = 0; i < 15; i++)
 		printf("%02X", BtoA[i]);
 	printf("\n");
-	
+
 	if (!failed) {
 		printf("Self-check succeeded: everything looks ok.\n");
 	} else {
@@ -158,7 +159,9 @@ void test() {
 	printf("A51_GSM takes %g seconds per iteration\n", t);
 }
 
-int main(void) {
+int main(int argc, char **argv)
+{
 	test();
+
 	return 0;
 }

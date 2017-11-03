@@ -16,43 +16,42 @@
 
 */
 
-
-
 #ifndef GSMCONFIG_H
 #define GSMCONFIG_H
 
-#include "Defines.h"
 #include <vector>
+
+#include "Defines.h"
+#include "GSML3CommonElements.h"
+#include "GSML3RRElements.h"
+#include "GSML3RRMessages.h"
+#include "GSMRadioResource.h"
 #include <Interthread.h>
 #include <PowerManager.h>
-#include "GSMRadioResource.h"
-#include "GSML3RRElements.h"
-#include "GSML3CommonElements.h"
-#include "GSML3RRMessages.h"
 
 #include "TRXManager.h"
-
 
 namespace GSM {
 
 // From GSM 05.02 6.5.
 const unsigned sMax_BS_PA_MFRMS = 9;
 
-
-
 class CCCHLogicalChannel;
 class SDCCHLogicalChannel;
 class CBCHLogicalChannel;
 class TCHFACCHLogicalChannel;
 
-class CCCHList : public std::vector<CCCHLogicalChannel*> {};
-class SDCCHList : public std::vector<SDCCHLogicalChannel*> {};
-class TCHList : public std::vector<TCHFACCHLogicalChannel*> {};
-typedef std::vector<L2LogicalChannel*> L2ChanList;
+class CCCHList : public std::vector<CCCHLogicalChannel *> {
+};
+class SDCCHList : public std::vector<SDCCHLogicalChannel *> {
+};
+class TCHList : public std::vector<TCHFACCHLogicalChannel *> {
+};
+typedef std::vector<L2LogicalChannel *> L2ChanList;
 
 struct TimeSlot {
 	int mCN, mTN;
-	TimeSlot(int wCN,int wTN) : mCN(wCN), mTN(wTN) {}
+	TimeSlot(int wCN, int wTN) : mCN(wCN), mTN(wTN) {}
 };
 
 /**
@@ -61,20 +60,19 @@ struct TimeSlot {
 */
 class GSMConfig {
 
-	private:
-
+private:
 	/** The paging mechanism is built-in. */
-	//Control::Pager mPager;
+	// Control::Pager mPager;
 
-	mutable Mutex mLock;						///< multithread access control
+	mutable Mutex mLock; ///< multithread access control
 
 	/**@name Groups of CCCH subchannels -- may intersect. */
 	//@{
-	CCCHList mAGCHPool;		///< access grant CCCH subchannels
-	CCCHList mPCHPool;		///< paging CCCH subchannels
+	CCCHList mAGCHPool; ///< access grant CCCH subchannels
+	CCCHList mPCHPool;  ///< paging CCCH subchannels
 	//@}
 
-	CBCHLogicalChannel* mCBCH;
+	CBCHLogicalChannel *mCBCH;
 
 	/**@name Allocatable channel pools. */
 	//@{
@@ -84,13 +82,13 @@ class GSMConfig {
 
 	/**@name BSIC. */
 	//@{
-	unsigned mNCC;		///< network color code
-	unsigned mBCC;		///< basestation color code
+	unsigned mNCC; ///< network color code
+	unsigned mBCC; ///< basestation color code
 	//@}
 
-	GSMBand mBand;		///< BTS operating band, or 0 for custom band
+	GSMBand mBand; ///< BTS operating band, or 0 for custom band
 
-	Clock mClock;		///< local copy of BTS master clock
+	Clock mClock; ///< local copy of BTS master clock
 
 	/**@name Encoded L2 frames to be sent on the BCCH. */
 	//@{
@@ -98,7 +96,7 @@ class GSMConfig {
 	L2Frame mSI2Frame;
 	L2Frame mSI3Frame;
 	L2Frame mSI4Frame;
-	L2Frame mSI13Frame;	// pat added for GPRS
+	L2Frame mSI13Frame; // pat added for GPRS
 	//@}
 
 	/**@name Encoded L3 frames to be sent on the SACCH. */
@@ -109,28 +107,27 @@ class GSMConfig {
 
 	/**@name Copies of system information messages as they were most recently generated. */
 	//@{
-	L3SystemInformationType1* mSI1;
-	L3SystemInformationType2* mSI2;
-	L3SystemInformationType3* mSI3;
-	L3SystemInformationType4* mSI4;
-	L3SystemInformationType5* mSI5;
-	L3SystemInformationType6* mSI6;
-	L3SystemInformationType13* mSI13;
+	L3SystemInformationType1 *mSI1;
+	L3SystemInformationType2 *mSI2;
+	L3SystemInformationType3 *mSI3;
+	L3SystemInformationType4 *mSI4;
+	L3SystemInformationType5 *mSI5;
+	L3SystemInformationType6 *mSI6;
+	L3SystemInformationType13 *mSI13;
 	//@}
 
 	time_t mStartTime;
 
 	L3LocationAreaIdentity mLAI;
 
-	bool mHold;		///< If true, do not respond to RACH bursts.
+	bool mHold; ///< If true, do not respond to RACH bursts.
 	Bool_z mShutdown;
 
 	unsigned mChangemark;
 
-	void crackPagingFromImsi(unsigned imsiMod1000,unsigned &ccch_group,unsigned &paging_Index);
+	void crackPagingFromImsi(unsigned imsiMod1000, unsigned &ccch_group, unsigned &paging_Index);
 
-	public:
-	
+public:
 	GSMConfig();
 
 	/** Initialize with parameters from gConfig.  */
@@ -138,29 +135,29 @@ class GSMConfig {
 
 	/** Start the internal control loops. */
 	void gsmStart();
-	
+
 	/**@name Get references to L2 frames for BCCH SI messages. */
 	//@{
-	const L2Frame& SI1Frame() const { return mSI1Frame; }
-	const L2Frame& SI2Frame() const { return mSI2Frame; }
-	const L2Frame& SI3Frame() const { return mSI3Frame; }
-	const L2Frame& SI4Frame() const { return mSI4Frame; }
-	const L2Frame& SI13Frame() const { return mSI13Frame; }	// pat added for GPRS
+	const L2Frame &SI1Frame() const { return mSI1Frame; }
+	const L2Frame &SI2Frame() const { return mSI2Frame; }
+	const L2Frame &SI3Frame() const { return mSI3Frame; }
+	const L2Frame &SI4Frame() const { return mSI4Frame; }
+	const L2Frame &SI13Frame() const { return mSI13Frame; } // pat added for GPRS
 	//@}
 	/**@name Get references to L3 frames for SACCH SI messages. */
 	//@{
-	const L3Frame& SI5Frame() const { return mSI5Frame; }
-	const L3Frame& SI6Frame() const { return mSI6Frame; }
+	const L3Frame &SI5Frame() const { return mSI5Frame; }
+	const L3Frame &SI6Frame() const { return mSI6Frame; }
 	//@}
 	/**@name Get the messages themselves. */
 	//@{
-	const L3SystemInformationType1* SI1() const { return mSI1; }
-	const L3SystemInformationType2* SI2() const { return mSI2; }
-	const L3SystemInformationType3* SI3() const { return mSI3; }
-	const L3SystemInformationType4* SI4() const { return mSI4; }
-	const L3SystemInformationType5* SI5() const { return mSI5; }
-	const L3SystemInformationType6* SI6() const { return mSI6; }
-	const L3SystemInformationType13* SI13() const { return mSI13; }
+	const L3SystemInformationType1 *SI1() const { return mSI1; }
+	const L3SystemInformationType2 *SI2() const { return mSI2; }
+	const L3SystemInformationType3 *SI3() const { return mSI3; }
+	const L3SystemInformationType4 *SI4() const { return mSI4; }
+	const L3SystemInformationType5 *SI5() const { return mSI5; }
+	const L3SystemInformationType6 *SI6() const { return mSI6; }
+	const L3SystemInformationType13 *SI13() const { return mSI13; }
 	//@}
 
 	/** Get the current master clock value. */
@@ -168,17 +165,17 @@ class GSMConfig {
 
 	/**@name Accessors. */
 	//@{
-	//Control::Pager& pager() { return mPager; }
+	// Control::Pager& pager() { return mPager; }
 	GSMBand band() const { return mBand; }
 	unsigned BCC() const { return mBCC; }
 	unsigned NCC() const { return mNCC; }
-	GSM::Clock& clock() { return mClock; }
-	const L3LocationAreaIdentity& LAI() const { return mLAI; }
+	GSM::Clock &clock() { return mClock; }
+	const L3LocationAreaIdentity &LAI() const { return mLAI; }
 	unsigned changemark() const { return mChangemark; }
 	//@}
 
 	/** Return the BSIC, NCC:BCC. */
-	unsigned BSIC() const { return (mNCC<<3) | mBCC; }
+	unsigned BSIC() const { return (mNCC << 3) | mBCC; }
 
 	/**
 		Re-encode the L2Frames for system information messages.
@@ -205,31 +202,31 @@ class GSMConfig {
 	bool btsShutdown() const { return mShutdown; }
 	void setBtsShutdown() { mShutdown = true; }
 
-	protected:
-
+protected:
 	/** Find a minimum-load CCCH from a list. */
-	CCCHLogicalChannel* minimumLoad(CCCHList &chanList);
+	CCCHLogicalChannel *minimumLoad(CCCHList &chanList);
 
 	/** Return the total load of a CCCH list. */
 	size_t totalLoad(const CCCHList &chanList) const;
 
-	public:
-
+public:
 	size_t AGCHLoad();
 	size_t PCHLoad();
 
 	//@}
 
-
 	/**@ Manage the CBCH. */
 	//@{
 	L3ChannelDescription mCBCHDescription;
 	/** The add method is not mutex protected and should only be used during initialization. */
-	void addCBCH(CBCHLogicalChannel *wCBCH) { assert(mCBCH==NULL); mCBCH=wCBCH; }
+	void addCBCH(CBCHLogicalChannel *wCBCH)
+	{
+		assert(mCBCH == NULL);
+		mCBCH = wCBCH;
+	}
 	void createCBCH(ARFCNManager *radio, TypeAndOffset type, int CN, int TN);
-	CBCHLogicalChannel* getCBCH() { return mCBCH; }
+	CBCHLogicalChannel *getCBCH() { return mCBCH; }
 	//@}
-
 
 	/**@name Manage SDCCH Pool. */
 	//@{
@@ -244,7 +241,7 @@ class GSMConfig {
 	/** Return number of active SDCCH. */
 	unsigned SDCCHActive() const;
 	/** Just a reference to the SDCCH pool. */
-	const SDCCHList& SDCCHPool() const { return mSDCCHPool; }
+	const SDCCHList &SDCCHPool() const { return mSDCCHPool; }
 	//@}
 
 	/**@name Manage TCH pool. */
@@ -252,8 +249,8 @@ class GSMConfig {
 	/** The add method is not mutex protected and should only be used during initialization. */
 	void addTCH(TCHFACCHLogicalChannel *wTCH) { mTCHPool.push_back(wTCH); }
 	/** Return a pointer to a usable channel. */
-	TCHFACCHLogicalChannel *getTCH(bool forGPRS=false, bool onlyCN0=false);
-	int getTCHGroup(int groupSize,TCHFACCHLogicalChannel **results);
+	TCHFACCHLogicalChannel *getTCH(bool forGPRS = false, bool onlyCN0 = false);
+	int getTCHGroup(int groupSize, TCHFACCHLogicalChannel **results);
 	/** Return true if an TCH is available, but do not allocate it. */
 	size_t TCHAvailable() const;
 	/** Return number of total TCH. */
@@ -261,7 +258,7 @@ class GSMConfig {
 	/** Return number of active TCH. */
 	unsigned TCHActive() const;
 	/** Just a reference to the TCH pool. */
-	const TCHList& TCHPool() const { return mTCHPool; }
+	const TCHList &TCHPool() const { return mTCHPool; }
 	//@}
 
 	/**@name Methods to create channel combinations. */
@@ -275,24 +272,21 @@ class GSMConfig {
 	void createBeacon(ARFCNManager *radio);
 	/** Combination XIII is a GPRS PDTCH: PDTCH/F+PACCH/F+PTCCH/F */
 	// pat todo: This does not exist yet.
-	//void createCombinationXIII(TransceiverManager &TRX, unsigned CN, unsigned TN);
+	// void createCombinationXIII(TransceiverManager &TRX, unsigned CN, unsigned TN);
 	//@}
 
 	/** Return number of seconds since starting. */
-	time_t uptime() const { return ::time(NULL)-mStartTime; }
+	time_t uptime() const { return ::time(NULL) - mStartTime; }
 
 	/** Get a handle to the power manager. */
-	void getChanVector(std::vector<L2LogicalChannel*> &result);
+	void getChanVector(std::vector<L2LogicalChannel *> &result);
 };
-
 
 extern int gNumC7s, gNumC1s;
 
 extern bool isCBSEnabled();
 
-
-};	// GSM
-
+}; // namespace GSM
 
 /**@addtogroup Globals */
 //@{
@@ -300,8 +294,4 @@ extern bool isCBSEnabled();
 extern GSM::GSMConfig gBTS;
 //@}
 
-
 #endif
-
-
-// vim: ts=4 sw=4

@@ -17,7 +17,8 @@
 
 */
 
-#include "config.h"
+#include <config.h>
+
 #include <Globals.h>
 
 #define PROD_CAT "P"
@@ -29,13 +30,14 @@
 // in a header file that always gets generated and recompiled.
 const char *gVersionString = "release " VERSION "+" REPO_REV FEATURES PROD_CAT " built " TIMESTAMP_ISO " ";
 
-const char* gOpenBTSWelcome =
-	//23456789123456789223456789323456789423456789523456789623456789723456789
+const char *gOpenBTSWelcome =
+	// 23456789123456789223456789323456789423456789523456789623456789723456789
 	"OpenBTS\n"
 	"Copyright 2008, 2009, 2010 Free Software Foundation, Inc.\n"
 	"Copyright 2010 Kestrel Signal Processing, Inc.\n"
 	"Copyright 2011, 2012, 2013, 2014 Range Networks, Inc.\n"
-	"Release " VERSION "+" REPO_REV " " PROD_CAT " formal build date " TIMESTAMP_ISO "\n"
+	"Release " VERSION "+" REPO_REV " " PROD_CAT " formal build date " TIMESTAMP_ISO
+	"\n"
 	"\"OpenBTS\" is a registered trademark of Range Networks, Inc.\n"
 	"\nContributors:\n"
 	"  Range Networks, Inc.:\n"
@@ -51,15 +53,16 @@ const char* gOpenBTSWelcome =
 	"Incorporated L/GPL libraries and components:\n"
 	"  libortp, LGPL, 2.1 Copyright 2001 Simon MORLAT simon.morlat@linphone.org\n"
 	"  libusb, LGPL 2.1, various copyright holders, www.libusb.org\n"
-        "  libzmq, LGPL 3:\n"
-        "      Copyright (c) 2009-2011 250bpm s.r.o.\n"
-        "      Copyright (c) 2011 Botond Ballo\n"
-        "      Copyright (c) 2007-2009 iMatix Corporation\n"
+	"  libzmq, LGPL 3:\n"
+	"      Copyright (c) 2009-2011 250bpm s.r.o.\n"
+	"      Copyright (c) 2011 Botond Ballo\n"
+	"      Copyright (c) 2007-2009 iMatix Corporation\n"
 
 	"Incorporated BSD/MIT-style libraries and components:\n"
-	"  A5/1 Pedagogical Implementation, Simplified BSD License, Copyright 1998-1999 Marc Briceno, Ian Goldberg, and David Wagner\n"
+	"  A5/1 Pedagogical Implementation, Simplified BSD License, Copyright 1998-1999 Marc Briceno, Ian Goldberg, "
+	"and David Wagner\n"
 	"  JsonBox, Copyright 2011 Anhero Inc.\n"
-        "  Google Core Dumper, BSD 3-Clause License, Copyright (c) 2005-2007, Google Inc.\n"
+	"  Google Core Dumper, BSD 3-Clause License, Copyright (c) 2005-2007, Google Inc.\n"
 	"Incorporated public domain libraries and components:\n"
 	"  sqlite3, released to public domain 15 Sept 2001, www.sqlite.org\n"
 	"\n"
@@ -81,6 +84,4 @@ const char* gOpenBTSWelcome =
 	" end users (a) only as Commercial Items and (b) with only those rights as are\n"
 	" granted to all other end users pursuant to the terms and conditions of\n"
 	" Range Networks' software licenses and master customer agreement.\n"
-
-
-;
+	;

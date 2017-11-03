@@ -15,9 +15,10 @@
 
 /**@file GPRS L2 RLC Messages, from GSM 04.60 Section 11 */
 
-#define LOG_GROUP LogGroup::GPRS		// Can set Log.Level.GPRS for debugging
+#define LOG_GROUP LogGroup::GPRS // Can set Log.Level.GPRS for debugging
 
 //#include <iostream>
+
 #include "Defines.h"
 //#include "GSMCommon.h"
 #include <BitVector.h>
@@ -26,10 +27,9 @@
 #include "RLCHdr.h"
 #include "TBF.h"
 #define RLCMESSAGES_IMPLEMENTATION 1
-#include "RLCMessages.h"
-#include "MAC.h"
 #include "FEC.h"
-
+#include "MAC.h"
+#include "RLCMessages.h"
 
 namespace GPRS {
 
@@ -49,9 +49,9 @@ const char *RLCUplinkMessage::name(MessageType type)
 		CASENAME(EGPRSPacketDownlinkAckNack)
 		CASENAME(PacketPause)
 		CASENAME(AdditionalMSRadioAccessCapabilities)
-		default:
-			sprintf(buf,"RLCUplinkMessageType %d (unknown)",(int)type);
-			return buf;
+	default:
+		sprintf(buf, "RLCUplinkMessageType %d (unknown)", (int)type);
+		return buf;
 	}
 }
 
@@ -59,11 +59,11 @@ const char *RLCDownlinkMessage::name(MessageType type)
 {
 	static char buf[50];
 	switch (type) {
-		CASENAME(PacketAccessReject )
+		CASENAME(PacketAccessReject)
 		CASENAME(PacketCellChangeOrder)
 		CASENAME(PacketDownlinkAssignment)
-		CASENAME(PacketMeasurementOrder )
-		CASENAME(PacketPagingRequest )
+		CASENAME(PacketMeasurementOrder)
+		CASENAME(PacketPagingRequest)
 		CASENAME(PacketPDCHRelease)
 		CASENAME(PacketPollingRequest)
 		CASENAME(PacketPowerControlTimingAdvance)
@@ -88,9 +88,9 @@ const char *RLCDownlinkMessage::name(MessageType type)
 		CASENAME(PSI3ter)
 		CASENAME(PSI3quater)
 		CASENAME(PSI15)
-		default:
-			sprintf(buf,"RLCDownlinkMessageType %d (unknown)",(int)type);
-			return buf;
+	default:
+		sprintf(buf, "RLCDownlinkMessageType %d (unknown)", (int)type);
+		return buf;
 	}
 }
 
@@ -102,27 +102,29 @@ MSInfo *RLCMsgPacketResourceRequest::getMS(PDCHL1FEC *chan, bool create)
 		return ms;
 	} else {
 		RLCDirType dir = mGTFI.mIsDownlinkTFI ? RLCDir::Down : RLCDir::Up;
-		TBF *tbf = chan->getTFITBF(mGTFI.mGTFI,dir);
-		if (tbf) return tbf->mtMS;
+		TBF *tbf = chan->getTFITBF(mGTFI.mGTFI, dir);
+		if (tbf)
+			return tbf->mtMS;
 	}
 	return NULL;
 }
 
-void RLCMsgPacketUplinkAssignmentDynamicAllocationElt::setFrom(TBF *tbf,MultislotSymmetry sym)
+void RLCMsgPacketUplinkAssignmentDynamicAllocationElt::setFrom(TBF *tbf, MultislotSymmetry sym)
 {
 	MSInfo *ms = tbf->mtMS;
 	setAlpha(ms->msGetAlpha());
 	PDCHL1Uplink *up;
-	RN_FOR_ALL(PDCHL1UplinkList_t,ms->msPCHUps,up) {
+	RN_FOR_ALL(PDCHL1UplinkList_t, ms->msPCHUps, up)
+	{
 		int tn = up->TN();
-		setUSF(tn,ms->msUSFs[tn]);
-		setGamma(tn,ms->msGetGamma());
+		setUSF(tn, ms->msUSFs[tn]);
+		setGamma(tn, ms->msGetGamma());
 	}
 	if (ms->isExtendedDynamic()) {
 		mExtendedDynamicAllocation = true;
 	}
 
-	//if (sym == MultislotSymmetric && isExtendedDynamic()) {
+	// if (sym == MultislotSymmetric && isExtendedDynamic()) {
 	//	// This sounds odd, but we need to use the downlink timeslots to program
 	//	// the uplink timeslots so that they will be symmetric.
 	//	// If they are assymetric, the smaller array is always valid in both directions.
@@ -147,21 +149,21 @@ void RLCMsgPowerControlParametersIE::setFrom(TBF *tbf)
 	MSInfo *ms = tbf->mtMS;
 	setAlpha(ms->msGetAlpha());
 	PDCHL1Downlink *down;
-	RN_FOR_ALL(PDCHL1DownlinkList_t,ms->msPCHDowns,down) {
+	RN_FOR_ALL(PDCHL1DownlinkList_t, ms->msPCHDowns, down)
+	{
 		int tn = down->TN();
-		setGamma(tn,ms->msGetGamma());
+		setGamma(tn, ms->msGetGamma());
 	}
 }
-
 
 /** GSM 04.60 11.2
  * Process/parse all uplink messages
  * */
-RLCUplinkMessage* RLCUplinkMessageParse(RLCRawBlock *src)
+RLCUplinkMessage *RLCUplinkMessageParse(RLCRawBlock *src)
 {
 	RLCUplinkMessage *result = NULL;
 
-	unsigned mMessageType = src->mData.peekField(8,6);
+	unsigned mMessageType = src->mData.peekField(8, 6);
 
 	// Kyle reported that OpenBTS crashes parsing the RLCMsgMSRACapabilityValuePartIE.
 	// If you look at the message that is in, if the RACap is trashed, the message is unusable.
@@ -169,32 +171,32 @@ RLCUplinkMessage* RLCUplinkMessageParse(RLCRawBlock *src)
 	// In case of error, we are probably permanently losing the memory associated with the messsage, oh well.
 	try {
 		switch (mMessageType) {
-			case RLCUplinkMessage::PacketControlAcknowledgement:
-				result = new RLCMsgPacketControlAcknowledgement(src);
-				break;
-			case RLCUplinkMessage::PacketDownlinkAckNack:
-				// Thats right: DownlinkAckNack is an uplink message.
-				result = new RLCMsgPacketDownlinkAckNack(src);
-				break;
-			case RLCUplinkMessage::PacketUplinkDummyControlBlock:
-				result = new RLCMsgPacketUplinkDummyControlBlock(src);
-				break;
-			case RLCUplinkMessage::PacketResourceRequest:
-				result = new RLCMsgPacketResourceRequest(src);
-				break;
-			// case PacketMobileTBFStatus:
-			// case AdditionalMSRadioAccessCapabilities:
-			default:
-				GLOG(INFO) << "unsupported RLC uplink message, type=" << mMessageType;
-				//result = new RLCMsgPacketUplinkDummyControlBlock(src);
-				return NULL;
+		case RLCUplinkMessage::PacketControlAcknowledgement:
+			result = new RLCMsgPacketControlAcknowledgement(src);
+			break;
+		case RLCUplinkMessage::PacketDownlinkAckNack:
+			// Thats right: DownlinkAckNack is an uplink message.
+			result = new RLCMsgPacketDownlinkAckNack(src);
+			break;
+		case RLCUplinkMessage::PacketUplinkDummyControlBlock:
+			result = new RLCMsgPacketUplinkDummyControlBlock(src);
+			break;
+		case RLCUplinkMessage::PacketResourceRequest:
+			result = new RLCMsgPacketResourceRequest(src);
+			break;
+		// case PacketMobileTBFStatus:
+		// case AdditionalMSRadioAccessCapabilities:
+		default:
+			GLOG(INFO) << "unsupported RLC uplink message, type=" << mMessageType;
+			// result = new RLCMsgPacketUplinkDummyControlBlock(src);
+			return NULL;
 		}
 		return result;
 	} catch (ByteVectorError) {
-		GLOG(ERR) << "Parse Error: Premature end of message, type="
-			<<mMessageType<<"="<<RLCUplinkMessage::name((RLCUplinkMessage::MessageType)mMessageType);
+		GLOG(ERR) << "Parse Error: Premature end of message, type=" << mMessageType << "="
+			  << RLCUplinkMessage::name((RLCUplinkMessage::MessageType)mMessageType);
 	}
 	return NULL;
 };
 
-};	// namespace GPRS
+}; // namespace GPRS

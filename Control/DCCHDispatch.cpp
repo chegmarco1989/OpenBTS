@@ -17,34 +17,29 @@
 
 */
 
-
 #define LOG_GROUP LogGroup::Control
-
 
 #include "ControlCommon.h"
 //#include "L3CallControl.h"
+#include "L3LogicalChannel.h"
 #include "L3MobilityManagement.h"
 #include "L3StateMachine.h"
-#include "L3LogicalChannel.h"
 #include <GSMConfig.h>
 
 #include <Logger.h>
 #undef WARNING
-#include <Reporting.h>
 #include <Globals.h>
+#include <Reporting.h>
 
 using namespace std;
 using namespace GSM;
 using namespace Control;
 
-
-
-
 /** Example of a closed-loop, persistent-thread control function for the DCCH. */
 // (pat) DCCH is a TCHFACCHLogicalChannel or SDCCHLogicalChannel
 void Control::DCCHDispatcher(L3LogicalChannel *DCCH)
 {
-	while (! gBTS.btsShutdown()) {
+	while (!gBTS.btsShutdown()) {
 		// This 'try' is redundant, but we are ultra-cautious here since a mistake means a crash.
 		try {
 			// Wait for a transaction to start.
@@ -53,9 +48,8 @@ void Control::DCCHDispatcher(L3LogicalChannel *DCCH)
 			L3Frame *frame = DCCH->waitForEstablishOrHandover();
 			LOG(DEBUG) << *DCCH << " received " << *frame;
 			gResetWatchdog();
-			L3DCCHLoop(DCCH,frame); // This will not return until the channel is released.
-		}
-		catch (...) {
+			L3DCCHLoop(DCCH, frame); // This will not return until the channel is released.
+		} catch (...) {
 			LOG(ERR) << "channel killed by unexpected exception ";
 		}
 
@@ -113,8 +107,3 @@ void Control::DCCHDispatcher(L3LogicalChannel *DCCH)
 #endif
 	}
 }
-
-
-
-
-// vim: ts=4 sw=4

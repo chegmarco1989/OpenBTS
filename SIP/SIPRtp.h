@@ -17,14 +17,14 @@
 #ifndef _SIPRTP_H_
 #define _SIPRTP_H_ 1
 
-#include <Threads.h>
-#include <CodecSet.h>
-#include <ByteVector.h>
-#include "SIPBase.h"
-
 #include <ortp/ortp.h>
-#undef WARNING		// The nimrods defined this to "warning"
-#undef CR			// This too
+#undef WARNING // The nimrods defined this to "warning"
+#undef CR      // This too
+
+#include "SIPBase.h"
+#include <ByteVector.h>
+#include <CodecSet.h>
+#include <Threads.h>
 
 extern int gCountRtpSessions;
 extern int gCountRtpSockets;
@@ -35,29 +35,31 @@ typedef ByteVector AudioFrame;
 
 class SipRtp {
 	Mutex mRtpLock;
-	public:
+
+public:
 	/**@name RTP state and parameters. */
 	//@{
 	unsigned mRTPPort;
 	Control::CodecSet mCodec;
-	RtpSession * mSession;		///< RTP media session
-	unsigned int mTxTime;		///< RTP transmission timestamp in 8 kHz samples
-	unsigned int mRxTime;		///< RTP receive timestamp in 8 kHz samples
-	uint64_t mRxRealTime;		// In msecs.
-	uint64_t mTxRealTime;		// In msecs.
+	RtpSession *mSession; ///< RTP media session
+	unsigned int mTxTime; ///< RTP transmission timestamp in 8 kHz samples
+	unsigned int mRxTime; ///< RTP receive timestamp in 8 kHz samples
+	uint64_t mRxRealTime; // In msecs.
+	uint64_t mTxRealTime; // In msecs.
 	//@}
 
 	/**@name RFC-2833 DTMF state. */
 	//@{
-	// (pat) Dont change mDTMF to char.  The unbelievably stupid <<mDTMS will write the 0 directly on the string prematurely terminating it.
-	unsigned mDTMF;					///< current DTMF digit, \0 if none
-	unsigned mDTMFDuration;		///< duration of DTMF event so far
-	unsigned mDTMFStartTime;	///< start time of the DTMF key event
-	unsigned mDTMFEnding;		///< Counts number of rtp end events sent; we are supposed to send three.
+	// (pat) Dont change mDTMF to char.  The unbelievably stupid <<mDTMS will write the 0 directly on the string
+	// prematurely terminating it.
+	unsigned mDTMF;		 ///< current DTMF digit, \0 if none
+	unsigned mDTMFDuration;  ///< duration of DTMF event so far
+	unsigned mDTMFStartTime; ///< start time of the DTMF key event
+	unsigned mDTMFEnding;    ///< Counts number of rtp end events sent; we are supposed to send three.
 	//@}
 
 	/** Return RTP session */
-	RtpSession * RTPSession() const { return mSession; }
+	RtpSession *RTPSession() const { return mSession; }
 
 	/** Return the RTP Port being used. */
 	unsigned RTPPort() const { return mRTPPort; }
@@ -71,14 +73,14 @@ class SipRtp {
 	void stopDTMF();
 
 	/** Send a vocoder frame over RTP. */
-	void txFrame(AudioFrame* frame, unsigned numFlushed);
+	void txFrame(AudioFrame *frame, unsigned numFlushed);
 
 	/**
 		Receive a vocoder frame over RTP.
 		@param The vocoder frame
 		@return audio data or NULL on error or no data.
 	*/
-	AudioFrame * rxFrame();
+	AudioFrame *rxFrame();
 	void initRTP1(const char *d_ip_addr, unsigned d_port, unsigned dialogId);
 
 	virtual string vsdbText() const = 0;
@@ -89,8 +91,9 @@ class SipRtp {
 	void rtpStop();
 	// The virtual keyword is not currently needed since we dont use pointers to SipRtp as a base class.
 	virtual ~SipRtp() { rtpStop(); }
-	void rtpText(std::ostringstream&os) const;
+	void rtpText(std::ostringstream &os) const;
 };
 
-};
+}; // namespace SIP
+
 #endif
