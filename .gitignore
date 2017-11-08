@@ -1,5 +1,4 @@
 ._*
-*.in
 .deps
 .libs
 *.o
