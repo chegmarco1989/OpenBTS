@@ -43,6 +43,16 @@ add_executable(JSONEventsClient
 
 target_link_libraries(JSONEventsClient zmq)
 
+install(TARGETS OpenBTS OpenBTSCLI
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
+)
+
+install(FILES OpenBTS.example.sql
+	DESTINATION share/doc/OpenBTS
+)
+
 # install(CLI)
 # install(OpenBTS.example.sql)
 # install(OpenBTSDo)

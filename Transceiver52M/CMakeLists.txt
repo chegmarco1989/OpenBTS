@@ -38,5 +38,9 @@ target_link_libraries(openbts-transceiver-uhd
 
 )
 
+install(TARGETS openbts-transceiver-uhd
+	RUNTIME DESTINATION bin
+)
+
 # install(README)
 # install(README.Talgorithm)

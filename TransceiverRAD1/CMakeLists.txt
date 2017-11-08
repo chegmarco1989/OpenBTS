@@ -39,5 +39,9 @@ target_link_libraries(RAD1ping openbts-transceiverrad1)
 target_link_libraries(openbts-transceiver-rad1 openbts-transceiverrad1 openbts-gsm)
 target_link_libraries(sigProcLibTest openbts-transceiverrad1 openbts-gsm)
 
+install(TARGETS openbts-transceiver-rad1
+	RUNTIME DESTINATION bin
+)
+
 # install(README)
 # install(README.Talgorithm)
