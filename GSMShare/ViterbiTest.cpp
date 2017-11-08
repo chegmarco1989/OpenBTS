@@ -1,28 +1,27 @@
-/*
-* Copyright 2008, 2014 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-*
-* This software is distributed under the terms of the GNU Affero Public License.
-* See the COPYING file in the main directory for details.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU Affero General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU Affero General Public License for more details.
-
-	You should have received a copy of the GNU Affero General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+/* GSMShare/ViterbiTest.cpp */
+/*-
+ * Copyright 2008, 2014 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under the terms of the GNU Affero Public License.
+ * See the COPYING file in the main directory for details.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include <sys/time.h>
 
@@ -31,7 +30,8 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "BitVector.h"
+#include <CommonLibs/Configuration.h>
+
 #include "GSM503Tables.cpp"
 #include "ViterbiR204.h"
 
@@ -43,7 +43,6 @@
 using namespace std;
 
 // We must have a gConfig now to include BitVector.
-#include "Configuration.h"
 ConfigurationTable gConfig;
 
 void origTest()
@@ -136,8 +135,8 @@ BitVector randomBitVector(int n)
 
 // Doug wrote this AMR test code
 // Pat modified to use the Viterbi base class.
-void testEncodeDecode(const char *label, ViterbiBase *coder, unsigned frameSize, unsigned iRate, unsigned order,
-		      bool debug)
+void testEncodeDecode(
+	const char *label, ViterbiBase *coder, unsigned frameSize, unsigned iRate, unsigned order, bool debug)
 {
 	const bool isAMR = false;
 	const unsigned trials = 10;

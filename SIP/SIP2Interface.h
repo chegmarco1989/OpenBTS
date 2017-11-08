@@ -1,31 +1,32 @@
-/*
-* Copyright 2008 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* SIP/SIP2Interface.h */
+/*-
+ * Copyright 2008 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef SIP2INTERFACE_H
 #define SIP2INTERFACE_H
 
 #include <string>
 
+#include <CommonLibs/Interthread.h>
+#include <CommonLibs/Sockets.h>
+#include <GSM/GSML3CCElements.h>
+
 #include "SIPDialog.h"
 #include "SIPMessage.h"
 #include "SIPTransaction.h"
-#include <GSML3CCElements.h>
-#include <Interthread.h>
-#include <Sockets.h>
 
 #define PAT_TEST_SIP_DIRECT 0
 

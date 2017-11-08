@@ -1,3 +1,8 @@
+/* GSMShare/A51.h */
+/*-
+ *
+ */
+
 #ifndef _OPENBTS_GSMSHARE_A51_H
 #define _OPENBTS_GSMSHARE_A51_H
 

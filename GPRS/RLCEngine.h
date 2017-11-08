@@ -1,18 +1,18 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
-/**@file GPRS RLC-MAC state machine, GSM 04.60. */
+/* GPRS/RLCEngine.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 /**@file GPRS RLC-MAC state machine, GSM 04.60. */
 
@@ -24,13 +24,14 @@
 
 #include <list>
 
-#include <Interthread.h>
+#include <CommonLibs/Interthread.h>
 
-#include "GPRSInternal.h"
 #if INTERNAL_SGSN == 0
 #include "BSSGMessages.h"
 #endif
+#include "GPRSInternal.h"
 #include "TBF.h"
+
 #define FAST_TBF 1 // Use aggregated downlink TBFs.
 
 namespace GPRS {

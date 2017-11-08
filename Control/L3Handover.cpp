@@ -1,50 +1,50 @@
+/* Control/L3Handover.cpp */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2011, 2012, 2013, 2014 Range Networks, Inc.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ */
+
 /**@file GSM Radio Resource procedures, GSM 04.18 and GSM 04.08. */
 
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2011, 2012, 2013, 2014 Range Networks, Inc.
-*
+#define LOG_GROUP LogGroup::Control
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-*/
-
-#include <list>
 #include <stdio.h>
 #include <stdlib.h>
 
-#define LOG_GROUP LogGroup::Control
+#include <list>
+
+#include <CommonLibs/Defines.h>
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Reporting.h>
+#include <GPRS/GPRSExport.h>
+#include <GSM/GSMConfig.h>
+#include <GSM/GSML3RRElements.h>
+#include <GSM/GSMLogicalChannel.h>
+#include <GSMShare/L3Enums.h>
+#include <Peering/NeighborTable.h>
+#include <Peering/Peering.h>
+#include <SIP/SIPDialog.h>
+
 #include "ControlCommon.h"
 #include "L3CallControl.h"
 #include "L3Handover.h"
 #include "L3MMLayer.h"
-#include <Defines.h>
-
-#include "../GPRS/GPRSExport.h"
-#include <GSMConfig.h>
-#include <GSML3RRElements.h>
-#include <GSMLogicalChannel.h>
-#include <L3Enums.h>
-
-#include <NeighborTable.h>
-#include <Peering.h>
-#include <SIPDialog.h>
-
-#include <Logger.h>
-#include <Reporting.h>
-#undef WARNING
 
 using namespace std;
 using namespace GSM;
+
 namespace Control {
 
 static void abortInboundHandover(RefCntPointer<TranEntry> transaction, RRCause cause, L3LogicalChannel *LCH = NULL)
@@ -91,8 +91,8 @@ void ProcessHandoverAccess(L3LogicalChannel *chan)
 		// Handover failure.
 		LOG(NOTICE) << "handover failure on due to TA=" << hr.mhrTimingError << " for " << *tran;
 		// RR cause 8: Handover impossible, timing advance out of range
-		abortInboundHandover(tran, L3RRCause::Handover_Impossible,
-				     dynamic_cast<L2LogicalChannel *>(tran->channel()));
+		abortInboundHandover(
+			tran, L3RRCause::Handover_Impossible, dynamic_cast<L2LogicalChannel *>(tran->channel()));
 		chan->chanRelease(L3_HARDRELEASE_REQUEST, TermCause::Local(L3Cause::Distance)); // TODO: Is this right?
 												// Will the channel be
 												// immediately
@@ -144,13 +144,13 @@ void ProcessHandoverAccess(L3LogicalChannel *chan)
 				LOG(NOTICE) << "unexpected primitive waiting for Handover Complete on " << *chan << ": "
 					    << *frame << " for " << *tran;
 				delete frame;
-				abortInboundHandover(tran, L3RRCause::Message_Type_Not_Compapatible_With_Protocol_State,
-						     chan);
+				abortInboundHandover(
+					tran, L3RRCause::Message_Type_Not_Compapatible_With_Protocol_State, chan);
 				chan->chanRelease(L3_HARDRELEASE_REQUEST,
-						  TermCause::Local(L3Cause::Handover_Error)); // TODO: Is this right?
-											      // Will the channel be
-											      // immediately
-											      // re-available?
+					TermCause::Local(L3Cause::Handover_Error)); // TODO: Is this right?
+										    // Will the channel be
+										    // immediately
+										    // re-available?
 				return;
 			}
 		}
@@ -161,8 +161,8 @@ void ProcessHandoverAccess(L3LogicalChannel *chan)
 	// RR cause 4: Abnormal release, no activity on the radio path
 	abortInboundHandover(tran, L3RRCause::No_Activity_On_The_Radio, chan);
 	chan->chanRelease(L3_HARDRELEASE_REQUEST,
-			  TermCause::Local(L3Cause::Radio_Interface_Failure)); // TODO: Is this right?  Will the channel
-									       // be immediately re-available?
+		TermCause::Local(L3Cause::Radio_Interface_Failure)); // TODO: Is this right?  Will the channel
+								     // be immediately re-available?
 	return;
 }
 
@@ -262,8 +262,8 @@ void HandoverDetermination(const L3MeasurementResults *measurements, SACCHLogica
 	}
 	// Don't hand over an emergency call based on an IMEI.  It WILL fail.
 	if (tran->servicetype() == GSM::L3CMServiceType::EmergencyCall &&
-	    // Unconst(tran)->subscriber().mImsi.length() == 0)
-	    tran->subscriber().mImsi.length() == 0) {
+		// Unconst(tran)->subscriber().mImsi.length() == 0)
+		tran->subscriber().mImsi.length() == 0) {
 		LOG(ALERT) << "cannot handover emergency call with non-IMSI subscriber ID: " << *tran;
 		return;
 	}

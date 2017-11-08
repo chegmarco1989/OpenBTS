@@ -1,26 +1,26 @@
-/*
-* Copyright 2011, 2012, 2014 Range Networks, Inc.
-*
-* This software is distributed under the terms of the GNU Affero Public License.
-* See the COPYING file in the main directory for details.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 2 of the License, or
-	(at your option) any later version.
-
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU Affero General Public License for more details.
-
-	You should have received a copy of the GNU Affero General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+/* apps/OpenBTSCLI.cpp */
+/*-
+ * Copyright 2011, 2012, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under the terms of the GNU Affero Public License.
+ * See the COPYING file in the main directory for details.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 // KEEP THIS FILE CLEAN FOR GPL PUBLIC RELEASE.
 
@@ -54,7 +54,7 @@
 // Note that we ONLY use this for the name of the file to use.
 
 // The assumption is that OpenBTS and OpenBTSCLI were built together.
-#include "Globals.h"
+#include <Globals/Globals.h>
 
 struct sockaddr_in sa;
 
@@ -256,7 +256,7 @@ int main(int argc, char **argv)
 		sockAddrBuf.sin_addr.s_addr = INADDR_ANY;
 		sockAddrBuf.sin_port = htons(13011);
 		if (bind(sock, (struct sockaddr *)&sockAddrBuf,
-			 sizeof(struct sockaddr_in))) { // Bind the socket to our assigned port.
+			    sizeof(struct sockaddr_in))) { // Bind the socket to our assigned port.
 			printf("bind call failed: %s", strerror(errno));
 			exit(2);
 		}

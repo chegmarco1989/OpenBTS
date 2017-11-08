@@ -1,31 +1,32 @@
+/* GSM/GSML2LAPDm.h */
+/*-
+ * Copyright 2008 Free Software Foundation, Inc.
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /*
-* Copyright 2008 Free Software Foundation, Inc.
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
-
-/*
-Many elements follow Daniele Orlandi's <daniele@orlandi.com> vISDN/Q.921
-implementation, although no code is copied directly.
-*/
+ * Many elements follow Daniele Orlandi's <daniele@orlandi.com> vISDN/Q.921
+ * implementation, although no code is copied directly.
+ */
 
 #ifndef L2LAPDM_H
 #define L2LAPDM_H
 
+#include <Control/ControlTransfer.h>
+
 #include "GSMCommon.h"
 #include "GSMTransfer.h"
-#include <ControlTransfer.h>
 
 namespace GSM {
 
@@ -142,8 +143,8 @@ public:
 
 	void l2dlWriteLowSide(const GSM::L2Frame &) { assert(0); }
 
-	// L3Frame* l2ReadHighSide(unsigned timeout=3600000) { if (timeout) {} assert(0); return NULL; }	// The 'if'
-	// shuts up gcc.
+	// L3Frame* l2ReadHighSide(unsigned timeout=3600000) { if (timeout) {} assert(0); return NULL; }	// The
+	// 'if' shuts up gcc.
 
 	void l2dlWriteHighSide(const GSM::L3Frame &);
 };

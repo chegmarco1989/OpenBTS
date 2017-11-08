@@ -1,3 +1,4 @@
+/* CLI/CLIServer.cpp */
 /*-
  * Copyright 2014 Range Networks, Inc.
  *
@@ -18,9 +19,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <CommonLibs/Configuration.h>
+#include <Globals/Globals.h>
+
 #include "CLI.h"
-#include <Configuration.h>
-#include <Globals.h>
 
 using namespace CommandLine;
 
@@ -122,7 +124,7 @@ void Parser::cliServer()
 	if (netSockFd != -1) {
 		char buf[BUFSIZ];
 		snprintf(buf, sizeof(buf) - 1, "OpenBTSCLI network socket support for %s:%s\n",
-			 (netTcp ? "tcp" : "udp"), netPort.c_str());
+			(netTcp ? "tcp" : "udp"), netPort.c_str());
 		COUT(buf);
 	}
 
@@ -181,11 +183,11 @@ void Parser::cliServer()
 							// Lets print out who it was from:
 							char addrString[256];
 							struct sockaddr_in *sp = (struct sockaddr_in *)&peer;
-							if (const char *ret = inet_ntop(AF_INET, &(sp->sin_addr),
-											addrString, 255)) {
+							if (const char *ret = inet_ntop(
+								    AF_INET, &(sp->sin_addr), addrString, 255)) {
 								LOG(INFO)
 									<< format("Accepting CLI connection from %s:%d",
-										  ret, (int)ntohs(sp->sin_port));
+										   ret, (int)ntohs(sp->sin_port));
 							}
 						}
 						FD_SET(fd, &rdFds); // so that we can select on it next time around

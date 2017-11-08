@@ -1,31 +1,33 @@
+/* GSM/GSML3RRMessages.cpp */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2011, 2012, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file
-  @brief GSM Radio Resorce messages, from GSM 04.08 9.1.
-*/
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2011, 2012, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+ * @brief GSM Radio Resorce messages, from GSM 04.08 9.1.
+ */
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
 #include <iostream>
 #include <typeinfo>
 
+#include <CommonLibs/Logger.h>
+
 #include "GSMConfig.h" // For gBTS
 #include "GSML3RRMessages.h"
-#include <Logger.h>
 
 using namespace std;
 using namespace GSM;
@@ -717,8 +719,8 @@ L3ApplicationInformation::~L3ApplicationInformation() {}
 
 L3ApplicationInformation::L3ApplicationInformation() {}
 
-L3ApplicationInformation::L3ApplicationInformation(BitVector2 &data, unsigned protocolIdentifier, unsigned cr,
-						   unsigned firstSegment, unsigned lastSegment)
+L3ApplicationInformation::L3ApplicationInformation(
+	BitVector2 &data, unsigned protocolIdentifier, unsigned cr, unsigned firstSegment, unsigned lastSegment)
 	: L3RRMessageNRO(), mID(protocolIdentifier), mFlags(cr, firstSegment, lastSegment), mData(data)
 {
 }

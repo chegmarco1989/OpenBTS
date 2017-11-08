@@ -1,21 +1,21 @@
+/* GSM/GSML3SSMessages.h */
+/*-
+ * Copyright 2008, 2009 Free Software Foundation, Inc.
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Messages for call independent Supplementary Service Control, GSM 04.80 2.2. */
-
-/*
-* Copyright 2008, 2009 Free Software Foundation, Inc.
-* Copyright 2011, 2014 Range Networks, Inc.
-
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 // (pat) About Supplementary Services [SS].
 // References:
@@ -45,9 +45,9 @@
 namespace GSM {
 
 /**
-This a virtual class for L3  Messages for call independent Supplementary Service Control.
-These messages are defined in GSM 04.80 2.2.
-*/
+ * This a virtual class for L3  Messages for call independent Supplementary Service Control.
+ * These messages are defined in GSM 04.80 2.2.
+ */
 class L3SupServMessage : public L3Message {
 
 protected:

@@ -1,32 +1,32 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* Control/L3SMSControl.cpp */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::Control
 
-#include "L3SMSControl.h"
-#include "ControlCommon.h"
+#include <CLI/CLI.h>
+#include <GSM/GSMCommon.h>
+#include <GSM/GSML3Message.h>
+#include <GSM/GSMLogicalChannel.h>
+#include <Globals/Globals.h>
+#include <SMS/SMSMessages.h>
+
 #include "L3MMLayer.h"
+#include "L3SMSControl.h"
 #include "L3StateMachine.h"
 #include "L3TranEntry.h"
-#include <GSMCommon.h>
-//#include <GSMConfig.h>
-#include <CLI.h>
-#include <GSML3Message.h>
-#include <GSMLogicalChannel.h>
-#include <Globals.h>
-#include <SMSMessages.h>
 
 namespace Control {
 
@@ -63,8 +63,8 @@ class MTSMSMachine : public SMSCommon {
 		stateStart,
 	};
 	// Use machineRunState1 so we can get the ESTABLISH primitive:
-	MachineStatus machineRunState1(int state, const L3Frame *frame, const L3Message *l3msg,
-				       const SIP::DialogMessage *sipmsg);
+	MachineStatus machineRunState1(
+		int state, const L3Frame *frame, const L3Message *l3msg, const SIP::DialogMessage *sipmsg);
 	bool handleRPDU(const RLFrame &RPDU);
 	bool createRPData(RPData &rp_data);
 
@@ -133,8 +133,8 @@ bool MOSMSMachine::handleRPDU(const RLFrame &RPDU)
 		// Step 1 and 2 -- Complete the transaction record and send TL-SUMBIT to server.
 		// Form the TLAddress into a CalledPartyNumber for the transaction.
 		// Attach calledParty and message body to the transaction.
-		SipDialog::newSipDialogMOSMS(tran()->tranID(), tran()->subscriber(), toAddress, body.str(),
-					     contentType);
+		SipDialog::newSipDialogMOSMS(
+			tran()->tranID(), tran()->subscriber(), toAddress, body.str(), contentType);
 		return true;
 	}
 	case RPMessage::Ack:
@@ -435,7 +435,7 @@ bool MTSMSMachine::createRPData(RPData &rp_data)
 		TLUserData tlmessage = TLUserData(tran()->mMessage.c_str());
 		PROCLOG(DEBUG) << LOGVAR(tlcalling) << LOGVAR(tlmessage);
 		rp_data = RPData(this->mRpduRef, RPAddress(gConfig.getStr("SMS.FakeSrcSMSC").c_str()),
-				 TLDeliver(tlcalling, tlmessage, 0));
+			TLDeliver(tlcalling, tlmessage, 0));
 	} else if (strncmp(contentType, "application/vnd.3gpp.sms", 24) == 0) {
 		BitVector2 RPDUbits(strlen(tran()->mMessage.c_str()) * 4);
 		if (!RPDUbits.unhex(tran()->mMessage.c_str())) {
@@ -471,8 +471,8 @@ bool MTSMSMachine::createRPData(RPData &rp_data)
 	return true;
 }
 
-MachineStatus MTSMSMachine::machineRunState1(int state, const L3Frame *frame, const L3Message *l3msg,
-					     const SIP::DialogMessage *sipmsg)
+MachineStatus MTSMSMachine::machineRunState1(
+	int state, const L3Frame *frame, const L3Message *l3msg, const SIP::DialogMessage *sipmsg)
 {
 	// Step 1	Network->MS	CP-DATA containing RP-DATA with message
 	// Step 2	MS->Network	CP-ACK
@@ -642,7 +642,7 @@ xxxxxxxx This version is not used
 
 	if (strncmp(contentType, "text/plain", 10) == 0) {
 		rp_data = new RPData(reference, RPAddress(gConfig.getStr("SMS.FakeSrcSMSC").c_str()),
-				     TLDeliver(callingPartyDigits, message, 0));
+			TLDeliver(callingPartyDigits, message, 0));
 	} else if (strncmp(contentType, "application/vnd.3gpp.sms", 24) == 0) {
 		BitVector2 RPDUbits(strlen(message) * 4);
 		if (!RPDUbits.unhex(message)) {

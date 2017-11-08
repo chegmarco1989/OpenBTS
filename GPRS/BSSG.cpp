@@ -1,17 +1,19 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* GPRS/BSSG.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
 #define LOG_GROUP LogGroup::GPRS // Can set Log.Level.GPRS for debugging
 
 #include <sys/types.h>
@@ -21,13 +23,12 @@
 
 #include <errno.h>
 
+#include <CommonLibs/Threads.h>
+#include <CommonLibs/Utils.h>
+#include <GSM/GSMConfig.h>
+
 #include "BSSG.h"
-#include "BSSGMessages.h"
-#include "Defines.h"
 #include "GPRSInternal.h" // For GPRSLOG()
-#include "GSMConfig.h"
-#include "Threads.h"
-#include "Utils.h"
 
 #if INTERNAL_SGSN == 0
 

@@ -1,32 +1,32 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* Control/L3MMLayer.h */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef _L3MMLAYER_H
 #define _L3MMLAYER_H 1
 
+#include <CommonLibs/Interthread.h>
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Timeval.h>
+#include <GSM/GSMTransfer.h>
+#include <SIP/SIPDialog.h>
+
 #include "ControlCommon.h"
 #include "L3TranEntry.h" // Needed because InterthreadQueue deletes its elements on destruction.
-#include "PagingEntry.h"
-#include <GSMTransfer.h>
-#include <Interthread.h>
-#include <Logger.h>
-#include <Timeval.h>
-//#include "RadioResource.h"		// For Paging
 #include "L3Utils.h"
-#include <SIPDialog.h>
+#include "PagingEntry.h"
 
 namespace Control {
 

@@ -1,33 +1,33 @@
-/*
-* Copyright 2008, 2014 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* SMS/SMSMessages.h */
+/*-
+ * Copyright 2008, 2014 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
-
-/*
-	As a simplification, we are supporting only the default 7-bit alphabet.
-*/
+/* As a simplification, we are supporting only the default 7-bit alphabet.  */
 
 #ifndef SMS_MESSAGE_H
 #define SMS_MESSAGE_H
 
 #include <stdio.h>
 
+#include <CommonLibs/Logger.h>
+#include <GSM/GSML3CCElements.h>
+#include <GSM/GSML3MMElements.h>
+#include <GSM/GSML3Message.h>
+
 #include "SMSTransfer.h"
-#include <GSML3CCElements.h>
-#include <GSML3MMElements.h>
-#include <GSML3Message.h>
-#include <Logger.h>
 
 namespace SMS {
 
@@ -35,6 +35,7 @@ class SMSReadError : public GSM::GSMError {
 public:
 	SMSReadError() : GSMError() {}
 };
+
 #define SMS_READ_ERROR \
 	{ \
 		throw SMSReadError(); \

@@ -1,29 +1,30 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* Peering/NeighborTable.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #include <time.h>
 
 #include <algorithm>
 #include <sstream>
 
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/sqlite3util.h>
+#include <Globals/Globals.h>
+
 #include "NeighborTable.h"
 #include "Peering.h"
-#include <Globals.h>
-#include <Logger.h>
-#include <sqlite3util.h>
 
 using namespace Peering;
 using namespace std;
@@ -230,7 +231,7 @@ void NeighborTable::ntFill()
 	char query2[400];
 	for (unsigned int i = 0; i < toBeDeleted.size(); i++) {
 		snprintf(query2, sizeof(query2), "delete from NEIGHBOR_TABLE where IPADDRESS = '%s'",
-			 toBeDeleted[i].c_str());
+			toBeDeleted[i].c_str());
 		sqlite3_command(mDB, query2);
 	}
 #else
@@ -272,9 +273,9 @@ void NeighborTable::addNeighbor(const struct ::sockaddr_in *address)
 
 	char query[200];
 	snprintf(query, sizeof(query),
-		 "INSERT OR IGNORE INTO NEIGHBOR_TABLE (IPADDRESS) "
-		 "VALUES ('%s:%d')",
-		 addrString, (int)ntohs(address->sin_port));
+		"INSERT OR IGNORE INTO NEIGHBOR_TABLE (IPADDRESS) "
+		"VALUES ('%s:%d')",
+		addrString, (int)ntohs(address->sin_port));
 	sqlite3_command(mDB, query);
 	// flag the entry as configured
 	char *p = 1 + index(query, '\'');
@@ -314,7 +315,7 @@ bool NeighborTable::ntAddInfo(NeighborEntry &newentry)
 	unsigned oldBSIC;
 	// snprintf(query, sizeof(query), "%s:%d", addrString,(int)ntohs(address->sin_port));
 	if (!sqlite3_single_lookup(mDB, "NEIGHBOR_TABLE", "IPADDRESS", newentry.mIPAddress, "C0", oldC0) ||
-	    !sqlite3_single_lookup(mDB, "NEIGHBOR_TABLE", "IPADDRESS", newentry.mIPAddress, "BSIC", oldBSIC)) {
+		!sqlite3_single_lookup(mDB, "NEIGHBOR_TABLE", "IPADDRESS", newentry.mIPAddress, "BSIC", oldBSIC)) {
 		LOG(NOTICE) << "Ignoring unsolicited 'RSP NEIGHBOR_PARAMS' from " << newentry.mIPAddress;
 		return false;
 	}
@@ -323,9 +324,9 @@ bool NeighborTable::ntAddInfo(NeighborEntry &newentry)
 	// (pat) Why would we set the HOLDOFF to 0 every time we see a RSP to neighbor info?
 	newentry.mUpdated = time(NULL);
 	snprintf(query, sizeof(query),
-		 "REPLACE INTO NEIGHBOR_TABLE (IPADDRESS,UPDATED,C0,BSIC,HOLDOFF) "
-		 "VALUES ('%s',%u,%u,%u,0) ",
-		 newentry.mIPAddress, newentry.mUpdated, newentry.mC0, newentry.mBSIC);
+		"REPLACE INTO NEIGHBOR_TABLE (IPADDRESS,UPDATED,C0,BSIC,HOLDOFF) "
+		"VALUES ('%s',%u,%u,%u,0) ",
+		newentry.mIPAddress, newentry.mUpdated, newentry.mC0, newentry.mBSIC);
 	if (!sqlite3_command(mDB, query)) {
 		LOG(ALERT) << "write to neighbor table failed: " << query;
 		return false;
@@ -499,7 +500,7 @@ void NeighborTable::setHoldOff(string ipaddress, unsigned seconds)
 	time_t holdoffTime = time(NULL) + seconds;
 	char query[200];
 	snprintf(query, sizeof(query), "UPDATE NEIGHBOR_TABLE SET HOLDOFF=%lu WHERE IPADDRESS='%s'", holdoffTime,
-		 ipaddress.c_str());
+		ipaddress.c_str());
 	if (!sqlite3_command(mDB, query)) {
 		LOG(ALERT) << "cannot access neighbor table";
 	}
@@ -590,7 +591,7 @@ std::vector<unsigned> NeighborTable::getARFCNs() const
 	// (pat) ORDER BY UPDATED looks wrong to me.
 	// 3GPP 44.018 10.5.2.20 says the ARFCNs are in increasing order of ARFCN, except that ARFCN 0 must appear last.
 	snprintf(query, sizeof(query), "SELECT C0 FROM NEIGHBOR_TABLE WHERE BSIC > -1 ORDER BY UPDATED DESC LIMIT %lu",
-		 gConfig.getNum("GSM.Neighbors.NumToSend"));
+		gConfig.getNum("GSM.Neighbors.NumToSend"));
 	sqlite3_stmt *stmt;
 	int prc = sqlite3_prepare_statement(mDB, &stmt, query);
 	if (prc) {

@@ -1,36 +1,40 @@
+/* Control/ControlTransfer.cpp */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Declarations for common-use control-layer functions. */
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #define LOG_GROUP LogGroup::Control
 
-#include "ControlTransfer.h"
-#include "CodecSet.h"
-#include "Defines.h"
-#include <L3Enums.h>
-#include <Utils.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <CommonLibs/Defines.h>
+#include <CommonLibs/Utils.h>
+
+#include "CodecSet.h"
+#include "ControlTransfer.h"
+
 namespace Control {
+
 using namespace GSM;
 
 #define CASENAME(x) \
 	case x: \
 		return #x;
+
 const char *CodecType2Name(CodecType ct)
 {
 	switch (ct) {

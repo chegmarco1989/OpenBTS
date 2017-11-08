@@ -1,37 +1,35 @@
+/* Globals/Globals.h */
+/*-
+ * Copyright 2008, 2009 Free Software Foundation, Inc.
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Global system parameters. */
-/*
-* Copyright 2008, 2009 Free Software Foundation, Inc.
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
-
-/*
-	This file keeps global system parameters.
-*/
+/* This file keeps global system parameters. */
 
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
 #if !defined(BUILD_CLI)
 
-#include <CLI.h>
-#include <GSMCommon.h>
-#include <OpenBTSConfig.h>
-#include <PhysicalStatus.h>
-//#include <TMSITable.h>
-#include <Reporting.h>
-#include <TRXManager.h>
+#include <CLI/CLI.h>
+#include <CommonLibs/Reporting.h>
+#include <GSM/GSMCommon.h>
+#include <GSM/PhysicalStatus.h>
+#include <TRXManager/TRXManager.h>
+#include <apps/OpenBTSConfig.h>
 
 #ifndef RN_DEVERLOPER_MODE
 #define RN_DEVERLOPER_MODE 0

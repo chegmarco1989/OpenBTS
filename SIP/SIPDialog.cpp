@@ -1,34 +1,32 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* SIP/SIPDialog.cpp */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 // Written by Pat Thompson.
 
 #define LOG_GROUP LogGroup::SIP // Can set Log.Level.SIP for debugging
 
 #include <algorithm>
 
+#include <CommonLibs/Reporting.h> // For gReports.
+#include <Control/L3StateMachine.h>
+#include <Control/L3TranEntry.h>
+#include <GSM/GSML3MMElements.h> // for L3CMServiceType
+
 #include "SIP2Interface.h"
-#include "SIPBase.h"
 #include "SIPDialog.h"
-#include "SIPTransaction.h"
-#include <GSML3CCElements.h> // for L3Cause
-#include <GSML3MMElements.h> // for L3CMServiceType
-#include <L3StateMachine.h>
-#include <L3TermCause.h>
-#include <L3TranEntry.h>
-#include <Reporting.h> // For gReports.
 
 namespace SIP {
 
@@ -186,7 +184,7 @@ void SipMOInviteClientTransactionLayer::MOCSendINVITE(const L3LogicalChannel *ch
 			unsigned remotePort = (remotePortStr != "") ? atoi(remotePortStr.c_str()) : 0;
 			LOG(DEBUG) << "BTS direct test: " << wCalledUsername
 				   << format(" -> SIP/%s@%s:%s", remoteIMSI.c_str(), remoteIPStr.c_str(),
-					     remotePortStr.c_str())
+					      remotePortStr.c_str())
 				   << sdbText();
 			if (remoteIPStr != "" && remotePort) {
 				// directBTSConnection = true;
@@ -195,7 +193,7 @@ void SipMOInviteClientTransactionLayer::MOCSendINVITE(const L3LogicalChannel *ch
 				mProxyPort = remotePort;
 				LOG(INFO) << "Calling BTS direct: " << wCalledUsername
 					  << format(" -> SIP/%s@%s:%u", mRemoteUsername.c_str(), mProxyIP.c_str(),
-						    mProxyPort)
+						     mProxyPort)
 					  << sdbText();
 			}
 		}
@@ -442,7 +440,7 @@ void SipMTInviteServerTransactionLayer::MTCSendOK(CodecSet wCodec, const L3Logic
 	LOG(INFO) << sdbText();
 	SipMessageReply ok(invite, 200, string("OK"), this);
 	ok.smAddBody(string("application/sdp"),
-		     makeSDPAnswer()); // TODO: This should be a reply to the originating SDP offer.
+		makeSDPAnswer()); // TODO: This should be a reply to the originating SDP offer.
 	// (pat) Chan is NULL when in a weird special handled in dialogCancel.
 	if (chan)
 		SipCallbacks::writePrivateHeaders(&ok, chan);
@@ -596,8 +594,8 @@ SipDialog *getRegistrar()
 }
 
 // We wrap our REGISTER messages inside a dialog object, even though it is technically not a dialog.
-SipMessage *SipDialog::makeRegisterMsg(DialogType wMethod, const L3LogicalChannel *chan, string RAND,
-				       const FullMobileId &msid, const char *SRES)
+SipMessage *SipDialog::makeRegisterMsg(
+	DialogType wMethod, const L3LogicalChannel *chan, string RAND, const FullMobileId &msid, const char *SRES)
 {
 	// TODO: We need to make a transaction here...
 	static const string registerStr("REGISTER");
@@ -643,8 +641,8 @@ SipMessage *SipDialog::makeRegisterMsg(DialogType wMethod, const L3LogicalChanne
 				msg->msmAuthorizationValue =
 					format("Digest realm=\"%s\", username=\"%s\", nonce=\"%s\", uri=\"%s\", "
 					       "response=\"%s\", algorithm=MD5, qop=\"auth\" ",
-					       realm.c_str(), authUsername.c_str(), RAND.c_str(), authUri.c_str(),
-					       response.c_str());
+						realm.c_str(), authUsername.c_str(), RAND.c_str(), authUri.c_str(),
+						response.c_str());
 			} else {
 				// (pat 9-2014)  These fields are all supposed to be quoted.  It was a mistake not to
 				// quote them. The above code that quotes the fields was used for kazoo, so the unquoted
@@ -653,7 +651,7 @@ SipMessage *SipDialog::makeRegisterMsg(DialogType wMethod, const L3LogicalChanne
 				// msg->msmAuthorizationValue = format("Digest, nonce=%s, uri=%s,
 				// response=%s",RAND.c_str(),msid.mImsi.c_str(),SRES);
 				msg->msmAuthorizationValue = format("Digest nonce=\"%s\", uri=\"%s\", response=\"%s\"",
-								    RAND.c_str(), msid.mImsi.c_str(), SRES);
+					RAND.c_str(), msid.mImsi.c_str(), SRES);
 			}
 		}
 	} else if (wMethod == SIPDTUnregister) {
@@ -744,11 +742,10 @@ SipDialog *SipDialog::newSipDialogRegister1() // caller imsi
 // Open an MOSMS [Mobile Originated Short Message Service] SIP Transaction and send the invite.
 // We use a dialog for this even though it is just a message because it was easier to interface
 // to the Control directory without changing anything.
-SipDialog *
-SipDialog::newSipDialogMOSMS(TranEntryId tranid,
-			     const FullMobileId &fromMsId, // caller imsi
-			     const string &calledDigits,   // number being called, or it may be config option SIP.SMSC
-			     const string &body, const string &contentType)
+SipDialog *SipDialog::newSipDialogMOSMS(TranEntryId tranid,
+	const FullMobileId &fromMsId, // caller imsi
+	const string &calledDigits,   // number being called, or it may be config option SIP.SMSC
+	const string &body, const string &contentType)
 {
 	LOG(DEBUG) << LOGVAR(fromMsId) << LOGVAR2("called", calledDigits); //<<LOGVAR2("tranid",wTranId);
 	// This is weird - use the local IP address as the domain of the remote user?
@@ -791,15 +788,15 @@ string escapeUssdUri(string ss)
 		if (pos == string::npos)
 			return ss;
 		ss.replace(pos, 1,
-			   "%23"); // it is ok not to advance pos because replacement "%23" does not include search "#".
+			"%23"); // it is ok not to advance pos because replacement "%23" does not include search "#".
 	}
 	return ss;
 }
 
 SipDialog *SipDialog::newSipDialogMOUssd(TranEntryId tranid,
-					 const FullMobileId &fromMsId, // caller imsi
-					 const string &wUssd, // USSD string entered by user to send to network.
-					 L3LogicalChannel *chan)
+	const FullMobileId &fromMsId, // caller imsi
+	const string &wUssd,	  // USSD string entered by user to send to network.
+	L3LogicalChannel *chan)
 {
 	LOG(DEBUG) << "MOUssd (INVITE)" << LOGVAR(fromMsId) << LOGVARM(wUssd);
 	// TODO: The SIPEngine constructor calls sipSetUser.  FIX IT.  Maybe I just need to replace SIPEngine.
@@ -818,7 +815,7 @@ SipDialog *SipDialog::newSipDialogMOUssd(TranEntryId tranid,
 
 	if (proxy == "testmode") {
 		gNewTransactionTable.ttSetDialog(tranid,
-						 dialog); // Must do this before the dialog receives any messages.
+			dialog); // Must do this before the dialog receives any messages.
 		DialogUssdMessage *dmsg = new DialogUssdMessage(tranid, DialogState::dialogBye, 0);
 		dmsg->dmMsgPayload = "Hello from OpenBTS.  You entered:" + wUssd;
 		LOG(DEBUG) << "USSD test mode" << LOGVAR(chan) << LOGVAR(tranid) << LOGVAR(fromMsId)
@@ -848,12 +845,11 @@ SipDialog *SipDialog::newSipDialogMOUssd(TranEntryId tranid,
 }
 
 // Open an MOC [Mobile Originated Call] dialog and send the invite.
-SipDialog *
-SipDialog::newSipDialogMOC(TranEntryId tranid,
-			   const FullMobileId &fromMsId, // caller imsi
-			   const string &wCalledDigits,  // number being called, or empty for an emergency call.
-			   CodecSet wCodecs,		 // phone capabilities
-			   L3LogicalChannel *chan)
+SipDialog *SipDialog::newSipDialogMOC(TranEntryId tranid,
+	const FullMobileId &fromMsId, // caller imsi
+	const string &wCalledDigits,  // number being called, or empty for an emergency call.
+	CodecSet wCodecs,	     // phone capabilities
+	L3LogicalChannel *chan)
 {
 
 	LOG(DEBUG) << "MOC SIP (INVITE)" << LOGVAR(fromMsId) << LOGVAR2("called", wCalledDigits);
@@ -879,7 +875,7 @@ SipDialog::newSipDialogMOC(TranEntryId tranid,
 		devassert(username.substr(0, 4) == "IMSI");
 		string pAssociatedUri, pAssertedIdentity;
 		gTMSITable.getSipIdentities(username.substr(4), pAssociatedUri,
-					    pAssertedIdentity); // They may be empty.
+			pAssertedIdentity); // They may be empty.
 		dialog->dsPAssociatedUri = pAssociatedUri;
 		dialog->dsPAssertedIdentity = pAssertedIdentity;
 		WATCH("MOC" << LOGVAR(username) << LOGVAR(pAssociatedUri) << LOGVAR(pAssertedIdentity));
@@ -1281,9 +1277,8 @@ bool SipDialog::permittedTransition(DialogState::msgState oldState, DialogState:
 	return false;
 }
 
-void SipDialog::dialogPushState(
-	SipState newSipState, // The new sip state.
-	int code,	     // The SIP message code that caused the state change, or 0 for ACK or total failures.
+void SipDialog::dialogPushState(SipState newSipState, // The new sip state.
+	int code, // The SIP message code that caused the state change, or 0 for ACK or total failures.
 	char timer)
 {
 	SipState oldSipState = getSipState();
@@ -1401,8 +1396,8 @@ DialogState::msgState SipDialog::getDialogState() const
 // Handle response to INVITE or MESSAGE.
 // Only responses (>=200) to INVITE get an ACK.  Specifically, not MESSAGE.
 void SipDialog::handleInviteResponse(int status,
-				     bool sendAck) // TRUE if transaction is INVITE.  We used to use this for MESSAGE
-						   // also, in which case it was false.
+	bool sendAck) // TRUE if transaction is INVITE.  We used to use this for MESSAGE
+		      // also, in which case it was false.
 {
 	LOG(DEBUG) << LOGVAR(status) << LOGVAR(sendAck);
 	switch (status) {

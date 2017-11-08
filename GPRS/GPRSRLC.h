@@ -1,29 +1,30 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* GPRS/GPRSRLC.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef GPRSRLC_H
 #define GPRSRLC_H
 
 #include <stdint.h>
-//#include <stdio.h>
 
 #include <iostream>
 
-#include <Timeval.h>
+#include <CommonLibs/Timeval.h>
 
 namespace GPRS {
+
 class RLCBSN_t;
 
 // There are roughly 48 RLC blocks/second.
@@ -182,7 +183,7 @@ public:
 	bool expired()
 	{
 		GPRSLOG(1) << format("*** expired valid=%d bsnnext=%d when=%d togo=%d\n", valid(), (int)gBSNNext,
-				     (int)mWhen, (mWhen - gBSNNext) * RLCBlockTimeMsecs);
+			(int)mWhen, (mWhen - gBSNNext) * RLCBlockTimeMsecs);
 		return valid() && gBSNNext > mWhen;
 	}
 	// setNow and elapsed function as a countup timer.

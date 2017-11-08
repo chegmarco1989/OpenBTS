@@ -1,4 +1,5 @@
-/*
+/* Transceiver52M/UHDDevice.cpp */
+/*-
  * Device support for Ettus Research UHD driver
  * Written by Thomas Tsou <ttsou@vt.edu>
  *
@@ -29,8 +30,9 @@
 #include <config.h>
 #endif
 
-#include "Logger.h"
-#include "Threads.h"
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Threads.h>
+
 #include "radioDevice.h"
 
 #define B2XX_CLK_RT 26e6
@@ -78,12 +80,18 @@ struct uhd_dev_offset {
  *   USRP1 with timestamps is not supported by UHD.
  */
 static struct uhd_dev_offset uhd_offsets[NUM_USRP_TYPES * 2] = {
-	{USRP1, 1, 0.0, "USRP1 not supported"},    {USRP1, 4, 0.0, "USRP1 not supported"},
-	{USRP2, 1, 1.2184e-4, "N2XX 1 SPS"},       {USRP2, 4, 8.0230e-5, "N2XX 4 SPS"},
-	{B100, 1, 1.2104e-4, "B100 1 SPS"},	{B100, 4, 7.9307e-5, "B100 4 SPS"},
-	{B2XX, 1, B2XX_TIMING_1SPS, "B200 1 SPS"}, {B2XX, 4, B2XX_TIMING_4SPS, "B200 4 SPS"},
-	{X3XX, 1, 1.5360e-4, "X3XX 1 SPS"},	{X3XX, 4, 1.1264e-4, "X3XX 4 SPS"},
-	{UMTRX, 1, 9.9692e-5, "UmTRX 1 SPS"},      {UMTRX, 4, 7.3846e-5, "UmTRX 4 SPS"},
+	{USRP1, 1, 0.0, "USRP1 not supported"},
+	{USRP1, 4, 0.0, "USRP1 not supported"},
+	{USRP2, 1, 1.2184e-4, "N2XX 1 SPS"},
+	{USRP2, 4, 8.0230e-5, "N2XX 4 SPS"},
+	{B100, 1, 1.2104e-4, "B100 1 SPS"},
+	{B100, 4, 7.9307e-5, "B100 4 SPS"},
+	{B2XX, 1, B2XX_TIMING_1SPS, "B200 1 SPS"},
+	{B2XX, 4, B2XX_TIMING_4SPS, "B200 4 SPS"},
+	{X3XX, 1, 1.5360e-4, "X3XX 1 SPS"},
+	{X3XX, 4, 1.1264e-4, "X3XX 4 SPS"},
+	{UMTRX, 1, 9.9692e-5, "UmTRX 1 SPS"},
+	{UMTRX, 4, 7.3846e-5, "UmTRX 4 SPS"},
 };
 
 static double get_dev_offset(enum uhd_dev_type type, int sps)
@@ -866,7 +874,7 @@ bool uhd_device::recv_async_msg()
 		aligned = false;
 
 		if ((md.event_code != uhd::async_metadata_t::EVENT_CODE_UNDERFLOW) &&
-		    (md.event_code != uhd::async_metadata_t::EVENT_CODE_TIME_ERROR)) {
+			(md.event_code != uhd::async_metadata_t::EVENT_CODE_TIME_ERROR)) {
 			LOG(ERR) << str_code(md);
 		}
 	}

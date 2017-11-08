@@ -1,27 +1,27 @@
-/*
-* Copyright 2008 Free Software Foundation, Inc.
-* Copyright 2011, 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* GSM/GSMCommon.cpp */
+/*-
+ * Copyright 2008 Free Software Foundation, Inc.
+ * Copyright 2011, 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
 #include <math.h>
 
-#include "GSMCommon.h"
+#include <apps/OpenBTSConfig.h>
 
-#include <OpenBTSConfig.h>
+#include "GSMCommon.h"
 
 using namespace GSM;
 using namespace std;
@@ -45,10 +45,14 @@ ostream &GSM::operator<<(ostream &os, L3PD val)
 }
 
 const BitVector2 GSM::gTrainingSequence[] = {
-	BitVector2("00100101110000100010010111"), BitVector2("00101101110111100010110111"),
-	BitVector2("01000011101110100100001110"), BitVector2("01000111101101000100011110"),
-	BitVector2("00011010111001000001101011"), BitVector2("01001110101100000100111010"),
-	BitVector2("10100111110110001010011111"), BitVector2("11101111000100101110111100"),
+	BitVector2("00100101110000100010010111"),
+	BitVector2("00101101110111100010110111"),
+	BitVector2("01000011101110100100001110"),
+	BitVector2("01000111101101000100011110"),
+	BitVector2("00011010111001000001101011"),
+	BitVector2("01001110101100000100111010"),
+	BitVector2("10100111110110001010011111"),
+	BitVector2("11101111000100101110111100"),
 };
 
 // (pat) Dummy Burst defined in GSM 5.02 5.2.6

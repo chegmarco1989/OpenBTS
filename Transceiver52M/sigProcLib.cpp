@@ -1,33 +1,31 @@
-/*
-* Copyright 2008, 2011 Free Software Foundation, Inc.
-*
-* This software is distributed under the terms of the GNU Affero Public License.
-* See the COPYING file in the main directory for details.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* Transceiver52M/sigProcLib.cpp */
+/*-
+ * Copyright 2008, 2011 Free Software Foundation, Inc.
+ *
+ * This software is distributed under the terms of the GNU Affero Public License.
+ * See the COPYING file in the main directory for details.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU Affero General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+#include <GSM/GSMCommon.h>
 
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU Affero General Public License for more details.
-
-	You should have received a copy of the GNU Affero General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-#include "sigProcLib.h"
-#include "GSMCommon.h"
-
-extern "C" {
 #include "convolve.h"
-}
+#include "sigProcLib.h"
 
 /* Clipping detection threshold */
 #define CLIP_THRESH 30000.0f
@@ -245,7 +243,7 @@ complex expjLookup(float x)
 	const float delta = argT - argI;
 	const float iDelta = 1.0F - delta;
 	return complex(iDelta * cosTable[argI] + delta * cosTable[argI + 1],
-		       iDelta * sinTable[argI] + delta * sinTable[argI + 1]);
+		iDelta * sinTable[argI] + delta * sinTable[argI + 1]);
 }
 
 /** Library setup functions */
@@ -327,7 +325,7 @@ static void GMSKReverseRotate(signalVector &x, int sps)
 }
 
 signalVector *convolve(const signalVector *x, const signalVector *h, signalVector *y, ConvType spanType, int start,
-		       unsigned len, unsigned step, int offset)
+	unsigned len, unsigned step, int offset)
 {
 	int rc, head = 0, tail = 0;
 	bool alloc = false, append = false;
@@ -390,16 +388,16 @@ signalVector *convolve(const signalVector *x, const signalVector *h, signalVecto
 	 */
 	if (h->isRealOnly() && h->isAligned()) {
 		rc = convolve_real((float *)_x->begin(), _x->size(), (float *)h->begin(), h->size(),
-				   (float *)y->begin(), y->size(), start, len, step, offset);
+			(float *)y->begin(), y->size(), start, len, step, offset);
 	} else if (!h->isRealOnly() && h->isAligned()) {
 		rc = convolve_complex((float *)_x->begin(), _x->size(), (float *)h->begin(), h->size(),
-				      (float *)y->begin(), y->size(), start, len, step, offset);
+			(float *)y->begin(), y->size(), start, len, step, offset);
 	} else if (h->isRealOnly() && !h->isAligned()) {
 		rc = base_convolve_real((float *)_x->begin(), _x->size(), (float *)h->begin(), h->size(),
-					(float *)y->begin(), y->size(), start, len, step, offset);
+			(float *)y->begin(), y->size(), start, len, step, offset);
 	} else if (!h->isRealOnly() && !h->isAligned()) {
 		rc = base_convolve_complex((float *)_x->begin(), _x->size(), (float *)h->begin(), h->size(),
-					   (float *)y->begin(), y->size(), start, len, step, offset);
+			(float *)y->begin(), y->size(), start, len, step, offset);
 	} else {
 		rc = -1;
 	}
@@ -1205,7 +1203,7 @@ bool energyDetect(signalVector &rxBurst, unsigned windowLength, float detectThre
  * and we run full interpolating peak detection.
  */
 static int detectBurst(signalVector &burst, signalVector &corr, CorrelationSequence *sync, float thresh, int sps,
-		       complex *amp, float *toa, int start, int len)
+	complex *amp, float *toa, int start, int len)
 {
 	/* Correlate */
 	if (!convolve(&burst, sync->sequence, &corr, CUSTOM, start, len, sps, 0)) {
@@ -1310,7 +1308,7 @@ int detectRACHBurst(signalVector &rxBurst, float thresh, int sps, complex *amp, 
  *   tail: Search 4 symbols + maximum expected delay
  */
 int analyzeTrafficBurst(signalVector &rxBurst, unsigned tsc, float thresh, int sps, complex *amp, float *toa,
-			unsigned max_toa, bool chan_req, signalVector **chan, float *chan_offset)
+	unsigned max_toa, bool chan_req, signalVector **chan, float *chan_offset)
 {
 	int rc, start, target, head, tail, len;
 	complex _amp;
@@ -1410,7 +1408,7 @@ SoftVector *demodulateBurst(signalVector &rxBurst, int sps, complex channel, flo
 // Assumes symbol-spaced sampling!!!
 // Based upon paper by Al-Dhahir and Cioffi
 bool designDFE(signalVector &channelResponse, float SNRestimate, int Nf, signalVector **feedForwardFilter,
-	       signalVector **feedbackFilter)
+	signalVector **feedbackFilter)
 {
 
 	signalVector G0(Nf);
@@ -1504,8 +1502,8 @@ bool designDFE(signalVector &channelResponse, float SNRestimate, int Nf, signalV
 
 // Assumes symbol-rate sampling!!!!
 SoftVector *equalizeBurst(signalVector &rxBurst, float TOA, int sps,
-			  signalVector &w, // feedforward filter
-			  signalVector &b) // feedback filter
+	signalVector &w, // feedforward filter
+	signalVector &b) // feedback filter
 {
 	signalVector *postForwardFull;
 

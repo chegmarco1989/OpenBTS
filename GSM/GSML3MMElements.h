@@ -1,29 +1,32 @@
-/**@file @brief Elements for Mobility Management messages, GSM 04.08 9.2. */
+/* GSM/GSML3MMElements.h */
+/*-
+ * Copyright 2008-2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-/*
-* Copyright 2008-2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/**@file
+ * @brief Elements for Mobility Management messages, GSM 04.08 9.2.
+ */
 
 #ifndef GSML3MMELEMENTS_H
 #define GSML3MMELEMENTS_H
 
+#include <GSMShare/L3Enums.h>
+#include <apps/OpenBTSConfig.h>
+
 #include "GSML3Message.h"
-#include "L3Enums.h"
-#include <OpenBTSConfig.h>
 
 namespace GSM {
 
@@ -120,8 +123,8 @@ private:
 
 public:
 	/** Set the network name, taking the default from gConfig. */
-	L3NetworkName(const char *wName, GSMAlphabet alphabet = ALPHABET_7BIT,
-		      int wCI = gConfig.getBool("GSM.ShowCountry"))
+	L3NetworkName(
+		const char *wName, GSMAlphabet alphabet = ALPHABET_7BIT, int wCI = gConfig.getBool("GSM.ShowCountry"))
 		: L3ProtocolElement(), mAlphabet(alphabet), mCI(wCI)
 	{
 		strncpy(mName, wName, maxLen);

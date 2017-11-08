@@ -1,31 +1,27 @@
-/*
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* SIP/SIPRtp.cpp */
+/*-
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::SIP // Can set Log.Level.SIP for debugging
 
-#include <ortp/telephonyevents.h>
-#undef WARNING // The nimrods defined this to "warning"
-#undef CR      // This too
-
 #include <config.h>
 
+#include <apps/OpenBTSConfig.h>
+
 #include "SIP2Interface.h"
-#include "SIPBase.h"
 #include "SIPRtp.h"
-#include <OpenBTSConfig.h>
 
 // Type is RtpCallback, but args determined by rtp_signal_table_emit2
 extern "C" {
@@ -129,8 +125,8 @@ void SipRtp::initRTP1(const char *d_ip_addr, unsigned d_port, unsigned dialogId)
 	rtp_session_set_payload_type(mSession, 3);
 	// (pat added) The last argument is user payload data that is passed to ourRtpTimestampJumpCallback()
 	// I was going to use the dialogId but decided to look up the dialog by mSession.
-	rtp_session_signal_connect(mSession, "timestamp_jump", (RtpCallback)ourRtpTimestampJumpCallback,
-				   (void *)(uintptr_t)dialogId);
+	rtp_session_signal_connect(
+		mSession, "timestamp_jump", (RtpCallback)ourRtpTimestampJumpCallback, (void *)(uintptr_t)dialogId);
 
 	gCountRtpSockets++;
 #ifdef ORTP_NEW_API
@@ -424,8 +420,7 @@ AudioFrame *SipRtp::rxFrame()
 				delayInFrames *
 				160; // elapsed time in RTP 'time' units.  (160 / 8000 bitrate == 20 msecs)
 			LOG(DEBUG) << format("realTime=%.3f delay=%.3f delayInFrames=%u RxTime=%u proposed=%u",
-					     realTime / 1e6, delay / 1e6, (unsigned)delayInFrames, mRxTime,
-					     proposedRxTime);
+				realTime / 1e6, delay / 1e6, (unsigned)delayInFrames, mRxTime, proposedRxTime);
 			if (proposedRxTime <= mRxTime) {
 				LOG(DEBUG) << "skip, insufficient time passed";
 				return NULL;

@@ -1,24 +1,26 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* SGSNGGSN/SgsnCli.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #include <list>
 
+#include <CLI/CLI.h>
+#include <CommonLibs/Utils.h>
+#include <Globals/Globals.h>
+
 #include "Sgsn.h"
-#include <CLI.h>
-#include <Globals.h>
-#include <Utils.h>
 
 using namespace Utils;
 
@@ -123,12 +125,12 @@ static struct SgsnSubCmds {
 	void (*subcmd)(int argc, char **argv, int argi, std::ostream &os);
 	const char *syntax;
 } sgsnSubCmds[] = {{"list", sgsnCliList, "list  [(imsi|tlli) id]  # list all or specified MS"},
-		   {"free", sgsnCliFree, "free (imsi|tlli) id     # Delete something"},
-		   {"help", sgsnCliHelp, "help                  # print this help"},
-		   //{ "stat",gprsStats, "stat  # Show GPRS statistics" },
-		   //{ "debug",gprsDebug,	"debug [level]  # Set debug level; 0 turns off" },
-		   //{ "stop",gprsStop,	"stop [-c]  # stop gprs thread and if -c release channels" },
-		   {NULL, NULL}};
+	{"free", sgsnCliFree, "free (imsi|tlli) id     # Delete something"},
+	{"help", sgsnCliHelp, "help                  # print this help"},
+	//{ "stat",gprsStats, "stat  # Show GPRS statistics" },
+	//{ "debug",gprsDebug,	"debug [level]  # Set debug level; 0 turns off" },
+	//{ "stop",gprsStop,	"stop [-c]  # stop gprs thread and if -c release channels" },
+	{NULL, NULL}};
 
 static void sgsnCliHelp(int argc, char **argv, int argi, ostream &os)
 {

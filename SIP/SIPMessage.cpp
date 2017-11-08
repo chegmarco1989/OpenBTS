@@ -1,18 +1,19 @@
-/*
-* Copyright 2008 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* SIP/SIPMessage.cpp */
+/*-
+ * Copyright 2008 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::SIP // Can set Log.Level.SIP for debugging
 
@@ -21,13 +22,14 @@ information for this specific distribution.
 #include <stdlib.h>
 
 #include <ortp/ortp.h>
+#undef WARNING // The nimrods defined this to "warning"
+#undef CR      // This too
+
+#include <apps/OpenBTSConfig.h>
 
 #include "SIPBase.h"
 #include "SIPMessage.h"
 #include "SIPUtility.h"
-#include <OpenBTSConfig.h>
-#undef WARNING // The nimrods defined this to "warning"
-#undef CR      // This too
 
 using namespace std;
 
@@ -229,7 +231,7 @@ string SipMessage::smGenerate(string userAgent)
 		// Take out the headers we are going to add below.
 		const char *name = it->mName.c_str();
 		if (strcasecmp(name, "User-Agent") && /*strcasecmp(name,"Max-Forwards") &&*/
-		    strcasecmp(name, "Content-Type") && strcasecmp(name, "Content-Length")) {
+			strcasecmp(name, "Content-Type") && strcasecmp(name, "Content-Length")) {
 			appendHeader(&result, it->mName.c_str(), it->mValue);
 		}
 	}
@@ -415,7 +417,7 @@ string SipMessage::smGetPrecis() const
 		return format("method=%s to=%s", methodname, smGetToHeader().c_str());
 	} else {
 		return format("response code=%d %s %s to=%s", smGetCode(), smGetReason().c_str(),
-			      smCSeqMethod().c_str(), smGetToHeader().c_str());
+			smCSeqMethod().c_str(), smGetToHeader().c_str());
 	}
 }
 

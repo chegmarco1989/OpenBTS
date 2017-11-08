@@ -1,21 +1,22 @@
+/* Transceiver52M/Complex.h */
+/*-
+ * Copyright 2008 Free Software Foundation, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file templates for Complex classes
-unlike the built-in complex<> templates, these inline most operations for speed
-*/
-
-/*
-* Copyright 2008 Free Software Foundation, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+ * unlike the built-in complex<> templates, these inline most operations for speed
+ */
 
 #ifndef COMPLEXCPP_H
 #define COMPLEXCPP_H

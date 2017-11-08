@@ -1,17 +1,18 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* GPRS/MSInfo.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::GPRS // Can set Log.Level.GPRS for debugging
 
@@ -19,12 +20,13 @@
 
 #include <iomanip> // For fmtflags, setprecision
 
+#include <SGSNGGSN/Sgsn.h>
+
 #include "BSSG.h"
 #include "FEC.h"
 #include "MSInfo.h"
 #include "RLCEngine.h"
 #include "RLCMessages.h"
-#include "Sgsn.h"
 #include "TBF.h"
 
 namespace GPRS {
@@ -49,19 +51,15 @@ struct MultislotClass {
 // adjacent to the idle frame.
 
 static const int sMultislotMax = 45; // Table entries numbered 1-45.
-static MultislotClass sMultislotInfo[sMultislotMax] = {{1, 1, 1, 2},   {2, 2, 1, 3},   {3, 2, 2, 3},   {4, 3, 1, 4},
-						       {5, 2, 2, 4},   {6, 3, 2, 4},   {7, 3, 3, 4},   {8, 4, 1, 5},
-						       {9, 3, 2, 5},   {10, 4, 2, 5},  {11, 4, 3, 5},  {12, 4, 4, 5},
-						       {13, 3, 3, 16}, // These ones with sum=16 are class 2 MS,
-						       {14, 4, 4, 16}, // ie, send and receive simultaneously.
-						       {15, 5, 5, 16}, {16, 6, 6, 16}, {17, 7, 7, 16}, {18, 8, 8, 16},
-						       {19, 6, 2, 16}, {20, 6, 3, 16}, {21, 6, 4, 16}, {22, 6, 4, 16},
-						       {23, 6, 6, 16}, {24, 8, 2, 16}, {25, 8, 3, 16}, {26, 8, 4, 16},
-						       {27, 8, 4, 16}, {28, 8, 6, 16}, {29, 8, 8, 16}, {30, 5, 1, 6},
-						       {31, 5, 2, 6},  {32, 5, 3, 6},  {33, 5, 4, 6},  {34, 5, 5, 6},
-						       {35, 5, 1, 6},  {36, 5, 2, 6},  {37, 5, 3, 6},  {38, 5, 4, 6},
-						       {39, 5, 5, 6},  {40, 6, 1, 7},  {41, 6, 2, 7},  {42, 6, 3, 7},
-						       {43, 6, 4, 7},  {44, 6, 5, 7},  {45, 6, 6, 7}};
+static MultislotClass sMultislotInfo[sMultislotMax] = {{1, 1, 1, 2}, {2, 2, 1, 3}, {3, 2, 2, 3}, {4, 3, 1, 4},
+	{5, 2, 2, 4}, {6, 3, 2, 4}, {7, 3, 3, 4}, {8, 4, 1, 5}, {9, 3, 2, 5}, {10, 4, 2, 5}, {11, 4, 3, 5},
+	{12, 4, 4, 5}, {13, 3, 3, 16}, // These ones with sum=16 are class 2 MS,
+	{14, 4, 4, 16},		       // ie, send and receive simultaneously.
+	{15, 5, 5, 16}, {16, 6, 6, 16}, {17, 7, 7, 16}, {18, 8, 8, 16}, {19, 6, 2, 16}, {20, 6, 3, 16}, {21, 6, 4, 16},
+	{22, 6, 4, 16}, {23, 6, 6, 16}, {24, 8, 2, 16}, {25, 8, 3, 16}, {26, 8, 4, 16}, {27, 8, 4, 16}, {28, 8, 6, 16},
+	{29, 8, 8, 16}, {30, 5, 1, 6}, {31, 5, 2, 6}, {32, 5, 3, 6}, {33, 5, 4, 6}, {34, 5, 5, 6}, {35, 5, 1, 6},
+	{36, 5, 2, 6}, {37, 5, 3, 6}, {38, 5, 4, 6}, {39, 5, 5, 6}, {40, 6, 1, 7}, {41, 6, 2, 7}, {42, 6, 3, 7},
+	{43, 6, 4, 7}, {44, 6, 5, 7}, {45, 6, 6, 7}};
 
 // Return an entry from the 45.002 Annex B table.
 // We use T(rb) and T(tb) instead of T(ra), T(ta) because the latter are only used
@@ -578,7 +576,7 @@ bool MSInfo::msAssignChannels()
 				maxup = slots.mMultislotTx;
 			}
 			GPRSLOG(1) << format("Multislot mscap=%d/%d max,down/up=%d/%d", slots.mMultislotRx,
-					     slots.mMultislotTx, maxdown, maxup);
+				slots.mMultislotTx, maxdown, maxup);
 
 			// Dont bother with this test.  Would only occur if you set
 			// maxup < maxdown on a multislot class phone, and so far all of
@@ -607,7 +605,7 @@ bool MSInfo::msAssignChannels()
 		msAssignChannels2(maxdown, maxup, slots.mMultislotSum);
 
 		LOGWATCHF("Channel Assign, max:down/up=%d/%d ch down/up=%zu/%zu\n", maxdown, maxup, msPCHDowns.size(),
-			  msPCHUps.size());
+			msPCHUps.size());
 
 		// If we are multislot, log a message:
 		if (msPCHDowns.size() > 1) {

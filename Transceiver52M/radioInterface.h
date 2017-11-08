@@ -1,20 +1,22 @@
-/*
-* Copyright 2008 Free Software Foundation, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* Transceiver52M/radioInterface.h */
+/*-
+ * Copyright 2008 Free Software Foundation, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#include <CommonLibs/LinkedLists.h>
+#include <GSM/GSMCommon.h>
 
-*/
-
-#include "GSMCommon.h"
-#include "LinkedLists.h"
 #include "radioClock.h"
 #include "radioDevice.h"
 #include "radioVector.h"
@@ -79,8 +81,8 @@ public:
 	virtual void close();
 
 	/** constructor */
-	RadioInterface(RadioDevice *wRadio = NULL, int receiveOffset = 3, int wSPS = 4,
-		       GSM::Time wStartTime = GSM::Time(0));
+	RadioInterface(
+		RadioDevice *wRadio = NULL, int receiveOffset = 3, int wSPS = 4, GSM::Time wStartTime = GSM::Time(0));
 
 	/** destructor */
 	virtual ~RadioInterface();
@@ -155,8 +157,8 @@ private:
 	void pullBuffer();
 
 public:
-	RadioInterfaceResamp(RadioDevice *wRadio = NULL, int receiveOffset = 3, int wSPS = 4,
-			     GSM::Time wStartTime = GSM::Time(0));
+	RadioInterfaceResamp(
+		RadioDevice *wRadio = NULL, int receiveOffset = 3, int wSPS = 4, GSM::Time wStartTime = GSM::Time(0));
 
 	~RadioInterfaceResamp();
 

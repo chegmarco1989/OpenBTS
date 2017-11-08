@@ -1,3 +1,4 @@
+/* CLI/CLI.cpp */
 /*-
  * Copyright 2009, 2010 Free Software Foundation, Inc.
  * Copyright 2010 Kestrel Signal Processing, Inc.
@@ -23,9 +24,10 @@
 #include <map>
 #include <string>
 
+#include <CommonLibs/Logger.h>
+#include <Globals/Globals.h>
+
 #include "CLI.h"
-#include <Globals.h>
-#include <Logger.h>
 
 namespace CommandLine {
 

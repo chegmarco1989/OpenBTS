@@ -1,27 +1,28 @@
-/* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* SIP/SIPExport.h */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef _SIPEXPORTH_
 #define _SIPEXPORTH_ 1
 
-//#include <SIPBase.h>
-#include <ControlTransfer.h>
+#include <Control/ControlTransfer.h>
 
 namespace SIP {
 
 extern void startRegister(TranEntryId tid, const Control::FullMobileId &msic, const string rand, const string sres,
-			  L3LogicalChannel *chan);
+	L3LogicalChannel *chan);
 extern void startUnregister(const FullMobileId &msid, L3LogicalChannel *chan);
 
 class SipDialog;

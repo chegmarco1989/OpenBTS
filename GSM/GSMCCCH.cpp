@@ -1,30 +1,30 @@
-/*
-* Copyright 2014 Range Networks, Inc.
-*
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-*/
+/* GSM/GSMCCCH.cpp */
+/*-
+ * Copyright 2014 Range Networks, Inc.
+ *
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ */
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
 #include <math.h>
 
+#include <Control/ControlTransfer.h>
+#include <Control/L3TranEntry.h> // For NewTransactionTable.
+#include <GPRS/MAC.h>
+
 #include "GSMCCCH.h"
-#include "GSMLogicalChannel.h"
 #include "GSMRadioResource.h"
-#include <ControlTransfer.h>
-#include <L3TranEntry.h> // For NewTransactionTable.
-#include <MAC.h>
 
 using namespace Control;
 using namespace GPRS;
@@ -357,7 +357,7 @@ bool CCCHLogicalChannel::processRaches()
 		// TODO: Update T3101.
 
 		L3ImmediateAssignment assign(L3RequestReference(rach->mRA, rach->mWhen), LCH->channelDescription(),
-					     L3TimingAdvance(initialTA));
+			L3TimingAdvance(initialTA));
 		// assign.setStartFrame(rach->mReadyTime.FN() + 104);
 
 		if (0) { // This was for debugging.  Adding this delay made the layer1 connection reliable.

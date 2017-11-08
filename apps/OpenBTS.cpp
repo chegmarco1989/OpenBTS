@@ -1,20 +1,20 @@
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2011, 2012, 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* apps/OpenBTS.cpp */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2011, 2012, 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -37,6 +37,26 @@
 #include <vector>
 
 #include <config.h> // For VERSION
+
+#include <CLI/CLI.h>
+#include <CommonLibs/Configuration.h>
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Reporting.h>
+#include <CommonLibs/SelfDetect.h>
+#include <Control/ControlTransfer.h>
+#include <Control/TMSITable.h>
+#include <GSM/GSMConfig.h>
+#include <GSM/GSML3RRElements.h>
+#include <GSM/GSMLogicalChannel.h>
+#include <GSM/PhysicalStatus.h>
+#include <GSM/PowerManager.h>
+#include <Globals/Globals.h>
+#include <NodeManager/NodeManager.h>
+#include <Peering/NeighborTable.h>
+#include <Peering/Peering.h>
+#include <SIP/SIP2Interface.h>
+#include <TRXManager/TRXManager.h>
+
 #include "OpenBTSConfig.h"
 
 std::vector<std::string> configurationCrossCheck(const std::string &key);
@@ -48,36 +68,10 @@ static const char *cOpenBTSConfigFile =
 	getenv(cOpenBTSConfigEnv) ? getenv(cOpenBTSConfigEnv) : "/etc/OpenBTS/OpenBTS.db";
 OpenBTSConfig gConfig(cOpenBTSConfigFile, "OpenBTS", getConfigurationKeys());
 
-#include <Logger.h>
 Log dummy("openbts", gConfig.getStr("Log.Level").c_str(), LOG_LOCAL7);
 
 // Set up the performance reporter.
-#include <Reporting.h>
 ReportingTable gReports(gConfig.getStr("Control.Reporting.StatsTable").c_str());
-
-#include <TRXManager.h>
-//#include <GSML1FEC.h>
-#include <GSMConfig.h>
-//#include <GSMSAPMux.h>
-//#include <GSML3RRMessages.h>
-#include <GSMLogicalChannel.h>
-
-#include <Control/TMSITable.h>
-#include <ControlTransfer.h>
-
-#include <Globals.h>
-
-#include "NeighborTable.h"
-#include <CLI.h>
-#include <Configuration.h>
-#include <GSML3RRElements.h>
-#include <NodeManager.h>
-#include <Peering.h>
-#include <PhysicalStatus.h>
-#include <PowerManager.h>
-#include <SIP2Interface.h>
-
-#include "SelfDetect.h"
 
 using namespace std;
 using namespace GSM;
@@ -115,8 +109,8 @@ GSMConfig gBTS;
 // the Logger may not have been initialized yet.
 
 // Our interface to the software-defined radio.
-TransceiverManager gTRX(gConfig.getNum("GSM.Radio.ARFCNs"), gConfig.getStr("TRX.IP").c_str(),
-			gConfig.getNum("TRX.Port"));
+TransceiverManager gTRX(
+	gConfig.getNum("GSM.Radio.ARFCNs"), gConfig.getStr("TRX.IP").c_str(), gConfig.getNum("TRX.Port"));
 
 /** The global peering interface. */
 Peering::PeerInterface gPeerInterface;
@@ -335,7 +329,7 @@ void createStats()
 // 1. Provide a seprate config OpenBTS.db file for each OpenBTS + transceiver pair.
 //		I run each OpenBTS+transceiver pair in a separate directory with its own OpenBTS.db set as below.
 //		To set the config file You can use the --config option or set the OpenBTSConfigFile environment
-//variable, 		which also works with gdb.
+// variable, 		which also works with gdb.
 // 2. Set TRX.RadioNumber to 1,2,3,...
 // 3. Set transceiver communication TRX.Port differently.  TRX uses >100 ports, so use: 5700, 5900, 6100, etc.
 // 4. Set GSM.Radio.C0 differently.
@@ -718,7 +712,7 @@ int main(int argc, char **argv)
 		// I am leaving out the SACCH in these descriptions; all TCH or SDCCH include the same number of SACCH.
 		// Combination-V is BCCH beacon + 3 AGCH + 4 SDCCH.  See GSM 5.02 figure 7 (page 59)
 		//		Note: A complete C-V mapping requires two consecutive 51-multiframes because of the way
-		//SACCH are interleaved.
+		// SACCH are interleaved.
 		// Combination-IV is BCCH beacon + 9 AGCH.
 		//		BS_CC_CHANS specifies how many timeslots support CCCH, from 1 to 4.
 		//		BS_AG_BLKS_RES specifies the number of beacon AGCH NOT used by paging.
@@ -812,8 +806,8 @@ int main(int argc, char **argv)
 		LOG(INFO) << "system ready";
 
 		gNodeManager.setAppLogicHandler(&nmHandler);
-		gNodeManager.start(gConfig.getNum("NodeManager.Commands.Port"),
-				   gConfig.getNum("NodeManager.Events.Port"));
+		gNodeManager.start(
+			gConfig.getNum("NodeManager.Commands.Port"), gConfig.getNum("NodeManager.Events.Port"));
 
 		COUT("\nsystem ready\n");
 		COUT("\nuse the OpenBTSCLI utility to access CLI\n");
@@ -933,7 +927,7 @@ vector<string> configurationCrossCheck(const string &key)
 	} else if (key.compare("Control.LUR.FailedRegistration.Message") == 0 ||
 		   key.compare("Control.LUR.FailedRegistration.ShortCode") == 0) {
 		if (gConfig.getStr("Control.LUR.FailedRegistration.Message").length() &&
-		    !gConfig.getStr("Control.LUR.FailedRegistration.ShortCode").length()) {
+			!gConfig.getStr("Control.LUR.FailedRegistration.ShortCode").length()) {
 			warning << "Control.LUR.FailedRegistration.Message is enabled but will not be functional until "
 				   "Control.LUR.FailedRegistration.ShortCode is set";
 			warnings.push_back(warning.str());
@@ -944,7 +938,7 @@ vector<string> configurationCrossCheck(const string &key)
 	} else if (key.compare("Control.LUR.NormalRegistration.Message") == 0 ||
 		   key.compare("Control.LUR.NormalRegistration.ShortCode") == 0) {
 		if (gConfig.getStr("Control.LUR.NormalRegistration.Message").length() &&
-		    !gConfig.getStr("Control.LUR.NormalRegistration.ShortCode").length()) {
+			!gConfig.getStr("Control.LUR.NormalRegistration.ShortCode").length()) {
 			warning << "Control.LUR.NormalRegistration.Message is enabled but will not be functional until "
 				   "Control.LUR.NormalRegistration.ShortCode is set";
 			warnings.push_back(warning.str());
@@ -955,7 +949,7 @@ vector<string> configurationCrossCheck(const string &key)
 	} else if (key.compare("Control.LUR.OpenRegistration") == 0 ||
 		   key.compare("Control.LUR.OpenRegistration.ShortCode") == 0) {
 		if (gConfig.getStr("Control.LUR.OpenRegistration").length() &&
-		    !gConfig.getStr("Control.LUR.OpenRegistration.ShortCode").length()) {
+			!gConfig.getStr("Control.LUR.OpenRegistration.ShortCode").length()) {
 			warning << "Control.LUR.OpenRegistration is enabled but will not be functional until "
 				   "Control.LUR.OpenRegistration.ShortCode is set";
 			warnings.push_back(warning.str());
@@ -992,8 +986,8 @@ vector<string> configurationCrossCheck(const string &key)
 			string speech = gConfig.getStr("SIP.Proxy.Speech");
 			string ussd = gConfig.getStr("SIP.Proxy.USSD");
 			if (registration.find(loopback) == std::string::npos ||
-			    sms.find(loopback) == std::string::npos || speech.find(loopback) == std::string::npos ||
-			    (ussd.length() && ussd.find(loopback) == std::string::npos)) {
+				sms.find(loopback) == std::string::npos || speech.find(loopback) == std::string::npos ||
+				(ussd.length() && ussd.find(loopback) == std::string::npos)) {
 				warning << "A non-local IP is being used for one or more SIP.Proxy.* settings but "
 					   "SIP.Local.IP is still set to 127.0.0.1. ";
 				warning << "Set SIP.Local.IP to the IP address of this machine as seen by the proxies.";

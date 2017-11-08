@@ -1,18 +1,19 @@
-/*
-* Copyright 2008 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* SIP/SIPUtility.cpp */
+/*-
+ * Copyright 2008 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::SIP // Can set Log.Level.SIP for debugging.  If there were any LOG() calls in this file.
 
@@ -22,20 +23,20 @@ information for this specific distribution.
 
 #include <ortp/ortp.h>
 #include <ortp/telephonyevents.h>
+#undef WARNING // The nimrods defined this to "warning"
+#undef CR      // This too
+
+#include <CommonLibs/Sockets.h>
+#include <apps/OpenBTSConfig.h>
 
 #include "SIPUtility.h"
-#include <OpenBTSConfig.h>
-#include <Sockets.h>
 
-// #include <GSML3CommonElements.h> // (pat 3-2014) Take this out temporarily to avoid referencing gBTS from the SIP
-// directory.
-
-//#include "md5.h"
+// (pat 3-2014) Take this out temporarily to avoid referencing gBTS from the SIP directory.
+// #include <GSML3CommonElements.h>
 
 namespace SIP {
 
 using namespace std;
-// using namespace MD5;
 
 string localIP()
 { // Replaces mSIPIP.
@@ -292,7 +293,7 @@ string globallyUniqueId(const char *start)
 	GSM::L3LocationAreaIdentity lai = gBTS.LAI(); // 3 digit MCC, 3 digit MNC, 16-bit LAC.
 	char buf[80];
 	snprintf(buf, 80, "%s%03u%02u%x%x-%x%x", start, lai.MCC(), lai.MNC(), lai.LAC(), cellid(), timeUniquifier(),
-		 (unsigned)(0xffffffff & random()));
+		(unsigned)(0xffffffff & random()));
 	return string(buf);
 }
 #endif

@@ -1,31 +1,28 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* SGSNGGSN/Ggsn.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define GGSN_IMPLEMENTATION 1
 
 #include <poll.h>
 #include <stdint.h>
 
+#include <GSM/GSMConfig.h>
+
 #include "Ggsn.h"
 #include "LLC.h"
-#include "Sgsn.h"
-#include "SgsnBase.h"
-#include "miniggsn.h"
-#include <GSMConfig.h>
-//#include "MSInfo.h"	// To dump MSInfo
-#include "GPRSL3Messages.h"
 
 #define CASENAME(x) \
 	case x: \
@@ -186,7 +183,7 @@ void *miniGgsnShellServiceLoop(void *arg)
 		if (0 != access(shname.c_str(), R_OK))
 			continue;
 		runcmd("/bin/sh", "sh", shname.c_str(), req->msrCommand.c_str(), req->msrArg1.c_str(),
-		       req->msrArg2.c_str(), req->msrArg3.c_str());
+			req->msrArg2.c_str(), req->msrArg3.c_str());
 		delete req;
 	}
 	return 0;
@@ -305,7 +302,7 @@ static void setPco(ByteVector &resultpco, ByteVector &pcoReq)
 								goto bad_ipcp_opt_len;
 							}
 							memcpy(&op[2], &mg_dns[mg_dns[1] ? 1 : 0],
-							       4); // addr in network order.
+								4); // addr in network order.
 							break;
 						case 2:
 							what = "IP Compression Protocol";
@@ -322,7 +319,7 @@ static void setPco(ByteVector &resultpco, ByteVector &pcoReq)
 							// up improperly.
 							MGWARN("SGSN: warning: ignoring PDP Context activation IPCP "
 							       "option %d %s\n",
-							       pc[4], what);
+								pc[4], what);
 							break;
 						}
 					}

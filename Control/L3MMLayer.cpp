@@ -1,36 +1,34 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* Control/L3MMLayer.cpp */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 // Written by Pat Thompson
 
 #define LOG_GROUP LogGroup::Control // Can set Log.Level.Control for debugging
 
-#include "L3MMLayer.h"
+#include <CommonLibs/Threads.h>
+#include <GSM/GSMConfig.h>
+#include <GSM/GSML3Message.h>      // Needed for L3LogicalChannel
+#include <GSM/GSMLogicalChannel.h> // Needed for L3LogicalChannel
+
 #include "ControlCommon.h"
 #include "L3CallControl.h"
+#include "L3MMLayer.h"
 #include "L3MobilityManagement.h"
 #include "L3SMSControl.h"
 #include "L3TranEntry.h"
-#include <GSMConfig.h>
-#include <GSML3Message.h>      // Needed for L3LogicalChannel
-#include <GSMLogicalChannel.h> // Needed for L3LogicalChannel
-#include <GSMTransfer.h>
-#include <Interthread.h>
-#include <Logger.h>
-#include <SIPDialog.h>
-#include <Threads.h>
 
 namespace Control {
 
@@ -163,7 +161,7 @@ bool MMContext::mmIsEmpty()
 bool MMContext::mmInMobilityManagement()
 {
 	ScopedLock lock(gMMLock, __FILE__,
-			__LINE__); // (pat) I dont think this lock is necessary because we use RefCntPointer now.
+		__LINE__); // (pat) I dont think this lock is necessary because we use RefCntPointer now.
 	return !mmGetTran(MMContext::TE_MM).isNULL();
 }
 
@@ -209,7 +207,7 @@ bool MMContext::mmCheckNewActivity()
 	if (mmIsEmpty() && mmcDuration() > 5) {
 		LOG(DEBUG) << "closing" << this;
 		mmcChan->chanClose(L3RRCause::Normal_Event, L3_RELEASE_REQUEST,
-				   TermCause::Local(L3Cause::No_Transaction_Expected));
+			TermCause::Local(L3Cause::No_Transaction_Expected));
 		return true; // This is new activity - the calling loop should skip back to the top
 	}
 	return false;
@@ -267,8 +265,7 @@ GSM::ChannelType MMUser::mmuGetInitialChanType() const
 }
 
 // Caller enters with the whole MMLayer locked so no one will try to add new contexts while we are doing this.
-void MMUser::mmuFree(
-	MMUserMap::iterator *piter,
+void MMUser::mmuFree(MMUserMap::iterator *piter,
 	TermCause cause) // Some callers deleted it from the MMUsers more efficiently than looking it up again.
 {
 	devassert(mmuContext == NULL); // Caller already unlinked or verified that it was unattached.

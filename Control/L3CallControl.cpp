@@ -1,18 +1,18 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* Control/L3CallControl.cpp */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 // Written by Pat Thompson
 
@@ -20,20 +20,20 @@
 
 #include <iostream>
 
+#include <CLI/CLI.h>
+#include <GSM/GSMCommon.h>
+#include <GSM/GSML3CCElements.h>
+#include <GSM/GSML3Message.h>
+#include <GSM/GSML3SSMessages.h>
+#include <GSM/GSMLogicalChannel.h>
+#include <Peering/Peering.h>
+#include <SIP/SIPDialog.h>
+
 #include "ControlCommon.h"
 #include "L3CallControl.h"
 #include "L3MMLayer.h"
-#include "L3StateMachine.h"
 #include "L3SupServ.h"
 #include "L3TranEntry.h"
-#include <CLI.h>
-#include <GSMCommon.h>
-#include <GSML3CCElements.h>
-#include <GSML3Message.h>
-#include <GSML3SSMessages.h>
-#include <GSMLogicalChannel.h>
-#include <Peering.h>
-#include <SIPDialog.h>
 
 namespace Control {
 
@@ -322,7 +322,7 @@ MachineStatus CCBase::defaultMessages(int state, const GSM::L3Message *l3msg)
 		timerStopAll();
 		const L3Disconnect *dmsg = dynamic_cast<typeof(dmsg)>(l3msg);
 		return sendRelease(TermCause::Local(dmsg->cause().cause()),
-				   false); // (pat) Preserve the cause the handset sent us.
+			false); // (pat) Preserve the cause the handset sent us.
 		// return sendRelease(TermCause::Local(L3Cause::Normal_Call_Clearing));  //svg change from CallRejected
 		// to NormalCallClearing 05/29/14
 	}
@@ -471,15 +471,15 @@ MachineStatus MOCMachine::handleSetupMsg(const L3Setup *setup)
 	// const char * imsi = tran()->subscriberIMSI();		// someday these will be a strings already
 	// The sipDialogMOC creates the SIP Dialog and sends the INVITE.
 	// The setDialog associates the new dialog with this transaction.
-	SipDialog *dialog = SipDialog::newSipDialogMOC(tran()->tranID(), tran()->subscriber(), calledNumber,
-						       tran()->getCodecs(), channel());
+	SipDialog *dialog = SipDialog::newSipDialogMOC(
+		tran()->tranID(), tran()->subscriber(), calledNumber, tran()->getCodecs(), channel());
 	if (dialog == NULL) {
 		// We failed to create the SIP session for some reason.  I dont think this can happen, but dont crash
 		// here.
 		LOG(ERR) << "Failed to create SIP Dialog, dropping connection";
 		LOG(INFO) << "SIP term info closeChannel called in handlesetupMessage";
-		return closeChannel(L3RRCause::Unspecified, L3_RELEASE_REQUEST,
-				    TermCause::Local(L3Cause::Sip_Internal_Error));
+		return closeChannel(
+			L3RRCause::Unspecified, L3_RELEASE_REQUEST, TermCause::Local(L3Cause::Sip_Internal_Error));
 	}
 	// setDialog(dialog);	Moved into newSipDialogMOC to eliminate a race.
 
@@ -538,7 +538,7 @@ MachineStatus MOCMachine::machineRunState(int state, const GSM::L3Message *l3msg
 	// This is the start state:
 	case L3CASE_MM(CMServiceRequest): {
 		timerStart(T303, T303ms,
-			   TimerAbortTran); // MS side: start CMServiceRequest sent; stop CallProceeding received.
+			TimerAbortTran); // MS side: start CMServiceRequest sent; stop CallProceeding received.
 		// This is both the start state and a request to start a new MO SMS when one is already in progress, as
 		// per GSM 4.11 5.4
 		setGSMState(CCState::MOCInitiated);
@@ -715,8 +715,8 @@ MachineStatus MOCMachine::machineRunState(int state, const GSM::L3Message *l3msg
 			if (!encryptionAlgorithm) {
 				LOG(DEBUG) << "A5/3 and A5/1 not supported: NOT sending Ciphering Mode Command on "
 					   << *channel() << " for " << tran()->subscriberIMSI();
-			} else if (channel()->getL2Channel()->decryptUplink_maybe(tran()->subscriberIMSI(),
-										  encryptionAlgorithm)) {
+			} else if (channel()->getL2Channel()->decryptUplink_maybe(
+					   tran()->subscriberIMSI(), encryptionAlgorithm)) {
 				LOG(DEBUG) << "sending Ciphering Mode Command on " << *channel() << " for IMSI"
 					   << tran()->subscriberIMSI();
 				channel()->l3sendm(GSM::L3CipheringModeCommand(
@@ -803,8 +803,8 @@ void AssignTCHMachine::sendReassignment()
 	channel()->l3sendm(GSM::L3AssignmentCommand(tch->channelDescription(), speechMode));
 }
 
-MachineStatus AssignTCHMachine::machineRunState(int state, const GSM::L3Message *l3msg,
-						const SIP::DialogMessage *sipmsg)
+MachineStatus AssignTCHMachine::machineRunState(
+	int state, const GSM::L3Message *l3msg, const SIP::DialogMessage *sipmsg)
 {
 	PROCLOG2(DEBUG, state) << LOGVAR(l3msg) << LOGVAR(sipmsg) << LOGVAR2("imsi", tran()->subscriber());
 	static const GSM::L3ChannelMode speechMode(GSM::L3ChannelMode::SpeechV1);
@@ -1032,7 +1032,7 @@ MachineStatus MTCMachine::machineRunState(int state, const GSM::L3Message *l3msg
 		if (msg->mFacility.mExtant)
 			WATCH(msg); // USSD DEBUG!
 		timerStart(T301, T301ms,
-			   TimerAbortTran); // Time state "Call Received"; start Alert recv; stop Connect recv.
+			TimerAbortTran); // Time state "Call Received"; start Alert recv; stop Connect recv.
 		setGSMState(CCState::CallReceived);
 		if (getDialog()) {
 			getDialog()->MTCSendRinging();
@@ -1076,8 +1076,8 @@ MachineStatus MTCMachine::machineRunState(int state, const GSM::L3Message *l3msg
 			if (!encryptionAlgorithm) {
 				LOG(DEBUG) << "A5/3 and A5/1 not supported: NOT sending Ciphering Mode Command on "
 					   << *channel() << " for IMSI" << tran()->subscriberIMSI();
-			} else if (channel()->getL2Channel()->decryptUplink_maybe(tran()->subscriberIMSI(),
-										  encryptionAlgorithm)) {
+			} else if (channel()->getL2Channel()->decryptUplink_maybe(
+					   tran()->subscriberIMSI(), encryptionAlgorithm)) {
 				LOG(DEBUG) << "sending Ciphering Mode Command on " << *channel() << " for IMSI"
 					   << tran()->subscriberIMSI();
 				channel()->l3sendm(GSM::L3CipheringModeCommand(
@@ -1120,8 +1120,8 @@ MachineStatus MTCMachine::machineRunState(int state, const GSM::L3Message *l3msg
 	}
 }
 
-MachineStatus InboundHandoverMachine::machineRunState(int state, const GSM::L3Message *l3msg,
-						      const SIP::DialogMessage *sipmsg)
+MachineStatus InboundHandoverMachine::machineRunState(
+	int state, const GSM::L3Message *l3msg, const SIP::DialogMessage *sipmsg)
 {
 	PROCLOG2(DEBUG, state) << LOGVAR(l3msg) << LOGVAR(sipmsg) << LOGVAR2("imsi", tran()->subscriber());
 
@@ -1209,7 +1209,7 @@ MachineStatus InboundHandoverMachine::machineRunState(int state, const GSM::L3Me
 			machineErrorMessage(LOG_NOTICE, state, l3msg, sipmsg, "waiting for Handover Complete");
 			TermCause cause = TermCause::Local(L3Cause::Invalid_Handover_Message);
 			return closeChannel(L3RRCause::Message_Type_Not_Compapatible_With_Protocol_State,
-					    L3_RELEASE_REQUEST, cause);
+				L3_RELEASE_REQUEST, cause);
 		} else {
 			// This state machine may need to be modified to handle this message, whatever it is:
 			machineErrorMessage(LOG_NOTICE, state, l3msg, sipmsg, "waiting for SIP Handover Complete");

@@ -1,26 +1,27 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* Control/L3LogicalChannel.h */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 #ifndef _L3LOGICALCHANNEL_H_
 #define _L3LOGICALCHANNEL_H_ 1
 
+#include <GSM/GSMTransfer.h>
+#include <GSMShare/L3Enums.h>
+
 #include "ControlTransfer.h"
 #include "L3TermCause.h"
-//#include <GSML3RRElements.h>
-#include <GSMTransfer.h>
-#include <L3Enums.h>
 
 namespace Control {
 
@@ -140,9 +141,9 @@ public:
 	// void setMMC(MMUser *mmc) { mMMC = mmc; }
 	// void chanLost();
 	// Send a channel release message, then release it.
-	void chanClose(GSM::RRCause cause,       // cause sent to the handset.
-		       GSM::Primitive prim,      // prim is RELEASE or HARDRELEASE
-		       TermCause upstreamCause); // All active transactions closed with this - sent upstram via SIP.
+	void chanClose(GSM::RRCause cause, // cause sent to the handset.
+		GSM::Primitive prim,       // prim is RELEASE or HARDRELEASE
+		TermCause upstreamCause);  // All active transactions closed with this - sent upstram via SIP.
 	// Request an immediate channel release.
 	// Dont use HARDRELEASE if you can avoid it - only used when the channel is already completely cleared.
 	void chanRelease(Primitive prim, TermCause cause);

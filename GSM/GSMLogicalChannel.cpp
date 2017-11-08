@@ -1,22 +1,22 @@
-/**@file Logical Channel.  */
+/* GSM/GSMLogicalChannel.cpp */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/**@file Logical Channel. */
 
 // 6-2014: Pat Thompson heavily rewrote this.
 
@@ -72,19 +72,16 @@
 // |         L1FEC                   |
 // +---------------------------------+
 
-#include "GSMLogicalChannel.h"
+#include <Control/ControlTransfer.h>
+#include <Control/L3Handover.h>
+#include <GPRS/GPRSExport.h>
+#include <Globals/Globals.h>
+
 #include "GSMConfig.h"
 #include "GSML3Message.h"
-#include "GSML3RRElements.h"
 #include "GSML3RRMessages.h"
+#include "GSMLogicalChannel.h"
 #include "GSMSMSCBL3Messages.h"
-
-#include "GPRSExport.h"
-#include <ControlTransfer.h>
-#include <Globals.h>
-#include <L3Handover.h>
-
-#include <Logger.h>
 
 using namespace std;
 
@@ -724,7 +721,7 @@ SDCCHLogicalChannel::SDCCHLogicalChannel(unsigned wCN, unsigned wTN, const Compl
 }
 
 SACCHLogicalChannel::SACCHLogicalChannel(unsigned wCN, unsigned wTN, const MappingPair &wMapping,
-					 /*const*/ L2LogicalChannel *wHost)
+	/*const*/ L2LogicalChannel *wHost)
 	: mHost(wHost)
 {
 	mSACCHL1 = new SACCHL1FEC(wCN, wTN, wMapping);
@@ -790,7 +787,7 @@ static L3Message *parseSACCHMessage(const L3Frame *l3frame)
 bool SACCHLogicalChannel::processMeasurementReport(L3Frame *rrFrame)
 {
 	if (!(rrFrame->isData() && rrFrame->PD() == L3RadioResourcePD &&
-	      rrFrame->MTI() == L3RRMessage::MeasurementReport)) {
+		    rrFrame->MTI() == L3RRMessage::MeasurementReport)) {
 		return false;
 	}
 

@@ -1,35 +1,33 @@
+/* Control/DCCHDispatch.cpp */
+/*-
+ * Copyright 2008, 2009 Free Software Foundation, Inc.
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Idle-mode dispatcher for dedicated control channels. */
-
-/*
-* Copyright 2008, 2009 Free Software Foundation, Inc.
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #define LOG_GROUP LogGroup::Control
 
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Reporting.h>
+#include <GSM/GSMConfig.h>
+#include <Globals/Globals.h>
+
 #include "ControlCommon.h"
-//#include "L3CallControl.h"
 #include "L3LogicalChannel.h"
 #include "L3MobilityManagement.h"
 #include "L3StateMachine.h"
-#include <GSMConfig.h>
-
-#include <Logger.h>
-#undef WARNING
-#include <Globals.h>
-#include <Reporting.h>
 
 using namespace std;
 using namespace GSM;

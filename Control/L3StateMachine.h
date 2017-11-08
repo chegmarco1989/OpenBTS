@@ -1,19 +1,20 @@
+/* Control/L3StateMachine.h */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Declarations for Circuit Switched State Machine and related classes. */
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 // TODO: To avoid bugs where the state machines get stuck,
 // send a HARDRELEASE from L3 when mT3109 expires, which is the uplink activity counter in XCCHL1Decoder,
@@ -28,23 +29,18 @@
 
 #include <map>
 
-#include <Interthread.h>
-#include <Logger.h>
-#include <Timeval.h>
+#include <CommonLibs/Interthread.h>
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Timeval.h>
+#include <GSM/GSML3CCMessages.h>
+#include <GSM/GSML3MMMessages.h>
+#include <GSM/GSML3RRMessages.h>
+#include <GSM/GSMTransfer.h>
 
 #include "ControlCommon.h"
 #include "L3TermCause.h"
 #include "L3Utils.h"
-#include <GSMTransfer.h>
-//#include <GSML3CommonElements.h>
-//#include <GSML3MMElements.h>
-//#include <GSML3CCElements.h>
-//#include <GSML3Message.h>		// Doesnt this poor L3Message get lonely?  When apparently there are multiple
-// L3MMMessages and L3CCMessages?
-#include <GSML3CCMessages.h>
-#include <GSML3MMMessages.h>
-#include <GSML3RRMessages.h>
-//#include <SIPDialog.h>
+
 namespace SIP {
 
 class SipDialog;
@@ -164,8 +160,8 @@ public:
 	virtual const char *debugName() const = 0;
 	MachineStatus unexpectedState(int state, const L3Message *l3msg);
 	MachineStatus closeChannel(RRCause rrcause, Primitive prim, TermCause cause);
-	void machineErrorMessage(int level, int state, const L3Message *l3msg, const SIP::DialogMessage *sipmsg,
-				 const char *format);
+	void machineErrorMessage(
+		int level, int state, const L3Message *l3msg, const SIP::DialogMessage *sipmsg, const char *format);
 
 	virtual void handleTerminationRequest() {} // Procedure can over-ride this to do nicer cleanup.
 
@@ -177,11 +173,10 @@ public:
 
 	// The state machine must implement one of the following methods, depending on how much control it wants over
 	// its input.
-	virtual MachineStatus machineRunState(int state, const GSM::L3Message *l3msg = NULL,
-					      const SIP::DialogMessage *sipmsg = NULL);
+	virtual MachineStatus machineRunState(
+		int state, const GSM::L3Message *l3msg = NULL, const SIP::DialogMessage *sipmsg = NULL);
 	virtual MachineStatus machineRunState1(int state, const GSM::L3Frame *frame = NULL,
-					       const GSM::L3Message *l3msg = NULL,
-					       const SIP::DialogMessage *sipmsg = NULL);
+		const GSM::L3Message *l3msg = NULL, const SIP::DialogMessage *sipmsg = NULL);
 
 	// virtual MachineStatus procRunSipMsg(const SIP::DialogMessage *sipmsg) = 0;
 

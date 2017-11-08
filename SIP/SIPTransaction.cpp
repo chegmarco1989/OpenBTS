@@ -1,28 +1,26 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* SIP/SIPTransaction.cpp */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 // Written by Pat Thompson.
 
 #define LOG_GROUP LogGroup::SIP // Can set Log.Level.SIP for debugging
 
 #include "SIPTransaction.h"
 #include "SIP2Interface.h"
-#include "SIPBase.h"
-#include "SIPExport.h"
 #include "SIPMessage.h"
-#include "SIPUtility.h"
 
 namespace SIP {
 
@@ -59,16 +57,16 @@ static const string cREGISTERstr("REGISTER");
 void SipTransaction::_define_vtable() {}
 void SipTransaction::TUTimeoutV() { LOG(DEBUG); }
 
-void SipTransaction::stInitNonDialogTransaction(TranEntryId tranid, string wBranch, SipMessage *request,
-						const IPAddressSpec *wPeer)
+void SipTransaction::stInitNonDialogTransaction(
+	TranEntryId tranid, string wBranch, SipMessage *request, const IPAddressSpec *wPeer)
 {
 	mstTranId = tranid;
 	mstBranch = wBranch;
 	stSaveRequestId(request);
 	mstPeer = *wPeer;
 }
-void SipTransaction::stInitNonDialogTransaction(TranEntryId tranid, string wBranch, SipMessage *request, string wProxy,
-						const char *wProxyProvenance)
+void SipTransaction::stInitNonDialogTransaction(
+	TranEntryId tranid, string wBranch, SipMessage *request, string wProxy, const char *wProxyProvenance)
 {
 	mstTranId = tranid;
 	mstBranch = wBranch;
@@ -326,8 +324,8 @@ void SipClientTrLayer::TLWriteLowSideV(SipMessage *request)
 	mstState = stCallingOrTrying;
 }
 
-void SipClientTrLayer::sctInitRegisterClientTransaction(SipDialog *wRegistrar, TranEntryId tid, SipMessage *request,
-							string branch)
+void SipClientTrLayer::sctInitRegisterClientTransaction(
+	SipDialog *wRegistrar, TranEntryId tid, SipMessage *request, string branch)
 {
 	// stInitInDialogTransaction(wDialog, branch, request);	// Do this first.
 	stInitNonDialogTransaction(tid, branch, request, wRegistrar->dsPeer());
@@ -583,8 +581,8 @@ void SipRegisterTU::TUWriteHighSideV(SipMessage *sipmsg)
 		// setDialogState(Fail,sipmsg);
 		LOG(INFO) << whatami << "received:" << sipmsg;
 		if (stKind == KindRegister) {
-			sendAuthFailMessage(code, sipmsg->smGetRand401(),
-					    sipmsg->msmHeaders.paramFind(pRejectCauseHeader));
+			sendAuthFailMessage(
+				code, sipmsg->smGetRand401(), sipmsg->msmHeaders.paramFind(pRejectCauseHeader));
 		}
 		setTransactionState(stCompleted);
 	} else if (code == 200) {
@@ -620,7 +618,7 @@ SipRegisterTU::SipRegisterTU(SipRegisterTU::Kind wKind, SipDialog *registrar, Tr
 }
 
 void startRegister(TranEntryId tid, const FullMobileId &msid, const string rand, const string sres,
-		   L3LogicalChannel *chan) // msid is imsi and/or tmsi
+	L3LogicalChannel *chan) // msid is imsi and/or tmsi
 {
 	LOG(DEBUG) << LOGVAR(msid) << LOGVAR(rand) << LOGVAR(sres);
 	// Kinda dumb to fish out the branch from the request, but its ok.
@@ -653,7 +651,7 @@ void SipMOByeTU::TUWriteHighSideV(SipMessage *sipmsg)
 // void SipMOByeTU::TUTimeoutV() { stSetDialogState(Cleared,0); }
 
 SipMOByeTU::SipMOByeTU(SipDialog *wDialog,
-		       string wReasonHeader) // : SipClientTrLayer(wDialog->dsPeer(), make_branch(),wDialog)
+	string wReasonHeader) // : SipClientTrLayer(wDialog->dsPeer(), make_branch(),wDialog)
 {
 	LOG(INFO) << "SIP term info SipMOByeTU"; // SVGDBG
 	string branch = make_branch();

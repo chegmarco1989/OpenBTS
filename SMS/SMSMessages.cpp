@@ -1,18 +1,21 @@
-/*
-* Copyright 2008, 2009, 2010, 2014 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
+/* SMS/SMSMessages.cpp */
+/*-
+ * Copyright 2008, 2009, 2010, 2014 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-*/
 #define LOG_GROUP LogGroup::SMS
 
 #include <stdint.h>
@@ -20,13 +23,13 @@ information for this specific distribution.
 
 #include <cstdio>
 
-#include "SMSMessages.h"
-#include "Timeval.h"
-#include <Logger.h>
+#include <CommonLibs/Timeval.h>
 
-using namespace std;
+#include "SMSMessages.h"
+
 using namespace GSM;
 using namespace SMS;
+using namespace std;
 
 ostream &SMS::operator<<(ostream &os, CPMessage::MessageType val)
 {

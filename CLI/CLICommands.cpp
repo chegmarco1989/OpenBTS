@@ -1,3 +1,4 @@
+/* CLI/CLICommands.cpp */
 /*-
  * Copyright 2014 Range Networks, Inc.
  *
@@ -28,27 +29,28 @@
 
 #include <config.h>
 
+#include <CommonLibs/Defines.h>
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Utils.h>
+#include <Control/CBS.h>
+#include <Control/ControlTransfer.h>
+#include <Control/L3MMLayer.h>
+#include <Control/L3TranEntry.h>
+#include <Control/TMSITable.h>
+#include <GPRS/GPRSExport.h>
+#include <GPRS/MAC.h>
+#include <GSM/GSMCCCH.h>
+#include <GSM/GSMConfig.h>
+#include <GSM/GSMLogicalChannel.h>
+#include <GSM/GSMRadioResource.h>
+#include <Globals/Globals.h>
+#include <NodeManager/NodeManager.h>
+#include <Peering/NeighborTable.h>
+#include <Peering/Peering.h>
+#include <SIP/SIP2Interface.h>
+#include <TRXManager/TRXManager.h>
+
 #include "CLI.h"
-#include <CBS.h>
-#include <ControlTransfer.h>
-#include <Defines.h>
-#include <GPRSExport.h>
-#include <GSMCCCH.h>
-#include <GSMConfig.h>
-#include <GSMLogicalChannel.h>
-#include <GSMRadioResource.h>
-#include <Globals.h>
-#include <L3MMLayer.h>
-#include <L3TranEntry.h>
-#include <Logger.h>
-#include <MAC.h>
-#include <NeighborTable.h>
-#include <NodeManager.h>
-#include <Peering.h>
-#include <SIP2Interface.h>
-#include <TMSITable.h>
-#include <TRXManager.h>
-#include <Utils.h>
 
 std::string getARFCNsString(unsigned band);
 
@@ -493,12 +495,12 @@ static CLIStatus sendsimple(int argc, char **argv, ostream &os)
 		"\r\n%s\r\n";
 	static char buffer[1500];
 	snprintf(buffer, 1499, form, IMSI, sock.port(), // via
-		 (unsigned)random(),			// branch
-		 srcAddr, srcAddr, sock.port(),		// from
-		 (unsigned)random(),			// tag
-		 IMSI,					// to imsi
-		 (unsigned)random(), sock.port(),       // Call-ID
-		 strlen(txtBuf), txtBuf);		// Content-Type and content.
+		(unsigned)random(),			// branch
+		srcAddr, srcAddr, sock.port(),		// from
+		(unsigned)random(),			// tag
+		IMSI,					// to imsi
+		(unsigned)random(), sock.port(),	// Call-ID
+		strlen(txtBuf), txtBuf);		// Content-Type and content.
 	sock.write(buffer);
 
 	os << "message submitted for delivery" << endl;
@@ -536,9 +538,9 @@ static CLIStatus sendsms(int argc, char **argv, ostream &os)
 	// We just use the IMSI, dont try to find a tmsi.
 	FullMobileId msid(IMSI);
 	Control::TranEntry *tran = Control::TranEntry::newMTSMS(NULL, // No SIPDialog
-								msid, GSM::L3CallingPartyBCDNumber(srcAddr),
-								rest,		       // message body
-								string("text/plain")); // messate content type
+		msid, GSM::L3CallingPartyBCDNumber(srcAddr),
+		rest,		       // message body
+		string("text/plain")); // messate content type
 	Control::gMMLayer.mmAddMT(tran);
 	os << "message submitted for delivery" << endl;
 	return SUCCESS;
@@ -568,9 +570,9 @@ static CLIStatus fuzzSMS(int argc, char **argv, ostream &os)
 		// We just use the IMSI, dont try to find a tmsi.
 		FullMobileId msid(IMSI);
 		Control::TranEntry *tran = Control::TranEntry::newMTSMS(NULL, // No SIPDialog
-									msid, GSM::L3CallingPartyBCDNumber("0"),
-									str,		       // message body
-									string("text/plain")); // messate content type
+			msid, GSM::L3CallingPartyBCDNumber("0"),
+			str,		       // message body
+			string("text/plain")); // messate content type
 		Control::gMMLayer.mmAddMT(tran);
 		std::cout << "message submitted for delivery" << endl;
 	}
@@ -665,7 +667,7 @@ static CLIStatus handover(int argc, char **argv, ostream &os)
 		vector<string> neighbors = gConfig.getVectorOfStrings("GSM.Neighbors");
 		if (nth < 0 || nth >= (int)neighbors.size()) {
 			os << format("Specified neighbor index '%d' out of bounds.  There are %zu neighbors.", nth,
-				     neighbors.size());
+				neighbors.size());
 			return BAD_VALUE;
 		}
 		peer = neighbors[nth];
@@ -1101,9 +1103,9 @@ static CLIStatus page(int argc, char **argv, ostream &os)
 	// (pat) Implement pat by just sending an SMS.
 	Control::FullMobileId msid(IMSI);
 	Control::TranEntry *tran = Control::TranEntry::newMTSMS(NULL, // No SIPDialog
-								msid, GSM::L3CallingPartyBCDNumber("0"),
-								string(""),  // message body
-								string("")); // messate content type
+		msid, GSM::L3CallingPartyBCDNumber("0"),
+		string(""),  // message body
+		string("")); // messate content type
 	Control::gMMLayer.mmAddMT(tran);
 	return SUCCESS;
 }
@@ -1203,9 +1205,9 @@ static string chanState(const L2LogicalChannel *chan)
 
 // This allocates a ton of tiny strings.  It doesnt matter; this function is only called interactively.
 static void addChanInfo(vector<string> &row, // Result returned here.
-			TranEntryList tids,  // Transaction IDs in case that is one of the requested fields.
-			const GSM::L2LogicalChannel *chan, // The main channel, not the SACCH.
-			const vector<string> &fields)      // Fields to put in the result row.
+	TranEntryList tids,		     // Transaction IDs in case that is one of the requested fields.
+	const GSM::L2LogicalChannel *chan,   // The main channel, not the SACCH.
+	const vector<string> &fields)	// Fields to put in the result row.
 {
 	row.clear();
 	for (unsigned i = 0; i < fields.size(); i++) {
@@ -1261,8 +1263,8 @@ static void addChanInfo(vector<string> &row, // Result returned here.
 			if (phys == 0) {
 				phys = chan->getPhysInfo();
 			}
-			row.push_back(phys->isValid() ? format("%-4d", (int)round(phys->getRSSP()) - target)
-						      : string("-"));
+			row.push_back(
+				phys->isValid() ? format("%-4d", (int)round(phys->getRSSP()) - target) : string("-"));
 		} else if (field == "TA") { // The TA measured by the BTS.
 			// (pat) This was requested by Mark to get a more accurate distance measure of the MS.
 			if (phys == 0) {
@@ -1273,14 +1275,14 @@ static void addChanInfo(vector<string> &row, // Result returned here.
 			if (phys == 0) {
 				phys = chan->getPhysInfo();
 			}
-			row.push_back(phys->isValid() ? format("%-5d", (int)round(phys->actualMSPower()))
-						      : string("-"));
+			row.push_back(
+				phys->isValid() ? format("%-5d", (int)round(phys->actualMSPower())) : string("-"));
 		} else if (field == "TA_DL") { // The TA reported by the MS.
 			if (phys == 0) {
 				phys = chan->getPhysInfo();
 			}
-			row.push_back(phys->isValid() ? format("%-4d", (int)round(phys->actualMSTiming()))
-						      : string("-"));
+			row.push_back(
+				phys->isValid() ? format("%-4d", (int)round(phys->actualMSTiming())) : string("-"));
 		} else if (field == "RXLEV_DL") {
 			if (chan->getSACCH() && meas.isServingCellValid()) {
 				row.push_back(format("%-5d", meas.RXLEV_FULL_SERVING_CELL_dBm()));
@@ -1349,8 +1351,8 @@ static void addChanInfo(vector<string> &row, // Result returned here.
 		} else if (field == "Timers") {
 			row.push_back(chan->displayTimers());
 		} else if (field == "Layer1") {
-			row.push_back(format("%s/%s", chan->l1active() ? "on" : "off",
-					     chan->getSACCH()->l1active() ? "on" : "off"));
+			row.push_back(format(
+				"%s/%s", chan->l1active() ? "on" : "off", chan->getSACCH()->l1active() ? "on" : "off"));
 		}
 	}
 }
@@ -1483,7 +1485,7 @@ void printChanInfo(unsigned transID, const GSM::L2LogicalChannel *chan, ostream 
 	os << " " << setw(5) << chan->recyclable();
 	char buffer[200];
 	snprintf(buffer, 199, "%5.2f %4d %5d %4d", 100.0 * chan->FER(), (int)round(chan->RSSI()), chan->actualMSPower(),
-		 chan->actualMSTiming());
+		chan->actualMSTiming());
 	os << " " << buffer;
 
 	if (!chan->SACCH()) {
@@ -1499,7 +1501,7 @@ void printChanInfo(unsigned transID, const GSM::L2LogicalChannel *chan, ostream 
 	}
 
 	snprintf(buffer, 199, "%5d %5.2f", meas.RXLEV_FULL_SERVING_CELL_dBm(),
-		 100.0 * meas.RXQUAL_FULL_SERVING_CELL_BER());
+		100.0 * meas.RXQUAL_FULL_SERVING_CELL_BER());
 	os << " " << buffer;
 
 	if (meas.NO_NCELL() == 0) {
@@ -1753,7 +1755,7 @@ static CLIStatus neighbors(int argc, char **argv, ostream &os)
 	FILE *result = NULL;
 	char cmd[200];
 	snprintf(cmd, 200, "sqlite3 -separator ' ' %s 'select IPADDRESS,C0,BSIC from neighbor_table'",
-		 gConfig.getStr("Peering.NeighborTable.Path").c_str());
+		gConfig.getStr("Peering.NeighborTable.Path").c_str());
 	result = popen(cmd, "r");
 	if (result) {
 		char line[202];
@@ -1816,14 +1818,14 @@ static CLIStatus stats(int argc, char **argv, ostream &os)
 			return SUCCESS;
 		}
 		snprintf(cmd, sizeof(cmd) - 1,
-			 "sqlite3 %s 'select name||\": \"||value||\" events over \"||((%lu-clearedtime)/60)||\" "
-			 "minutes\" from reporting where name like \"%%%s%%\";'",
-			 gConfig.getStr("Control.Reporting.StatsTable").c_str(), time(NULL), argv[1]);
+			"sqlite3 %s 'select name||\": \"||value||\" events over \"||((%lu-clearedtime)/60)||\" "
+			"minutes\" from reporting where name like \"%%%s%%\";'",
+			gConfig.getStr("Control.Reporting.StatsTable").c_str(), time(NULL), argv[1]);
 	} else if (argc == 1) {
 		snprintf(cmd, sizeof(cmd) - 1,
-			 "sqlite3 %s 'select name||\": \"||value||\" events over \"||((%lu-clearedtime)/60)||\" "
-			 "minutes\" from reporting;'",
-			 gConfig.getStr("Control.Reporting.StatsTable").c_str(), time(NULL));
+			"sqlite3 %s 'select name||\": \"||value||\" events over \"||((%lu-clearedtime)/60)||\" "
+			"minutes\" from reporting;'",
+			gConfig.getStr("Control.Reporting.StatsTable").c_str(), time(NULL));
 	} else {
 		return BAD_NUM_ARGS;
 	}
@@ -1858,32 +1860,32 @@ void Parser::addCommands()
 	addCommand("uptime", uptime, "-- show BTS uptime and BTS frame number.");
 	addCommand("help", showHelp, "[command] -- list available commands or gets help on a specific command.");
 	addCommand("restart", exit_function,
-		   "[wait] -- restart OpenBTS (if running from upstart), shut down if manually run, either "
-		   "immediately, or waiting for existing calls to clear with a timeout in seconds");
+		"[wait] -- restart OpenBTS (if running from upstart), shut down if manually run, either "
+		"immediately, or waiting for existing calls to clear with a timeout in seconds");
 	addCommand("shutdown", nop,
-		   "[] -- shut down via upstart OpenBTS.  If OpenBTS was not started via upstart, it is a no op.");
+		"[] -- shut down via upstart OpenBTS.  If OpenBTS was not started via upstart, it is a no op.");
 	addCommand("tmsis", tmsis, tmsisHelp);
 	addCommand("sendsms", sendsms,
-		   "IMSI src# message... -- send direct SMS to IMSI on this BTS, addressed from source number src#.");
+		"IMSI src# message... -- send direct SMS to IMSI on this BTS, addressed from source number src#.");
 	addCommand("sendsimple", sendsimple,
-		   "IMSI src# message... -- send SMS to IMSI via SIP interface, addressed from source number src#.");
+		"IMSI src# message... -- send SMS to IMSI via SIP interface, addressed from source number src#.");
 	addCommand("load", printStats, "-- print the current activity loads.");
 	addCommand("cellid", cellID,
-		   "[MCC MNC LAC CI] -- get/set location area identity (MCC, MNC, LAC) and cell ID (CI).");
+		"[MCC MNC LAC CI] -- get/set location area identity (MCC, MNC, LAC) and cell ID (CI).");
 	addCommand("calls", calls, callsHelp);
 	// addCommand("trans", transactions, "[purge] -- print-only or print-and-purge completed transaction table
 	// (tabular format).");
 	addCommand("rawconfig", rawconfig,
-		   "[] OR [patt] OR [key val(s)] -- print the current configuration, print configuration values "
-		   "matching a pattern, or set/change a configuration value.");
+		"[] OR [patt] OR [key val(s)] -- print the current configuration, print configuration values "
+		"matching a pattern, or set/change a configuration value.");
 	addCommand("trxfactory", trxfactory, "-- print the radio's factory calibration and meta information.");
 	addCommand("audit", audit, "-- audit the current configuration for troubleshooting.");
 	addCommand("config", config,
-		   "[] OR [patt] OR [key val(s)] -- print the current configuration, print configuration values "
-		   "matching a pattern, or set/change a configuration value.");
+		"[] OR [patt] OR [key val(s)] -- print the current configuration, print configuration values "
+		"matching a pattern, or set/change a configuration value.");
 	addCommand("devconfig", devconfig,
-		   "[] OR [patt] OR [key val(s)] -- print the current configuration, print configuration values "
-		   "matching a pattern, or set/change a configuration value.");
+		"[] OR [patt] OR [key val(s)] -- print the current configuration, print configuration values "
+		"matching a pattern, or set/change a configuration value.");
 	addCommand("regperiod", regperiod, "[GSM] [SIP] -- get/set the registration period (GSM T3212), in MINUTES.");
 	addCommand("alarms", alarms, "-- show latest alarms.");
 	addCommand("version", version, "-- print the version string.");
@@ -1894,7 +1896,7 @@ void Parser::addCommands()
 	addCommand("freqcorr", freqcorr, "[newOffset] -- get/set the new radio frequency offset.");
 	addCommand("noise", noise, "-- report receive noise level in RSSI dB.");
 	addCommand("rmconfig", rmconfig,
-		   "key -- set a configuration value back to its default or remove a custom key/value pair.");
+		"key -- set a configuration value back to its default or remove a custom key/value pair.");
 	addCommand("unconfig", unconfig, "key -- disable a configuration key by setting an empty value.");
 	addCommand("notices", notices, "-- show startup copyright and legal notices.");
 	addCommand("endcall", endcall, endcallHelp);
@@ -1904,7 +1906,7 @@ void Parser::addCommands()
 	addCommand("sgsn", SGSN::sgsnCLI, "SGSN mode sub-command.  Type: 'sgsn help' for more.");
 	addCommand("crashme", crashme, "force crash of OpenBTS for testing purposes.");
 	addCommand("stats", stats,
-		   "[patt] OR clear -- print all, or selected, performance counters, OR clear all counters.");
+		"[patt] OR clear -- print all, or selected, performance counters, OR clear all counters.");
 	addCommand("handover", handover, handoverHelp);
 	addCommand("memstat", memStat, "-- internal testing command: print memory use stats.");
 	addCommand("cbs", cbscmd, cbsHelp);

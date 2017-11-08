@@ -1,28 +1,30 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* SGSNGGSN/SgsnExport.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef SGSNEXPORT_H
 #define SGSNEXPORT_H
 
 #include <string>
 
-#include "ByteVector.h"
-#include "LinkedLists.h"
-#include "MemoryLeak.h"
+#include <CommonLibs/LinkedLists.h>
+#include <CommonLibs/MemoryLeak.h>
+#include <GPRS/ByteVector.h>
+#include <Globals/Globals.h> // For RN_UMTS
+
 #include "SgsnBase.h" // For SmCause
-#include <Globals.h>  // For RN_UMTS
 
 namespace SGSN {
 

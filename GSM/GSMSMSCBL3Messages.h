@@ -1,19 +1,19 @@
-/*
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2014 Range Networks , Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* GSM/GSMSMSCBL3Messages.h */
+/*-
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2014 Range Networks , Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef GSML3SMSCBMESSAGES_H
 #define GSML3SMSCBMESSAGES_H
@@ -134,8 +134,7 @@ private:
 
 public:
 	L3SMSCBMessage(L3SMSCBSerialNumber wSerialNumber, L3SMSCBMessageIdentifier wMessageIdentifier,
-		       L3SMSCBDataCodingScheme wDataCodingScheme, L3SMSCBPageParameter wPageParameter,
-		       L3SMSCBContent wContent)
+		L3SMSCBDataCodingScheme wDataCodingScheme, L3SMSCBPageParameter wPageParameter, L3SMSCBContent wContent)
 		: mSerialNumber(wSerialNumber), mMessageIdentifier(wMessageIdentifier),
 		  mDataCodingScheme(wDataCodingScheme), mPageParameter(wPageParameter), mContent(wContent)
 	{

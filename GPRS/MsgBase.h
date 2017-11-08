@@ -1,17 +1,19 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* GPRS/MsgBase.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
 #ifndef MSGBASE_H
 #define MSGBASE_H 1
 
@@ -19,9 +21,9 @@
 
 #include <iostream>
 
-#include "BitVector.h"
-#include "Defines.h"
-#include "ScalarTypes.h"
+#include <CommonLibs/BitVector.h>
+#include <CommonLibs/Defines.h>
+#include <CommonLibs/ScalarTypes.h>
 
 typedef const char *Type2Str(int);
 
@@ -62,11 +64,11 @@ public:
 	virtual void _define_vtable() {} // Must be the first function.
 
 	// The primary function to write bitfields.
-	virtual void writeField(uint64_t value,	// The value to be output to the BitVector by write().
-				unsigned len,	  // length in bits of value.
-				const char *name = 0,  // name to be output by text() function; if not supplied,
-						       // then this var does not appear in the text()
-				Type2Str cvt = 0) = 0; // optional function to translate value to a string in text().
+	virtual void writeField(uint64_t value, // The value to be output to the BitVector by write().
+		unsigned len,			// length in bits of value.
+		const char *name = 0,		// name to be output by text() function; if not supplied,
+						// then this var does not appear in the text()
+		Type2Str cvt = 0) = 0;		// optional function to translate value to a string in text().
 
 	// This is used primarily to write variables of type Field or Field_z,
 	// for which the width is defined in the type declaration.

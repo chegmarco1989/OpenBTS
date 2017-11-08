@@ -1,29 +1,33 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* GPRS/RLCEngine.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/**@file GPRS RLC-MAC state machine, GSM 04.60. */
 
 #define LOG_GROUP LogGroup::GPRS // Can set Log.Level.GPRS for debugging
 
 // File contains RLCUpEngine and RLCDownEngine, which are classes that extend
 // TBF (Temporary Block Flow) to do the data block uplink/downlink movement functions for a TBF.
 
-#include "RLCEngine.h"
+#include <SGSNGGSN/Sgsn.h>
+
 #include "BSSG.h"
 #include "FEC.h"
 #include "MAC.h"
+#include "RLCEngine.h"
 #include "RLCMessages.h"
-#include "Sgsn.h"
 #include "TBF.h"
 
 namespace GPRS {
@@ -280,7 +284,7 @@ void RLCDownEngine::engineRecvAckNack(const RLCMsgPacketDownlinkAckNack *msg)
 		if (stuck && !receivedNewAcks) {
 			LOGWATCHF("T%s STUCK at %d\n", getTBF()->tbfid(1), (int)AND.mSSN);
 			if ((int)mTotalBlocksSent - (int)mPrevAckBlockCount >
-			    configGetNumQ("GPRS.TBF.Downlink.NStuck", 250)) {
+				configGetNumQ("GPRS.TBF.Downlink.NStuck", 250)) {
 				mtCancel(MSStopCause::Stuck, TbfRetryAfterRelease);
 				goto finished;
 			}
@@ -651,7 +655,7 @@ bool RLCUpEngine::engineService(PDCHL1Downlink *down)
 				bool result = sendNonFinalAckNack(down);
 				if (result)
 					LOGWATCHF("K%s keepalive=%d persist=%d\n", getTBF()->tbfid(1),
-						  mtUpKeepAliveTimer.elapsed(), mtUpPersistTimer.elapsed());
+						mtUpKeepAliveTimer.elapsed(), mtUpPersistTimer.elapsed());
 				return result;
 			}
 		} else if (mtUpState == RlcUpPersistFinal) {
@@ -706,7 +710,7 @@ void RLCUpEngine::engineRecvDataBlock(RLCUplinkDataBlock *block, int tn)
 	// Mark the ack flags and save the block.
 	unsigned BSN = block->mBSN; // This is modulo mSNS
 	LOGWATCHF("B%s tn=%d block=%d cc=%d %s %s\n", getTBF()->tbfid(1), tn, BSN, (int)block->mUpCC,
-		  block->mmac.isFinal() ? "final" : "", mSt.VN[BSN] ? "dup" : "");
+		block->mmac.isFinal() ? "final" : "", mSt.VN[BSN] ? "dup" : "");
 	if (mSt.RxQ[BSN]) {
 		// If BSN < VQ in modulo arithmetic, this is a duplicate block that
 		// we have already scanned past, and we dont need to save it.
@@ -788,7 +792,7 @@ RLCMsgPacketUplinkAckNack *RLCUpEngine::engineUpAckNack()
 		mtUpKeepAliveTimer.setNow();
 	}
 	LOGWATCHF("A%s SSN=%d state=%d keepalive=%d persist=%d\n", getTBF()->tbfid(1), (int)AND.mSSN, mtUpState,
-		  mtUpKeepAliveTimer.elapsed(), mtUpPersistTimer.elapsed());
+		mtUpKeepAliveTimer.elapsed(), mtUpPersistTimer.elapsed());
 #endif
 	return msg;
 }
@@ -890,7 +894,7 @@ void RLCDownEngine::engineWriteHighSide(SGSN::GprsSgsnDownlinkPdu *dlmsg)
 // otherwise get the next block, or NULL if no more data avail,
 // which can only happen in persistent mode.
 RLCDownlinkDataBlock *RLCDownEngine::getBlock(unsigned vs,
-					      int tn) // Timeslot Number, for debugging only.
+	int tn) // Timeslot Number, for debugging only.
 {
 #if FAST_TBF
 	mTotalDataBlocksSent++;
@@ -936,7 +940,7 @@ RLCDownlinkDataBlock *RLCDownEngine::getBlock(unsigned vs,
 // the caller notices the FBI bit and does not call it any more after
 // receiving the last block.
 RLCDownlinkDataBlock *RLCDownEngine::engineFillBlock(unsigned bsn,
-						     int tn) // Timeslot Number, for debugging only.
+	int tn) // Timeslot Number, for debugging only.
 {
 	const int maxPdus = 10;
 	int li[maxPdus];

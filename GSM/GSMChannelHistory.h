@@ -1,26 +1,29 @@
-/*
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* GSM/GSMChannelHistory.h */
+/*-
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 // Written 3-2014 by Pat Thompson
+
 #ifndef _GSMNEIGHBORS_H_
 #define _GSMNEIGHBORS_H_ 1
 
+#include <Control/ControlTransfer.h>
+#include <apps/OpenBTSConfig.h>
+
 #include "GSMCommon.h"
 #include "GSMConfig.h"
-#include <ControlTransfer.h>
-#include <OpenBTSConfig.h>
 
 namespace GSM {
 
@@ -31,8 +34,7 @@ class SACCHLogicalChannel;
 typedef int FrameNum;
 
 template <typename PointListType, typename PointType, typename YValueType>
-float inline ComputeTrend(
-	PointListType &data,		  // currently it is always: std::deque<PointType> &data,
+float inline ComputeTrend(PointListType &data, // currently it is always: std::deque<PointType> &data,
 	FrameNum x0,			  // this doesnt need to be an argument; it is always the current frame number.
 	FrameNum (PointType::*xmethod)(), // method pointer to retrieve X values from data.
 	YValueType (PointType::*ymethod)(bool &valid), // method pointer to retrieve Y values from data.

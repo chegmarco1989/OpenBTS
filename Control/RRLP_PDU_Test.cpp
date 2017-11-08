@@ -1,17 +1,18 @@
-/*
-* Copyright 2014 Range Networks, Inc.
-*
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-*/
+/* Control/RRLP_PDU_Test.cpp */
+/*-
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ */
 
 #include "Configuration.h"
 #include "RRLPQueryController.h"
@@ -27,7 +28,7 @@ using namespace GSM::RRLP;
 // having to copy this line around.
 ConfigurationTable gConfig("OpenBTS.config");
 
-int main()
+int main(int argc, char **argv)
 {
 	// This is a MsrPositionRsp with valid coordinates
 	// 38.28411340713501,237.95414686203003,22 (as parsed by the erlang automatically generated

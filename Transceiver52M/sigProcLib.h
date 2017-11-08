@@ -1,24 +1,26 @@
-/*
-* Copyright 2008 Free Software Foundation, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* Transceiver52M/sigProcLib.h */
+/*-
+ * Copyright 2008 Free Software Foundation, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef SIGPROCLIB_H
 #define SIGPROCLIB_H
 
+#include <CommonLibs/Vector.h>
+#include <GSM/GSMTransfer.h>
+
 #include "Complex.h"
-#include "GSMTransfer.h"
-#include "Vector.h"
 
 using namespace GSM;
 
@@ -129,7 +131,7 @@ void sigProcLibDestroy(void);
 	@return The convolution result or NULL on error.
 */
 signalVector *convolve(const signalVector *a, const signalVector *b, signalVector *c, ConvType spanType, int start = 0,
-		       unsigned len = 0, unsigned step = 1, int offset = 0);
+	unsigned len = 0, unsigned step = 1, int offset = 0);
 
 /**
 	Frequency shift a vector.
@@ -140,8 +142,8 @@ signalVector *convolve(const signalVector *a, const signalVector *b, signalVecto
 	@param finalPhase The final phase of the oscillator
 	@return The frequency shifted vector.
 */
-signalVector *frequencyShift(signalVector *y, signalVector *x, float freq = 0.0, float startPhase = 0.0,
-			     float *finalPhase = NULL);
+signalVector *frequencyShift(
+	signalVector *y, signalVector *x, float freq = 0.0, float startPhase = 0.0, float *finalPhase = NULL);
 
 /**
 	Correlate two vectors.
@@ -151,7 +153,7 @@ signalVector *frequencyShift(signalVector *y, signalVector *x, float freq = 0.0,
 	@return The correlation result.
 */
 signalVector *correlate(signalVector *a, signalVector *b, signalVector *c, ConvType spanType,
-			bool bReversedConjugated = false, unsigned startIx = 0, unsigned len = 0);
+	bool bReversedConjugated = false, unsigned startIx = 0, unsigned len = 0);
 
 /** Operate soft slicer on real-valued portion of vector */
 bool vectorSlicer(signalVector *x);
@@ -259,8 +261,8 @@ int detectRACHBurst(signalVector &rxBurst, float detectThreshold, int sps, compl
 	@return positive if threshold value is reached, negative on error, zero otherwise
 */
 int analyzeTrafficBurst(signalVector &rxBurst, unsigned TSC, float detectThreshold, int sps, complex *amplitude,
-			float *TOA, unsigned maxTOA, bool requestChannel = false, signalVector **channelResponse = NULL,
-			float *channelResponseOffset = NULL);
+	float *TOA, unsigned maxTOA, bool requestChannel = false, signalVector **channelResponse = NULL,
+	float *channelResponseOffset = NULL);
 
 /**
 	Decimate a vector.
@@ -291,7 +293,7 @@ SoftVector *demodulateBurst(signalVector &rxBurst, int sps, complex channel, flo
 	@return True if DFE can be designed.
 */
 bool designDFE(signalVector &channelResponse, float SNRestimate, int Nf, signalVector **feedForwardFilter,
-	       signalVector **feedbackFilter);
+	signalVector **feedbackFilter);
 
 /**
 	Equalize/demodulate a received burst via a decision-feedback equalizer.

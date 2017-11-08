@@ -1,17 +1,18 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* GPRS/MAC.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 /**@file Common-use GSM declarations, most from the GSM 04.xx and 05.xx series. */
 
@@ -20,17 +21,17 @@
 
 #include <list>
 
+#include <CommonLibs/Interthread.h>
+#include <CommonLibs/MemoryLeak.h>
+#include <CommonLibs/Utils.h>
+#include <GSM/GSML1FEC.h>
+#include <GSM/GSML3RRElements.h> // For RequestReference
+#include <GSM/GSMTDMA.h>
+#include <GSM/GSMTransfer.h> // For GSM::L2Frame
+
 #include "GPRSRLC.h"
-#include "GSML1FEC.h"
-#include "GSMTDMA.h"
-#include "GSMTransfer.h" // For GSM::L2Frame
-#include "Interthread.h"
-#include "MemoryLeak.h"
-//#include "GSMCommon.h"	// For ChannelType
-#include "GSML3RRElements.h" // For RequestReference
 #include "RList.h"
 #include "TBF.h"
-#include "Utils.h"
 
 namespace GPRS {
 
@@ -471,10 +472,10 @@ public:
 
 public:
 	RLCBSN_t makeReservationInt(RLCBlockReservation::type restype, RLCBSN_t afterBSN, TBF *tbf, GSM::RadData *rd,
-				    int *prrbp, MsgTransactionType mttype);
+		int *prrbp, MsgTransactionType mttype);
 
 	RLCBSN_t makeCCCHReservation(GSM::CCCHLogicalChannel *AGCH, RLCBlockReservation::type type, TBF *tbf,
-				     GSM::RadData *rd, bool forDRX, MsgTransactionType mttype);
+		GSM::RadData *rd, bool forDRX, MsgTransactionType mttype);
 	RLCBSN_t makeRRBPReservation(TBF *tbf, int *prrbp, MsgTransactionType ttype);
 
 	// Get the reservation for the specified block timeslot.
@@ -488,7 +489,7 @@ public:
 };
 
 extern bool setMACFields(MACDownlinkHeader *block, PDCHL1FEC *pdch, TBF *tbf, int makeres, MsgTransactionType mttype,
-			 unsigned *pcounter);
+	unsigned *pcounter);
 extern int configGetNumQ(const char *name, int defaultvalue);
 extern int configGprsMultislotMaxUplink();
 extern int configGprsMultislotMaxDownlink();

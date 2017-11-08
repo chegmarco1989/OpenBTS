@@ -1,3 +1,8 @@
+/* GSM/gsmtap.h */
+/*-
+ *
+ */
+
 #ifndef _GSMTAP_H
 #define _GSMTAP_H
 

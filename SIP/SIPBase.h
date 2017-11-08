@@ -1,20 +1,21 @@
-/*
-* Copyright 2008 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* SIP/SIPBase.h */
+/*-
+ * Copyright 2008 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 #ifndef _SIPBase_H_
 #define _SIPBase_H_ 1
 
@@ -25,19 +26,22 @@
 
 #include <string>
 
+#include <CommonLibs/Sockets.h>
+#include <CommonLibs/Timeval.h>
+#include <Control/CodecSet.h>
+#include <Control/ControlTransfer.h>
+#include <GPRS/ByteVector.h>
+
 #include "SIPMessage.h"
 #include "SIPUtility.h"
-#include <ByteVector.h>
-#include <CodecSet.h>
-#include <ControlTransfer.h>
-#include <Sockets.h>
-#include <Timeval.h>
 
 extern int gCountSipDialogs;
 
 namespace Control {
+
 class L3LogicalChannel;
-};
+
+}; // namespace Control
 
 namespace SIP {
 
@@ -343,7 +347,7 @@ public:
 	// Make an initial request: INVITE MESSAGE REGISTER
 	// Make a standard initial request with info from the DialogState.
 	SipMessage *makeRequest(string method, string requri, string whoami, SipPreposition *toContact,
-				SipPreposition *fromContact, string branch);
+		SipPreposition *fromContact, string branch);
 	SipMessage *makeInitialRequest(string method); // with default URIs
 public:
 	Bool_z mIsHandover; // TRUE if this dialog was established by an inbound handover.

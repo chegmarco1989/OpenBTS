@@ -1,19 +1,20 @@
+/* Control/ControlTransfer.h */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Declarations for common-use control-layer functions. */
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #ifndef CONTROLTRANSFER_H
 #define CONTROLTRANSFER_H
@@ -24,15 +25,15 @@
 #include <string>
 #include <vector>
 
-#include <L3Enums.h>
-#include <ScalarTypes.h> // From CommonLibs
-#include <Timeval.h>     // From CommonLibs
+#include <CommonLibs/ScalarTypes.h>
+#include <CommonLibs/Timeval.h>
+#include <GSMShare/L3Enums.h>
 
 namespace SIP {
 
 class DialogMessage;
 
-};
+}; // namespace SIP
 
 namespace GPRS {
 

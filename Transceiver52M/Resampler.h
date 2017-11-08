@@ -1,4 +1,5 @@
-/*
+/* Transceiver52M/Resampler.h */
+/*-
  * Rational Sample Rate Conversion
  * Copyright (C) 2012, 2013  Thomas Tsou <tom@tsou.cc>
  *

@@ -41,7 +41,6 @@ TransceiverRAD1/RAD1SN
 TransceiverRAD1/RAD1ping
 TransceiverRAD1/sigProcLibTest
 TransceiverRAD1/transceiver
-apps/
 apps/OpenBTS
 apps/OpenBTSCLI
 apps/JSONEventsClient

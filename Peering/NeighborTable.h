@@ -1,19 +1,20 @@
+/* Peering/NeighborTable.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@ The global table of neighboring BTS units. */
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #ifndef NEIGHBORTABLE_H
 #define NEIGHBORTABLE_H
@@ -24,9 +25,9 @@
 #include <set>
 #include <vector>
 
-#include <ScalarTypes.h>
-#include <Sockets.h>
-#include <Threads.h>
+#include <CommonLibs/ScalarTypes.h>
+#include <CommonLibs/Sockets.h>
+#include <CommonLibs/Threads.h>
 
 using namespace std;
 

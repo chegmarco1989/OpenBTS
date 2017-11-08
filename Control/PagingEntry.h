@@ -1,25 +1,27 @@
+/* Control/PagingEntry.h */
+/*-
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Declarations for common-use control-layer functions. */
-/*
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #ifndef _PAGING_H_
 #define _PAGING_H_
 
+#include <GSM/GSMCommon.h>
+
 #include "ControlTransfer.h"
-#include <GSMCommon.h>
 
 namespace GSM {
 
@@ -65,7 +67,7 @@ struct NewPagingEntry {
 		// mCheckedForTmsi = other.mCheckedForTmsi
 		assert(other.mGprsClient == NULL);
 		assert(other.mImmAssign ==
-		       NULL); // Since it is deleted when NewPagingEntry is deleted, it would be double deleted.
+			NULL); // Since it is deleted when NewPagingEntry is deleted, it would be double deleted.
 	}
 	// { *this = other; }
 	~NewPagingEntry();

@@ -1,21 +1,24 @@
-/**@file @brief Mobility Management messages, GSM 04.08 9.2. */
-/*
-* Copyright 2008 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* GSM/GSML3MMMessages.h */
+/*-
+ * Copyright 2008 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/**@file
+ * @brief Mobility Management messages, GSM 04.08 9.2.
+ */
 
 #ifndef GSML3MMMESSAGES_H
 #define GSML3MMMESSAGES_H
@@ -144,7 +147,7 @@ public:
 	}
 
 	L3LocationUpdatingAccept(const L3LocationAreaIdentity &wLAI, const L3MobileIdentity &wMobileIdentity,
-				 bool wFollowOnProceed = false)
+		bool wFollowOnProceed = false)
 		: L3MMMessage(), mLAI(wLAI), mFollowOnProceed(wFollowOnProceed), mHaveMobileIdentity(true),
 		  mMobileIdentity(wMobileIdentity)
 	{

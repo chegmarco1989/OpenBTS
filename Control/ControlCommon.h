@@ -1,40 +1,34 @@
+/* Control/ControlCommon.h */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Declarations for common-use control-layer functions. */
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #ifndef CONTROLCOMMON_H
 #define CONTROLCOMMON_H
 
-#include <list>
 #include <stdio.h>
 
-#include <Logger.h>
-//#include <Interthread.h>
-#include <Timeval.h>
+#include <list>
 
-//#include <GSML3CommonElements.h>
-//#include <GSML3MMElements.h>
-//#include <GSML3CCElements.h>
-//#include <GSML3RRMessages.h>
-//#include <SIPEngine.h>
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Timeval.h>
 
-//#include "TMSITable.h"
-#include <ControlTransfer.h>
+#include "ControlTransfer.h"
 
 // These are macros for manufacturing states for state machines.
 // Since we are using C++, they cannot be classes if we want to use switch().

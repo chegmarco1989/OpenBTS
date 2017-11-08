@@ -1,33 +1,36 @@
+/* Control/L3TermCause.h */
+/*-
+ * Copyright 2013 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Declarations for common-use control-layer functions. */
-/*
-* Copyright 2013 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #ifndef _TERMCAUSE_H_
 #define _TERMCAUSE_H_
 
 #include <assert.h>
+
 #include <string>
 
-#include <L3Enums.h>
-#include <Logger.h>
-#include <ScalarTypes.h> // for Int_z, From CommonLibs
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/ScalarTypes.h> // for Int_z
+#include <GSMShare/L3Enums.h>
 
 namespace SIP {
+
 class SipDialog;
-}
+};
 
 namespace Control {
 

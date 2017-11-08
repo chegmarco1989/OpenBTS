@@ -1,26 +1,28 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* GPRS/GPRSCLI.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::GPRS // Can set Log.Level.GPRS for debugging
 
+#include <CLI/CLI.h>
+#include <CommonLibs/Interthread.h>
+#include <SGSNGGSN/LLC.h>
+
 #include "BSSG.h"
-#include "CLI.h"
 #include "FEC.h"
 #include "GPRSInternal.h"
-#include "Interthread.h"
-#include "LLC.h"
 #include "MAC.h"
 #include "RLCEngine.h"
 #include "RLCMessages.h"
@@ -656,16 +658,16 @@ static struct GprsSubCmds {
 	const char *name;
 	CLIStatus (*subcmd)(int argc, char **argv, int argi, std::ostream &os);
 	const char *syntax;
-} gprsSubCmds[] = {
-	{"list", gprsList,
-	 "list [ms|tbf|ch] [-v] [-x] [-c] [id]  # list active objects of specified type;\n\t\t -v => verbose; -c => "
-	 "include MS Capabilities -x => list expired rather than active"},
+} gprsSubCmds[] = {{"list", gprsList,
+			   "list [ms|tbf|ch] [-v] [-x] [-c] [id]  # list active objects of specified type;\n\t\t -v => "
+			   "verbose; -c => "
+			   "include MS Capabilities -x => list expired rather than active"},
 	{"stat", gprsStats, "stat  # Show GPRS statistics"},
 	{"free", gprsFree, "free ms|tbf|ch id   # Delete something"},
 	{"freex", gprsFreeExpired, "freex	# free expired ms and tbf structs"},
 	{"debug", gprsDebug, "debug [level]  # Set debug level; 0 turns off"},
 	{"start", gprsStart,
-	 "start [step]   # Start gprs, optionally in single-step-mode;\n\t\t- can also start by 'gprs rach'"},
+		"start [step]   # Start gprs, optionally in single-step-mode;\n\t\t- can also start by 'gprs rach'"},
 	{"stop", gprsStop, "stop [-c]  # stop gprs thread and if -c release channels"},
 	{"step", gprsStep, "step    # single step the MAC service loop (requires 'start step')."},
 	{"set", gprsSet, "set name [val]   # print and optionally set a variable - see source for names"},
@@ -676,7 +678,8 @@ static struct GprsSubCmds {
 	{"testul", gprsTestUl, "testul [-r]   # Send a test PDU through the RLCEngine; -r => randomize order "},
 #endif
 	{"console", gprsConsole,
-	 "console [0|1]  # Send messages to console as well as /var/log/OpenBTS.log;\n\t\t (default=1 for debugging)"},
+		"console [0|1]  # Send messages to console as well as /var/log/OpenBTS.log;\n\t\t (default=1 for "
+		"debugging)"},
 	{"mem", gprsMem, "mem   # Memory leak detector - print numbers of structs in use"},
 	{"test", gprsTest, "test   # Temporary test"},
 	// Dont have the source code for pinghttp linked in yet.

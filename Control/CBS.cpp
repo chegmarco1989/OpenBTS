@@ -1,30 +1,32 @@
+/* Control/CBS.cpp */
+/*-
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file SMSCB Control (L3), GSM 03.41. */
-/*
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #define LOG_GROUP LogGroup::Control
 
+#include <CommonLibs/Reporting.h>
+#include <CommonLibs/sqlite3util.h>
+#include <GSM/GSMConfig.h>
+#include <GSM/GSMLogicalChannel.h>
+#include <GSM/GSMSMSCBL3Messages.h>
+
 #include "CBS.h"
 #include "ControlCommon.h"
-#include <GSMConfig.h>
-#include <GSMLogicalChannel.h>
-#include <GSMSMSCBL3Messages.h>
-#include <Reporting.h>
-#include <sqlite3util.h>
 
 // (pat) See GSM 03.41.  SMSCB is a broadcast message service on a dedicated broadcast channel and unrelated to anything
 // else. Broadcast messages are completely unacknowledged.  They are repeated perpetually.
@@ -156,8 +158,8 @@ static string strJoin(vector<string> &fields, string separator)
 	return result;
 }
 
-static void update1field(const char *col, unsigned uval, vector<string> *cols, vector<string> *vals,
-			 vector<string> *both)
+static void update1field(
+	const char *col, unsigned uval, vector<string> *cols, vector<string> *vals, vector<string> *both)
 {
 	if (cols) {
 		cols->push_back(col);
@@ -184,8 +186,8 @@ static void update1field(const char *col, string sval, vector<string> *cols, vec
 }
 
 // The all flag is for INSERT which must update all the DB fields with the "NOT NULL" option. Oops.
-static void CBMessage2SQLFields(CBMessage &msg, vector<string> *cols, vector<string> *vals, vector<string> *both,
-				bool all)
+static void CBMessage2SQLFields(
+	CBMessage &msg, vector<string> *cols, vector<string> *vals, vector<string> *both, bool all)
 {
 	if (all || msg.mGS_change) {
 		update1field("GS", msg.mGS, cols, vals, both);
@@ -329,8 +331,7 @@ static void CBSSendMessage(CBMessage &msg, GSM::CBCHLogicalChannel *CBCH)
 			thisPage[dp++] = buf;
 		}
 		// Format the page into an L3 message.
-		GSM::L3SMSCBMessage message(
-			GSM::L3SMSCBSerialNumber(msg.mGS, msg.mMessageCode, msg.mUpdateNumber),
+		GSM::L3SMSCBMessage message(GSM::L3SMSCBSerialNumber(msg.mGS, msg.mMessageCode, msg.mUpdateNumber),
 			GSM::L3SMSCBMessageIdentifier(msg.mMessageId), GSM::L3SMSCBDataCodingScheme(codingScheme),
 			GSM::L3SMSCBPageParameter(page + 1, numPages), GSM::L3SMSCBContent(thisPage));
 		// Send it.
@@ -372,7 +373,7 @@ void *SMSCBSender(void *)
 		{
 			string query =
 				format("SELECT %s FROM SMSCB WHERE SEND_TIME==(SELECT min(SEND_TIME) FROM SMSCB)",
-				       crackRowNames);
+					crackRowNames);
 			sqlite3_stmt *stmt;
 			if (sqlite3_prepare_statement(sCBSDB, &stmt, query.c_str())) {
 				LOG(ALERT) << "Cannot access SMSCB database: " << sqlite3_errmsg(sCBSDB);
@@ -395,7 +396,7 @@ void *SMSCBSender(void *)
 			// Update send count and send time in the database.
 			char query[100];
 			snprintf(query, 100, "UPDATE SMSCB SET SEND_TIME = %u, SEND_COUNT = %u WHERE ROWID == %u",
-				 (unsigned)time(NULL), msg.mSendCount + 1, (unsigned)msg.mRowId);
+				(unsigned)time(NULL), msg.mSendCount + 1, (unsigned)msg.mRowId);
 			if (!sqlite3_command(sCBSDB, query))
 				LOG(ALERT) << "SMSCB database timestamp update failed: " << sqlite3_errmsg(sCBSDB);
 			continue;

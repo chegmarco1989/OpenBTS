@@ -1,28 +1,30 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* Control/L3MobilityManagement.h */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef _L3MOBILITYMANAGEMENT_H_
 #define _L3MOBILITYMANAGEMENT_H_ 1
 
 //#include <memory>	// for auto_ptr, shared_ptr
 
+#include <GSM/GSMCommon.h>
+#include <GSM/GSML3MMElements.h>
+#include <SIP/SIPBase.h>
+
 #include "L3StateMachine.h"
 #include "TMSITable.h"
-#include <GSMCommon.h>
-#include <GSML3MMElements.h>
-#include <SIPBase.h>
 
 namespace SIP {
 class DialogMessage;
@@ -64,7 +66,7 @@ protected:
 public:
 	// On success the resultant imsi is placed in wTran->subscriber.
 	L3IdentifyMachine(TranEntry *wTran, const GSM::L3MobileIdentity &wMobileID,
-			  bool *wResultPtr) // Returns true on success, false on failure.
+		bool *wResultPtr) // Returns true on success, false on failure.
 		: MachineBase(wTran), mMobileID(wMobileID), mResultPtr(wResultPtr)
 	{
 	}
@@ -188,7 +190,7 @@ public:
 	string text()
 	{
 		return format("AssignedTmsi=0x%x status=%d RegistrationResult=%s", mAssignedTmsi, mTmsiStatus,
-			      mRegistrationResult.text().c_str());
+			mRegistrationResult.text().c_str());
 		// return format("AssignedTmsi=0x%x status=%d RegistrationResult=%s rand=%s",mAssignedTmsi,mTmsiStatus,
 		//	mRegistrationResult.text().c_str(),mRAND.c_str());
 	}
@@ -311,8 +313,8 @@ protected:
 
 public:
 	L3RegisterMachine(TranEntry *wTran, SIP::DialogType wMethod,
-			  string &wSRES,	      // may be NULL for the initial registration query to elicit a
-			  RegistrationResult *wResult // Result returned here: true (1), false(0), timeout (-1).
+		string &wSRES,		    // may be NULL for the initial registration query to elicit a
+		RegistrationResult *wResult // Result returned here: true (1), false(0), timeout (-1).
 	);
 	const char *debugName() const { return "L3RegisterMachine"; }
 	SIP::SipMessage *makeRegisterMsg1();

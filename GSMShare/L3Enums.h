@@ -1,17 +1,19 @@
-/*
-* Copyright 2008, 2014 Free Software Foundation, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* GSMShare/L3Enums.h */
+/*-
+ * Copyright 2008, 2014 Free Software Foundation, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 #ifndef _L3ENUMS_H_
 #define _L3ENUMS_H_ 1
 
@@ -123,13 +125,13 @@ struct L3Cause {
 		Normal_Call_Clearing = 16, // One of the two handsets hang up.
 		User_Busy = 17,		   // "the called user has indicated the inablity to accept another call"
 		No_User_Responding = 18,   // (pat) I dont understand the H.1.7 description:
-					 // "This cause is used when a user does not respond to a call establishment
-					 // message with either "an alerting or connect indication within the prescribed
-					 // period of time allocated
-					 // "(defined by the expiry of either timer T303 or T310)."
-					 // In other words, the MTC handset is present, but when the BTS sends setup it
-					 // does not respond with alerting.  Why not? Busy with GPRS?  Authentication
-					 // failure?
+					   // "This cause is used when a user does not respond to a call establishment
+		// message with either "an alerting or connect indication within the prescribed
+		// period of time allocated
+		// "(defined by the expiry of either timer T303 or T310)."
+		// In other words, the MTC handset is present, but when the BTS sends setup it
+		// does not respond with alerting.  Why not? Busy with GPRS?  Authentication
+		// failure?
 		User_Alerting_No_Answer = 19, // The phone rang, but the user did not pick up.
 		Call_Rejected = 21, // The user "does not wish to accept this call" although they are neither busy nor
 				    // incompatible.

@@ -1,3 +1,4 @@
+/* CLI/CLIBase.cpp */
 /*-
  * Copyright 2014 Range Networks, Inc.
  *
@@ -15,9 +16,10 @@
 
 #include <ostream>
 
+#include <CommonLibs/Configuration.h>
+#include <Globals/Globals.h>
+
 #include "CLI.h"
-#include <Configuration.h>
-#include <Globals.h>
 
 namespace CommandLine {
 
@@ -30,9 +32,9 @@ CLIStatus configCmd(string mode, int argc, char **argv, ostream &os)
 		while (mp != gConfig.mSchema.end()) {
 			if (mode.compare("customer") == 0) {
 				if (mp->second.getVisibility() == ConfigurationKey::CUSTOMER ||
-				    mp->second.getVisibility() == ConfigurationKey::CUSTOMERSITE ||
-				    mp->second.getVisibility() == ConfigurationKey::CUSTOMERTUNE ||
-				    mp->second.getVisibility() == ConfigurationKey::CUSTOMERWARN) {
+					mp->second.getVisibility() == ConfigurationKey::CUSTOMERSITE ||
+					mp->second.getVisibility() == ConfigurationKey::CUSTOMERTUNE ||
+					mp->second.getVisibility() == ConfigurationKey::CUSTOMERWARN) {
 					ConfigurationKey::printKey(mp->second, gConfig.getStr(mp->first), os);
 				}
 			} else if (mode.compare("developer") == 0) {
@@ -58,9 +60,9 @@ CLIStatus configCmd(string mode, int argc, char **argv, ostream &os)
 			while (mp != matches.end()) {
 				if (mode.compare("customer") == 0) {
 					if (mp->second.getVisibility() == ConfigurationKey::CUSTOMER ||
-					    mp->second.getVisibility() == ConfigurationKey::CUSTOMERSITE ||
-					    mp->second.getVisibility() == ConfigurationKey::CUSTOMERTUNE ||
-					    mp->second.getVisibility() == ConfigurationKey::CUSTOMERWARN) {
+						mp->second.getVisibility() == ConfigurationKey::CUSTOMERSITE ||
+						mp->second.getVisibility() == ConfigurationKey::CUSTOMERTUNE ||
+						mp->second.getVisibility() == ConfigurationKey::CUSTOMERWARN) {
 						ConfigurationKey::printKey(mp->second, gConfig.getStr(mp->first), os);
 						foundCount++;
 					}

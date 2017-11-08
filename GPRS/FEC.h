@@ -1,29 +1,31 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* GPRS/FEC.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 /**@file GPRS L1 radio channels, from GSM 05.02 and 05.03. */
 
 #ifndef GPRSL1FEC_H
 #define GPRSL1FEC_H
 
+#include <GSM/GSMCommon.h>
+#include <GSM/GSMConfig.h> // for gBTS
+#include <GSM/GSML1FEC.h>
+#include <GSM/GSMLogicalChannel.h> // for TCHFACCHLogicalChannel
+#include <GSM/GSMTransfer.h>       // for TxBurst
+
 #include "MAC.h"
-#include <GSMCommon.h>
-#include <GSMConfig.h> // for gBTS
-#include <GSML1FEC.h>
-#include <GSMLogicalChannel.h> // for TCHFACCHLogicalChannel
-#include <GSMTransfer.h>       // for TxBurst
 
 using namespace GSM;
 
@@ -259,9 +261,9 @@ public:
 	// Send the L2Frame down to the radio now.
 	void send1Frame(BitVector &frame, ChannelCodingType encoding, bool idle);
 	bool send1DataFrame(RLCDownEngine *tbfdown, RLCDownlinkDataBlock *block, int makeres, MsgTransactionType mttype,
-			    unsigned *pcounter);
-	bool send1MsgFrame(TBF *tbf, RLCDownlinkMessage *msg, int makeres, MsgTransactionType mttype,
-			   unsigned *pcounter);
+		unsigned *pcounter);
+	bool send1MsgFrame(
+		TBF *tbf, RLCDownlinkMessage *msg, int makeres, MsgTransactionType mttype, unsigned *pcounter);
 	void sendIdleFrame(RLCBSN_t bsn);
 	void bugFixIdleFrame();
 };

@@ -1,19 +1,19 @@
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* SIP/SIP2Interface.cpp */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 // Comments by pat:
 // Documents: RFC-3261: The SIP bible.
@@ -42,23 +42,16 @@
 
 #include <typeinfo>
 
-#include <GSMConfig.h>
-#include <GSML3CCElements.h>
-#include <GSMLogicalChannel.h>
-#include <Globals.h> // For gReports.
-#include <L3MMLayer.h>
-#include <L3TranEntry.h>
-
-#include <OpenBTSConfig.h>
-#include <Sockets.h>
+#include <CommonLibs/Logger.h>
+#include <Control/L3MMLayer.h>
+#include <Control/L3TranEntry.h>
+#include <GSM/GSMConfig.h>
+#include <GSM/GSMLogicalChannel.h>
+#include <Globals/Globals.h> // For gReports.
+#include <apps/OpenBTSConfig.h>
 
 #include "SIP2Interface.h"
-#include "SIPMessage.h"
 #include "SIPUtility.h"
-
-#include <Logger.h>
-
-#undef WARNING
 
 namespace SIP {
 
@@ -661,7 +654,7 @@ bool MySipInterface::newCheckInvite(SipMessage *msg)
 			if (msg->smGetCode() ? msg->smGetBranch() == existing->mInviteViaBranch
 					     : msg->isACK() || msg->isCANCEL()) {
 				WATCH("SIP Sending message to existing dialog"
-				      << LOGVAR2("state", existing->getSipState()));
+					<< LOGVAR2("state", existing->getSipState()));
 				LOG(DEBUG) << "Sending message to existing dialog" << LOGVAR(msg->smGetCode())
 					   << LOGVAR(msg->smGetBranch()) << LOGVAR(existing->mInviteViaBranch)
 					   << LOGVAR(msg->smGetMethodName()) << existing->dialogText();

@@ -1,3 +1,4 @@
+/* GSMShare/A51Test.cpp */
 /*
  * A pedagogical implementation of A5/1.
  *
@@ -90,11 +91,11 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include <CommonLibs/Configuration.h>
+
 #include "A51.h"
 
 // We must have a gConfig now to include BitVector.
-#include "Configuration.h"
-
 ConfigurationTable gConfig;
 
 /* Test the code by comparing it against

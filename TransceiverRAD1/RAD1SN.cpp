@@ -1,5 +1,5 @@
-/* -*- c++ -*- */
-/*
+/* TransceiverRAD1/RAD1SN.cpp */
+/*-
  * USRP - Universal Software Radio Peripheral
  *
  * Copyright (C) 2003, 2004, 2009 Free Software Foundation, Inc.
@@ -20,45 +20,43 @@
  * Foundation, Inc., 51 Franklin Street, Boston, MA  02110-1301  USA
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
+#include <assert.h>
+#include <errno.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <getopt.h>
-#include <assert.h>
-#include <errno.h>
 
-#include <Logger.h>
-#include <Configuration.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
-ConfigurationTable gConfig;
-
-using namespace std;
+#include <CommonLibs/Configuration.h>
+#include <CommonLibs/Logger.h>
 
 #include "rnrad1Core.h"
 
+using namespace std;
+
+ConfigurationTable gConfig;
+
 char *prog_name;
 
-static void
-set_progname (char *path)
+static void set_progname(char *path)
 {
-  char *p = strrchr (path, '/');
-  if (p != 0)
-    prog_name = p+1;
-  else
-    prog_name = path;
+	char *p = strrchr(path, '/');
+	if (p != 0)
+		prog_name = p + 1;
+	else
+		prog_name = path;
 }
 
-static void
-usage ()
+static void usage()
 {
-  fprintf (stderr, "usage: \n");
-  fprintf (stderr, "  %s [-v] [-w <which_board>] [-x] serialnumber\n", prog_name);
-  exit (1);
+	fprintf(stderr, "usage: \n");
+	fprintf(stderr, "  %s [-v] [-w <which_board>] [-x] serialnumber\n", prog_name);
+	exit(1);
 }
 
 #if 0
@@ -70,143 +68,116 @@ die (const char *msg)
 }
 #endif
 
-static int 
-hexval (char ch)
+static int hexval(char ch)
 {
-  if ('0' <= ch && ch <= '9')
-    return ch - '0';
+	if ('0' <= ch && ch <= '9')
+		return ch - '0';
 
-  if ('a' <= ch && ch <= 'f')
-    return ch - 'a' + 10;
+	if ('a' <= ch && ch <= 'f')
+		return ch - 'a' + 10;
 
-  if ('A' <= ch && ch <= 'F')
-    return ch - 'A' + 10;
+	if ('A' <= ch && ch <= 'F')
+		return ch - 'A' + 10;
 
-  return -1;
+	return -1;
 }
 
-static unsigned char *
-hex_string_to_binary (const char *string, int *lenptr)
+static unsigned char *hex_string_to_binary(const char *string, int *lenptr) __attribute__((used));
+
+static unsigned char *hex_string_to_binary(const char *string, int *lenptr)
 {
-  int	sl = strlen (string);
-  if (sl & 0x01){
-    fprintf (stderr, "%s: odd number of chars in <hex-string>\n", prog_name);
-    return 0;
-  }
+	int sl = strlen(string);
+	if (sl & 0x01) {
+		fprintf(stderr, "%s: odd number of chars in <hex-string>\n", prog_name);
+		return 0;
+	}
 
-  int len = sl / 2;
-  *lenptr = len;
-  unsigned char *buf = new unsigned char [len];
+	int len = sl / 2;
+	*lenptr = len;
+	unsigned char *buf = new unsigned char[len];
 
-  for (int i = 0; i < len; i++){
-    int hi = hexval (string[2 * i]);
-    int lo = hexval (string[2 * i + 1]);
-    if (hi < 0 || lo < 0){
-      fprintf (stderr, "%s: invalid char in <hex-string>\n", prog_name);
-      delete [] buf;
-      return 0;
-    }
-    buf[i] = (hi << 4) | lo;
-  }
-  return buf;
+	for (int i = 0; i < len; i++) {
+		int hi = hexval(string[2 * i]);
+		int lo = hexval(string[2 * i + 1]);
+		if (hi < 0 || lo < 0) {
+			fprintf(stderr, "%s: invalid char in <hex-string>\n", prog_name);
+			delete[] buf;
+			return 0;
+		}
+		buf[i] = (hi << 4) | lo;
+	}
+	return buf;
 }
 
-static void
-print_hex (FILE *fp, unsigned char *buf, int len)
+static void chk_result(bool ok)
 {
-  for (int i = 0; i < len; i++){
-    fprintf (fp, "%02x", buf[i]);
-  }
-  fprintf (fp, "\n");
+	if (!ok) {
+		fprintf(stderr, "%s: failed\n", prog_name);
+		exit(1);
+	}
 }
 
-static void
-chk_result (bool ok)
+int main(int argc, char **argv)
 {
-  if (!ok){
-    fprintf (stderr, "%s: failed\n", prog_name);
-    exit (1);
-  }
-}
+	int ch;
+	// bool verbose = false;
+	int which_board = 0;
+	// bool fx2_ok_p = false;
 
-static bool
-get_on_off (const char *s)
-{
-  if (strcmp (s, "on") == 0)
-    return true;
+	set_progname(argv[0]);
 
-  if (strcmp (s, "off") == 0)
-    return false;
+	while ((ch = getopt(argc, argv, "vw:x")) != EOF) {
+		switch (ch) {
 
-  usage ();			// no return
-  return false;
-}
+		case 'v':
+			// verbose = true;
+			break;
 
+		case 'w':
+			which_board = strtol(optarg, 0, 0);
+			break;
 
-int
-main (int argc, char **argv)
-{
-  int		ch;
-  bool		verbose = false;
-  int		which_board = 0;
-  bool		fx2_ok_p = false;
-  
-  set_progname (argv[0]);
-  
-  while ((ch = getopt (argc, argv, "vw:x")) != EOF){
-    switch (ch){
+		case 'x':
+			// fx2_ok_p = true;
+			break;
 
-    case 'v':
-      verbose = true;
-      break;
-      
-    case 'w':
-      which_board = strtol (optarg, 0, 0);
-      break;
-      
-    case 'x':
-      fx2_ok_p = true;
-      break;
-      
-    default:
-      fprintf(stderr,"Bad option: %c\n",ch);
-      usage ();
-    }
-  }
+		default:
+			fprintf(stderr, "Bad option: %c\n", ch);
+			usage();
+		}
+	}
 
-  int nopts = argc - optind;
+	int nopts = argc - optind;
 
-  fprintf(stderr,"nopts: %d",nopts);
+	fprintf(stderr, "nopts: %d", nopts);
 
-  if (nopts < 1)
-    usage ();
+	if (nopts < 1)
+		usage();
 
-  gLogInit("openbts",argv[1],LOG_LOCAL7);
+	gLogInit("openbts", argv[1], LOG_LOCAL7);
 
-  rnrad1Core *core = new rnrad1Core(which_board,
-				    RAD1_CMD_INTERFACE,
-				    RAD1_CMD_ALTINTERFACE,
-				    "","",true);
+	rnrad1Core *core = new rnrad1Core(which_board, RAD1_CMD_INTERFACE, RAD1_CMD_ALTINTERFACE, "", "", true);
 
-  if (nopts != 1) usage ();
+	if (nopts != 1)
+		usage();
 
-  else {
-    char *hex_string  = argv[optind];
-    int len;
-    unsigned char *buf = (unsigned char *) hex_string;
-    len = 8;
-    //hex_string_to_binary (hex_string, &len);
-    if (buf == 0)
-      chk_result (0);
-    
-    std::string bufStr;
-    bufStr.assign((const char*) buf,len);
+	else {
+		char *hex_string = argv[optind];
+		int len;
+		unsigned char *buf = (unsigned char *)hex_string;
+		len = 8;
+		// hex_string_to_binary (hex_string, &len);
+		if (buf == 0)
+			chk_result(0);
 
-    bool result = core->writeEeprom(0x50, 248, bufStr);
-    chk_result (result);
+		std::string bufStr;
+		bufStr.assign((const char *)buf, len);
 
-    return 0;
-  }
- 
-  delete core;
+		bool result = core->writeEeprom(0x50, 248, bufStr);
+		chk_result(result);
+
+		return 0;
+	}
+
+	delete core;
 }

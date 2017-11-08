@@ -1,26 +1,25 @@
+/* GSM/PhysicalStatus.cpp */
+/*-
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2011, 2012, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Declarations for PhysicalStatus and related classes. */
-
-/*
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2011, 2012, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 /*
  * Copyright 2010 Kestrel Signal Processing, Inc.
  * All rights reserved.
- *
  */
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
@@ -31,14 +30,15 @@
 #include <iostream>
 #include <string>
 
-#include "NodeManager.h"
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/sqlite3util.h>
+#include <Globals/Globals.h>
+#include <NodeManager/NodeManager.h>
+#include <Peering/NeighborTable.h>
+
+#include "GSML3RRElements.h"
+#include "GSMLogicalChannel.h"
 #include "PhysicalStatus.h"
-#include <GSML3RRElements.h>
-#include <GSMLogicalChannel.h>
-#include <Globals.h>
-#include <Logger.h>
-#include <NeighborTable.h>
-#include <sqlite3util.h>
 
 extern NodeManager gNodeManager;
 

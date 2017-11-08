@@ -1,23 +1,25 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* SGSNGGSN/Sgsn.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef _SGSN_H_
 #define _SGSN_H_
 
+#include <GSM/GSMCommon.h> // For Z100Timer
+
 #include "GPRSL3Messages.h"
-#include "GSMCommon.h" // For Z100Timer
 #include "SgsnExport.h"
 
 #ifndef MIN
@@ -30,7 +32,7 @@
 #define RN_FOR_ALL_WITH_ITR(type, list, var, itr) \
 	type::iterator itr; \
 	for (type::iterator itr1 = (list).begin(), itr = itr1; \
-	     itr1 == (list).end() ? 0 : ((itr = itr1), (var = *itr1++), 1);)
+		itr1 == (list).end() ? 0 : ((itr = itr1), (var = *itr1++), 1);)
 #endif
 
 #define NEW_TLLI_ASSIGN_PROCEDURE 0 // NO, dont use this.

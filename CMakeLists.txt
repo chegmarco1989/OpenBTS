@@ -17,6 +17,7 @@ enable_testing()
 include(cmake/features.cmake)
 
 find_package(Boost COMPONENTS system)
+find_library(USB usb-1.0 REQUIRED)
 find_library(ZMQ zmq REQUIRED)
 
 add_compile_options(-g)
@@ -37,37 +38,7 @@ set(OPENBTS_COMMON_LIBRARIES -rdynamic sqlite3 pthread dl)
 
 include_directories(${PROJECT_SOURCE_DIR})  # required in apps/OpenBTS.cpp
 include_directories(${PROJECT_BINARY_DIR})  # required for <config.h>
-include_directories(CLI)
-include_directories(CommonLibs)
-include_directories(Control)
-include_directories(GPRS)
-include_directories(GSM)
-include_directories(GSMShare)
-include_directories(Globals)
-include_directories(NodeManager)
-include_directories(NodeManager/JsonBox-0.4.3/include)
-include_directories(Peering)
-include_directories(SGSNGGSN)
-include_directories(SIP)
-include_directories(SMS)
-include_directories(Scanning)
-include_directories(TRXManager)
-include_directories(apps)
-
-#COMMON_LA = $(top_builddir)/CommonLibs/libcommon.la
-#GSM_LA = $(top_builddir)/GSM/libGSM.la
-#GSMSHARE_LA = $(top_builddir)/GSMShare/libGSMShare.la
-#GPRS_LA = $(top_builddir)/GPRS/libGPRS.la
-#SGSNGGSN_LA = $(top_builddir)/SGSNGGSN/libSGSNGGSN.la
-#SIP_LA = $(top_builddir)/SIP/libSIP.la
-#SMS_LA = $(top_builddir)/SMS/libSMS.la
-#TRX_LA = $(top_builddir)/TRXManager/libtrxmanager.la
-#CONTROL_LA = $(top_builddir)/Control/libcontrol.la
-#GLOBALS_LA = $(top_builddir)/Globals/libglobals.la
-#CLI_LA = $(top_builddir)/CLI/libcli.la
-#PEERING_LA = $(top_builddir)/Peering/libpeering.la
-#NODEMANAGER_LA = $(top_builddir)/NodeManager/libnodemanager.la -lzmq
-#SCANNING_LA = $(top_builddir)/Scanning/libscanning.la
+include_directories(NodeManager/JsonBox-0.4.3/include)  # required for <JsonBox/*.h>
 
 add_subdirectory(CLI)
 add_subdirectory(CommonLibs)
@@ -84,7 +55,7 @@ add_subdirectory(SMS)
 add_subdirectory(Scanning)
 add_subdirectory(TRXManager)
 add_subdirectory(Transceiver52M)
-#add_subdirectory(TransceiverRAD1)
+add_subdirectory(TransceiverRAD1)
 add_subdirectory(apps)
 #add_subdirectory(doc)
 

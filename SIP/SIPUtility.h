@@ -1,18 +1,19 @@
-/*
-* Copyright 2008, 2014 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* SIP/SIPUtility.h */
+/*-
+ * Copyright 2008, 2014 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef SIP_UTILITY_H
 #define SIP_UTILITY_H
@@ -25,11 +26,11 @@ information for this specific distribution.
 #include <map>
 #include <string>
 
-#include <Interthread.h>
-#include <ScalarTypes.h>
-#include <Threads.h>
-#include <Timeval.h>
-#include <Utils.h>
+#include <CommonLibs/Interthread.h>
+#include <CommonLibs/ScalarTypes.h>
+#include <CommonLibs/Threads.h>
+#include <CommonLibs/Timeval.h>
+#include <CommonLibs/Utils.h>
 
 template <class ValueType>
 class ThreadSafeList {

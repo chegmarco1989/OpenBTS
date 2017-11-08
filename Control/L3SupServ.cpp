@@ -1,17 +1,18 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* Control/L3SupServ.cpp */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 // Written by Pat Thompson
 
@@ -20,15 +21,16 @@
 #include <list>
 #include <string>
 
+#include <GSM/GSMCommon.h>
+#include <GSM/GSML3Message.h>
+#include <GSM/GSML3SSMessages.h>
+#include <GSM/GSMLogicalChannel.h>
+#include <Globals/Globals.h>
+#include <SIP/SIPDialog.h>
+
 #include "L3MMLayer.h"
 #include "L3SupServ.h"
 #include "L3TranEntry.h"
-#include <GSMCommon.h>
-#include <GSML3Message.h>
-#include <GSML3SSMessages.h>
-#include <GSMLogicalChannel.h>
-#include <Globals.h>
-#include <SIPDialog.h>
 
 // Generic SS messages are transferred by the Facility IE, whose content is described by 24.080 4.61
 // and by an ASN description in the 24.080 appendix.  This encoding is actually part of the GSM MAP reference
@@ -237,7 +239,7 @@ class SupServCodes {
 		// from
 		// http://cpansearch.perl.org/src/REHSACK/Net-Radio-Location-SUPL-Test-0.001/asn1src/MAP-SS-Code.asn
 		addSSCode(0xa1,
-			  "75"); // eMLPP.  22.067  Also 75n n=0..4  ehanced Multilevel Precedence Pre-emption service.
+			"75"); // eMLPP.  22.067  Also 75n n=0..4  ehanced Multilevel Precedence Pre-emption service.
 		addSSCode(0x24, "66"); // CD.  Call Deflection 22.072
 		addSSCode(0x11, "30"); // CLIP  22.081  Calling Line Identification Presentation
 		addSSCode(0x12, "31"); // CLIR  Calling Line Identification Restriction
@@ -352,7 +354,7 @@ public:
 	string text()
 	{
 		string result = format("ComponentType=0x%x invokeID=0x%x linkID=0x%x opCode=0x%x ok=%d",
-				       ssComponentType, ssInvokeID, ssLinkID, ssOpCode, (int)ssParseSuccess);
+			ssComponentType, ssInvokeID, ssLinkID, ssOpCode, (int)ssParseSuccess);
 		for (vector<string>::iterator it = ssParams.begin(); it != ssParams.end(); it++) {
 			result += " <" + data2hex(it->data(), it->size()) + ">";
 		}
@@ -437,7 +439,7 @@ private:
 		unsigned paramsLen = data[datai++];
 		if (paramsLen < datalen - datai) {
 			throw SSParseExcept(format("parameter len (%u) exceeds component len (%u) at %u", paramsLen,
-						   datalen - datai, datai));
+				datalen - datai, datai));
 		}
 		ssParams.clear();
 		ssParams.reserve(6);
@@ -468,8 +470,8 @@ private:
 		ssComponentType = (SSComponentTypeTag)data[datai++];
 		unsigned componentLen = data[datai++];
 		if (componentLen > datalen - datai) {
-			throw SSParseExcept(format("component len (%u) exceeds data len-2 (%u) at %u", componentLen,
-						   datalen, datai));
+			throw SSParseExcept(format(
+				"component len (%u) exceeds data len-2 (%u) at %u", componentLen, datalen, datai));
 		}
 		ssInvokeID = ssParseInvokeID(data, componentLen, datai);
 		ssLinkID = ssParseLinkedID(data, datalen, datai);

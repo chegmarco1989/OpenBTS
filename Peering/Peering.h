@@ -1,34 +1,36 @@
+/* Peering/Peering.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Messages for peer-to-peer protocol */
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #ifndef PERRINGMESSAGES_H
 #define PERRINGMESSAGES_H
 
-#include <Globals.h>
-#include <Interthread.h>
-#include <Sockets.h>
-#include <Timeval.h>
-#include <Utils.h>
-//#include <ControlTransfer.h>
-#include <GSML3RRElements.h>
+#include <CommonLibs/Interthread.h>
+#include <CommonLibs/Sockets.h>
+#include <CommonLibs/Timeval.h>
+#include <CommonLibs/Utils.h>
+#include <GSM/GSML3RRElements.h>
+#include <Globals/Globals.h>
 
 namespace Control {
+
 class TranEntry;
 class HandoverEntry;
+
 }; // namespace Control
 
 namespace Peering {

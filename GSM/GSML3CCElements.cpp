@@ -1,27 +1,29 @@
+/* GSM/GSML3CCElements.cpp */
+/*-
+ * Copyright 2008, 2009, 2014 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file
-	@brief Call Control messages, GSM 04.08 9.3
-*/
-/*
-* Copyright 2008, 2009, 2014 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+ * @brief Call Control messages, GSM 04.08 9.3
+ */
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
+#include <Control/ControlTransfer.h>
+
 #include "GSML3CCElements.h"
-#include <ControlTransfer.h>
-#include <Logger.h>
 
 #define CASENAME(x) \
 	case x: \
@@ -155,7 +157,7 @@ void L3SupportedCodecList::parseV(const L3Frame &src, size_t &rp, size_t expecte
 		// (pat) If there are two bytes, the second is the high bits, so we cant just
 		// read them as a single field, we have to byte swap them.
 		int fixedLength = min((int)expectedLength - 2,
-				      bitmapLength); // Correct for error: bitmaplength longer than IE length.
+			bitmapLength); // Correct for error: bitmaplength longer than IE length.
 		unsigned codeclist = 0;
 		if (fixedLength >= 1)
 			codeclist = src.readField(rp, 8);

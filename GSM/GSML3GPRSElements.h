@@ -1,27 +1,31 @@
-/**@file @brief L3 Radio Resource messages related to GPRS */
-/*
-* Copyright 2008, 2010 Free Software Foundation, Inc.
-* Copyright 2011 Kestrel Signal Processing, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* GSM/GSML3GPRSElements.h */
+/*-
+ * Copyright 2008, 2010 Free Software Foundation, Inc.
+ * Copyright 2011 Kestrel Signal Processing, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/**@file @brief L3 Radio Resource messages related to GPRS */
 
 #ifndef GSML3GPRSELEMENTS_H
 #define GSML3GPRSELEMENTS_H
 
-#include "../GPRS/GPRSExport.h"
-#include "../GPRS/MsgBase.h"
+#include <CommonLibs/ScalarTypes.h>
+#include <GPRS/GPRSExport.h>
+#include <GPRS/MsgBase.h>
+
 #include "GSML3Message.h"
-#include "ScalarTypes.h"
 
 namespace GSM {
 
@@ -98,8 +102,8 @@ struct L3IAPacketAssignment : GenericMessageElement {
 
 	void setPacketUplinkAssignSingleBlock(unsigned TBFStartingTime);
 	void setPacketUplinkAssignDynamic(unsigned TFI, unsigned CSNum, unsigned USF);
-	void setPacketDownlinkAssign(unsigned wTLLI, unsigned wTFI, unsigned wCSNum, unsigned wRLCMode,
-				     unsigned wTAValid);
+	void setPacketDownlinkAssign(
+		unsigned wTLLI, unsigned wTFI, unsigned wCSNum, unsigned wRLCMode, unsigned wTAValid);
 	void setPacketUplinkAssignFixed();
 	void setPacketPowerOptions(unsigned wAlpha, unsigned wGamma);
 	void setPacketPollTime(unsigned TBFStartingTime);

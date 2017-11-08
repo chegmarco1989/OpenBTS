@@ -1,28 +1,32 @@
-/**@file @brief L3 Radio Resource messages related to GPRS */
-/*
-* Copyright 2008, 2010 Free Software Foundation, Inc.
-* Copyright 2011 Kestrel Signal Processing, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* GSM/GSML3GPRSElements.cpp */
+/*-
+ * Copyright 2008, 2010 Free Software Foundation, Inc.
+ * Copyright 2011 Kestrel Signal Processing, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/**@file @brief L3 Radio Resource messages related to GPRS */
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
 #include <iostream>
 #include <typeinfo>
 
-#include "../GPRS/GPRSExport.h"
+#include <CommonLibs/Logger.h>
+#include <GPRS/GPRSExport.h>
+
 #include "GSML3RRMessages.h"
-#include <Logger.h>
 
 namespace GSM {
 
@@ -126,8 +130,8 @@ void L3IAPacketAssignment::setPacketUplinkAssignDynamic(unsigned TFI, unsigned C
 	mUSF = USF;
 }
 
-void L3IAPacketAssignment::setPacketDownlinkAssign(unsigned wTLLI, unsigned wTFI, unsigned wCSNum, unsigned wRLCMode,
-						   unsigned wTAValid)
+void L3IAPacketAssignment::setPacketDownlinkAssign(
+	unsigned wTLLI, unsigned wTFI, unsigned wCSNum, unsigned wRLCMode, unsigned wTAValid)
 {
 	mPacketAssignmentType = PacketDownlinkAssign;
 	mTLLI = wTLLI;

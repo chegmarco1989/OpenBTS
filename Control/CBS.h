@@ -1,3 +1,4 @@
+/* Control/CBS.h */
 /*-
  * Copyright 2014 Range Networks, Inc.
  *
@@ -20,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include <ScalarTypes.h>
+#include <CommonLibs/ScalarTypes.h>
 
 namespace Control {
 

@@ -1,39 +1,40 @@
+/* Control/L3TranEntry.h */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2011, 2012, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Declarations for TransactionTable and related classes. */
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2011, 2012, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #ifndef L3TRANSACTIONTABLE_H
 #define L3TRANSACTIONTABLE_H
 
-#include <list>
 #include <stdio.h>
 
-#include <Interthread.h>
-#include <Logger.h>
-#include <Sockets.h>
-#include <Timeval.h>
+#include <list>
 
-#include <GSML3CCElements.h>
-#include <GSML3CommonElements.h>
-#include <GSML3MMElements.h>
-#include <GSML3RRElements.h>
-#include <SIPExport.h>
-//#include <SIPBase.h>
+#include <CommonLibs/Interthread.h>
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Sockets.h>
+#include <CommonLibs/Timeval.h>
+#include <GSM/GSML3CCElements.h>
+#include <GSM/GSML3CommonElements.h>
+#include <GSM/GSML3MMElements.h>
+#include <GSM/GSML3RRElements.h>
+#include <SIP/SIPExport.h>
+
 #include "ControlTransfer.h"
 #include "L3MobilityManagement.h"
 #include "L3StateMachine.h"
@@ -79,7 +80,7 @@ public:
 
 protected:
 	void initHandoverEntry(const struct sockaddr_in *peer, unsigned wHandoverReference,
-			       unsigned wHandoverOtherBSTransactionID, SimpleKeyValue &params);
+		unsigned wHandoverOtherBSTransactionID, SimpleKeyValue &params);
 
 public:
 	HandoverEntry(const TranEntry *tran);
@@ -346,8 +347,8 @@ private:
 	void TranEntryInit(); // Basic initialization for TranEntry.
 
 	TranEntry(SIP::SipDialog *wDialog,
-		  // const GSM::L3MobileIdentity& wSubscriber,
-		  const GSM::L3CMServiceType &wService);
+		// const GSM::L3MobileIdentity& wSubscriber,
+		const GSM::L3CMServiceType &wService);
 
 private:
 	static TranEntry *newMO(MMContext *wChan, const GSM::L3CMServiceType &wService);
@@ -360,17 +361,16 @@ public:
 	static TranEntry *newMOSSD(MMContext *wChannel);
 
 	// This is the post-l3-rewrite
-	static TranEntry *
-	newMTC(SIP::SipDialog *wDialog, const FullMobileId &msid,
-	       const GSM::L3CMServiceType &wService, // MobileTerminatedCall or UndefinedType for generic page from CLI.
-	       string wCallerId);
+	static TranEntry *newMTC(SIP::SipDialog *wDialog, const FullMobileId &msid,
+		const GSM::L3CMServiceType
+			&wService, // MobileTerminatedCall or UndefinedType for generic page from CLI.
+		string wCallerId);
 
 	static TranEntry *newMTSMS(SIP::SipDialog *dialog, const FullMobileId &msid,
-				   const GSM::L3CallingPartyBCDNumber &wCalling, string smsBody, string smsContentType);
+		const GSM::L3CallingPartyBCDNumber &wCalling, string smsBody, string smsContentType);
 
 	static TranEntry *newHandover(const struct sockaddr_in *peer, unsigned wHandoverReference,
-				      SimpleKeyValue &params, L3LogicalChannel *wChannel,
-				      unsigned wHandoverOtherBSTransactionID);
+		SimpleKeyValue &params, L3LogicalChannel *wChannel, unsigned wHandoverOtherBSTransactionID);
 
 	/** Form used for handover requests; argument is taken from the message string. */
 	/** unused
@@ -384,8 +384,8 @@ public:
 
 	/** Set the outbound handover parameters and set the state to HandoverOutbound. */
 	void setOutboundHandover(const GSM::L3HandoverReference &reference, const GSM::L3CellDescription &cell,
-				 const GSM::L3ChannelDescription2 &chan, const GSM::L3PowerCommandAndAccessType &pwrCmd,
-				 const GSM::L3SynchronizationIndication &synch);
+		const GSM::L3ChannelDescription2 &chan, const GSM::L3PowerCommandAndAccessType &pwrCmd,
+		const GSM::L3SynchronizationIndication &synch);
 
 	/** Set the inbound handover parameters on the channel; state should alread be HandoverInbound. */
 	// void setInboundHandover(float wRSSI, float wTimingError);

@@ -1,4 +1,5 @@
-/*
+/* Transceiver52M/radioVector.h */
+/*-
  * Written by Thomas Tsou <ttsou@vt.edu>
  * Based on code by Harvind S Samra <hssamra@kestrelsp.com>
  *
@@ -22,7 +23,8 @@
 #ifndef RADIOVECTOR_H
 #define RADIOVECTOR_H
 
-#include "GSMCommon.h"
+#include <GSM/GSMCommon.h>
+
 #include "sigProcLib.h"
 
 class radioVector : public signalVector {

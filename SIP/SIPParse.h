@@ -1,29 +1,29 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* SIP/SIPParse.h */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 // Written by Pat Thompson.
+//
 #ifndef _SIPPARSE_H_
 #define _SIPPARSE_H_ 1
 
 #include <list>
 #include <string>
 
-#include <Defines.h>
-#include <Logger.h>
-
-//#include "SIPBase.h"
+#include <CommonLibs/Defines.h>
+#include <CommonLibs/Logger.h>
 
 namespace SIP {
 
@@ -69,8 +69,8 @@ public:
 	{ // username without "sip:" or the host or password.
 		if (size() < start)
 			return string("");
-		string result = substr(start, find_first_of(";@:", start) -
-						      start); // chop off :password or @host or if no @host, ;params
+		string result = substr(start,
+			find_first_of(";@:", start) - start); // chop off :password or @host or if no @host, ;params
 		// LOG(DEBUG) << LOGVAR2("uri",substr())<<LOGVAR(n)<<LOGVAR(result)
 		// <<LOGVAR(find_first_of('@'))<<LOGVAR(uriAddress());
 		return result;
@@ -262,7 +262,7 @@ public:
 		// sTemp = "Reason: " + getTermGroupText() + "; cause=" +  to_string(icause) + "; text=\"" +
 		// getcauseDescription() + "\"\r\n";  //SVGDBG could not get this to compile
 		sTemp = format("Reason:%s; cause=%d; text=\"%s\"\r\n", this->getTermGroupText().c_str(), miCause,
-			       msCauseDesc.c_str());
+			msCauseDesc.c_str());
 		return sTemp;
 	}
 
@@ -298,7 +298,7 @@ public:
 	{
 		LOG(INFO) << "SIP term info SipTermList copy ctor";
 		for (vector<CallTerminationCause *>::const_iterator it = Source.lTermList.begin();
-		     it != Source.lTermList.end(); it++) {
+			it != Source.lTermList.end(); it++) {
 			lTermList.push_back(new CallTerminationCause(*(*it)));
 		} // for
 	}

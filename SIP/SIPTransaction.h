@@ -1,26 +1,29 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* SIP/SIPTransaction.h */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 // Written by Pat Thompson.
+
 #ifndef _SIPTRANSACTION_H_
 #define _SIPTRANSACTION_H_ 1
+
+#include <CommonLibs/Threads.h>
 
 #include "SIPBase.h"
 #include "SIPExport.h"
 #include "SIPUtility.h" // For SipTimer, IPAddressSpec
-#include <Threads.h>
 
 namespace SIP {
 
@@ -109,9 +112,9 @@ protected:
 	// outbound request for a client transaction.
 	// These differ only in how the peer is specified.
 	void stInitNonDialogTransaction(TranEntryId tranid, string wBranch, SipMessage *request,
-					const IPAddressSpec *wPeer); // currently unused
+		const IPAddressSpec *wPeer); // currently unused
 	void stInitNonDialogTransaction(TranEntryId tranid, string wBranch, SipMessage *request, string wProxy,
-					const char *wProxyProvenance); // currently unused
+		const char *wProxyProvenance); // currently unused
 	void stInitInDialogTransaction(SipDialog *wDialog, string wBranch, SipMessage *request);
 
 	virtual void stDestroyV() = 0;
@@ -195,8 +198,8 @@ public:
 	SipMessage *vstGetRequest();
 	// We use a client transaction for REGISTER even though it is not technically a TU, it acts like one
 	// except there are no resends, which we implement just by not setting any timers.
-	void sctInitRegisterClientTransaction(SipDialog *wRegistrar, TranEntryId tid, SipMessage *request,
-					      string branch);
+	void sctInitRegisterClientTransaction(
+		SipDialog *wRegistrar, TranEntryId tid, SipMessage *request, string branch);
 	void sctInitInDialogClientTransaction(SipDialog *wDialog, SipMessage *request, string branch);
 	void sctStart();
 };

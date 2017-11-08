@@ -1,35 +1,35 @@
-/*
-* Copyright 2008-2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2012, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* GSM/GSMConfig.h */
+/*-
+ * Copyright 2008-2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2012, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef GSMCONFIG_H
 #define GSMCONFIG_H
 
 #include <vector>
 
-#include "Defines.h"
+#include <CommonLibs/Defines.h>
+#include <CommonLibs/Interthread.h>
+#include <TRXManager/TRXManager.h>
+
 #include "GSML3CommonElements.h"
 #include "GSML3RRElements.h"
 #include "GSML3RRMessages.h"
 #include "GSMRadioResource.h"
-#include <Interthread.h>
-#include <PowerManager.h>
-
-#include "TRXManager.h"
+#include "PowerManager.h"
 
 namespace GSM {
 

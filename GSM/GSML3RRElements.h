@@ -1,31 +1,35 @@
-/**@file @brief Elements for Radio Resource messsages, GSM 04.08 10.5.2. */
-/*
-* Copyright 2008, 2009 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2011, 2012, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* GSM/GSML3RRElements.h */
+/*-
+ * Copyright 2008, 2009 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2011, 2012, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/**@file
+ * @brief Elements for Radio Resource messsages, GSM 04.08 10.5.2.
+ */
 
 #ifndef GSML3RRELEMENTS_H
 #define GSML3RRELEMENTS_H
 
 #include <vector>
 
+#include <GSMShare/L3Enums.h>
+#include <apps/OpenBTSConfig.h>
+
 #include "GSML3GPRSElements.h"
 #include "GSML3Message.h"
-#include "L3Enums.h"
-#include <OpenBTSConfig.h>
 
 namespace GSM {
 

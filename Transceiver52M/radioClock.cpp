@@ -1,4 +1,5 @@
-/*
+/* Transceiver52M/radioClock.cpp */
+/*-
  * Written by Thomas Tsou <ttsou@vt.edu>
  * Based on code by Harvind S Samra <hssamra@kestrelsp.com>
  *

@@ -1,17 +1,18 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* GPRS/RLCMessages.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 /**@file GPRS L2 RLC Messages, from GSM 04.60 Section 11 */
 
@@ -22,14 +23,12 @@
 
 #include <iostream>
 
-#include "BitVector.h"
-#include "Defines.h"
-#include "GSMCommon.h"
-#include "Logger.h"
-//#include "GSMTransfer.h"
-//#include "GSMTDMA.h"
-//#include <Globals.h>
-#include "MemoryLeak.h"
+#include <CommonLibs/BitVector.h>
+#include <CommonLibs/Defines.h>
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/MemoryLeak.h>
+#include <GSM/GSMCommon.h>
+
 #include "MsgBase.h"
 #include "RLCHdr.h"
 #include "TBF.h"

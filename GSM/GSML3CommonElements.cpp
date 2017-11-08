@@ -1,29 +1,30 @@
+/* GSM/GSML3CommonElements.cpp */
+/*-
+ * Copyright 2008, 2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file
-	@brief Common elements for L3 messages, GSM 04.08 10.5.1.
-*/
-
-/*
-* Copyright 2008, 2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+ * @brief Common elements for L3 messages, GSM 04.08 10.5.1.
+ */
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
+#include <CommonLibs/Logger.h>
+
 #include "GSML3CommonElements.h"
-#include <Logger.h>
 
 using namespace std;
 using namespace GSM;

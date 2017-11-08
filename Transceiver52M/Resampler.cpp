@@ -1,4 +1,5 @@
-/*
+/* Transceiver52M/Resampler.cpp */
+/*-
  * Rational Sample Rate Conversion
  * Copyright (C) 2012, 2013  Thomas Tsou <tom@tsou.cc>
  *
@@ -25,10 +26,7 @@
 #include <iostream>
 
 #include "Resampler.h"
-
-extern "C" {
 #include "convolve.h"
-}
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327f

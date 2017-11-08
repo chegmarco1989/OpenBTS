@@ -1,22 +1,22 @@
+/* GSM/GSMLogicalChannel.h */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Logical Channel.  */
-
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #ifndef LOGICALCHANNEL_H
 #define LOGICALCHANNEL_H
@@ -29,15 +29,14 @@
 #include <iostream>
 #include <map>
 
-#include <Logger.h>
-#include "GSML1FEC.h"
-//#include "GSMSAPMux.h"
+#include <CommonLibs/Logger.h>
+#include <Control/L3LogicalChannel.h>
+
 #include "GSMChannelHistory.h"
+#include "GSML1FEC.h"
 #include "GSML2LAPDm.h"
 #include "GSML3RRElements.h"
 #include "GSMTDMA.h"
-#include <L3LogicalChannel.h>
-
 
 class ARFCNManager;
 class UDPSocket;
@@ -535,7 +534,7 @@ protected:
 
 public:
 	SACCHLogicalChannel(unsigned wCN, unsigned wTN, const MappingPair &wMapping,
-			    /*const*/ L2LogicalChannel *wHost);
+		/*const*/ L2LogicalChannel *wHost);
 
 	ChannelType chtype() const { return SACCHType; }
 

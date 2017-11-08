@@ -1,34 +1,33 @@
-/*
-* Copyright 2008, 2010 Free Software Foundation, Inc.
-* Copyright 2012, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* TRXManager/TRXManager.cpp */
+/*-
+ * Copyright 2008, 2010 Free Software Foundation, Inc.
+ * Copyright 2012, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #include <stdlib.h>
 #include <string.h>
+
 #include <string>
 
-#include "TRXManager.h"
-#include <GSMCommon.h>
-#include <GSMConfig.h>
-#include <GSML1FEC.h>
-#include <GSMLogicalChannel.h>
-#include <GSMTransfer.h>
-#include <Globals.h>
-#include <Logger.h>
-#include <Reporting.h>
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Reporting.h>
+#include <GSM/GSMConfig.h>
+#include <GSM/GSML1FEC.h>
+#include <GSM/GSMLogicalChannel.h>
+#include <Globals/Globals.h>
 
-#undef WARNING
+#include "TRXManager.h"
 
 using namespace GSM;
 using namespace std;

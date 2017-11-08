@@ -1,45 +1,45 @@
+/* GSM/GSML2LAPDm.cpp */
+/*-
+ * Copyright 2008, 2009, 2014 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /*
-* Copyright 2008, 2009, 2014 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for
-* licensing information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+ * Many elements follow Daniele Orlandi's <daniele@orlandi.com> vISDN/Q.921
+ * implementation, although no code is copied directly.
+ * 6-2014: Pat Thompson rewrote the Layer1 and layer3 connections, primitives and messages.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/*
+ * As a general rule, the caller need not hold
+ * mLock when sending U frames but should hold the
+ * lock when transmitting S or I frames.
+ *
+ * This implementation is for use on the BTS side,
+ * however, some MS functions are included for unit-
+ * testing.  For actual use in a BTS, these will need
+ * to be compelted.
+ */
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
-/*
-Many elements follow Daniele Orlandi's <daniele@orlandi.com> vISDN/Q.921
-implementation, although no code is copied directly.
-6-2014: Pat Thompson rewrote the Layer1 and layer3 connections, primitives and messages.
-*/
-
-/*
-	As a general rule, the caller need not hold
-	mLock when sending U frames but should hold the
-	lock when transmitting S or I frames.
-
-	This implementation is for use on the BTS side,
-	however, some MS functions are included for unit-
-	testing.  For actual use in a BTS, these will need
-	to be compelted.
-*/
+#include <CommonLibs/Logger.h>
+#include <Control/L3StateMachine.h>
 
 #include "GSML2LAPDm.h"
-//#include "GSMSAPMux.h"
+#include "GSML3RRMessages.h"
 #include "GSMLogicalChannel.h"
-#include <GSML3RRMessages.h>
-#include <L3StateMachine.h>
-#include <Logger.h>
 
 using namespace std;
 using namespace GSM;

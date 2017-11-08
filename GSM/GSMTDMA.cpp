@@ -1,18 +1,19 @@
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* GSM/GSMTDMA.cpp */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
@@ -21,7 +22,7 @@ information for this specific distribution.
 using namespace GSM;
 
 TDMAMapping::TDMAMapping(TypeAndOffset wTypeAndOffset, bool wDownlink, bool wUplink, char wAllowedSlots, bool wC0Only,
-			 unsigned wRepeatLength, unsigned wNumFrames, const unsigned *wFrameMapping)
+	unsigned wRepeatLength, unsigned wNumFrames, const unsigned *wFrameMapping)
 	: mTypeAndOffset(wTypeAndOffset), mDownlink(wDownlink), mUplink(wUplink), mAllowedSlots(wAllowedSlots),
 	  mC0Only(wC0Only), mRepeatLength(wRepeatLength), mNumFrames(wNumFrames), mFrameMapping(wFrameMapping)
 {
@@ -43,11 +44,10 @@ TDMAMapping::TDMAMapping(TypeAndOffset wTypeAndOffset, bool wDownlink, bool wUpl
 /** A macro to save some typing when we set up TDMA maps. */
 #define MAKE_TDMA_MAPPING(NAME, TYPEANDOFFSET, DOWNLINK, UPLINK, ALLOWEDSLOTS, C0ONLY, REPEAT) \
 	const TDMAMapping GSM::g##NAME##Mapping(TYPEANDOFFSET, DOWNLINK, UPLINK, ALLOWEDSLOTS, C0ONLY, REPEAT, \
-						sizeof(NAME##Frames) / sizeof(unsigned), NAME##Frames)
+		sizeof(NAME##Frames) / sizeof(unsigned), NAME##Frames)
 
-const unsigned LoopbackTestFullFrames[] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
-					   16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
-					   32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
+const unsigned LoopbackTestFullFrames[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+	22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
 MAKE_TDMA_MAPPING(LoopbackTestFull, TDMA_MISC, true, true, 0xff, false, 51);
 
 const unsigned FCCHFrames[] = {0, 10, 20, 30, 40};
@@ -61,8 +61,8 @@ MAKE_TDMA_MAPPING(BCCH, TDMA_BEACON_BCCH, true, false, 0x55, true, 51);
 
 // Note that we removed frames for the SDCCH components of the Combination-V C0T0.
 // (pat) This comes from GSM 5.02 clause 7 table 5 of 9 page 46.
-const unsigned RACHC5Frames[] = {4,  5,  14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-				 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 45, 46};
+const unsigned RACHC5Frames[] = {
+	4, 5, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 45, 46};
 // allowedSlots == 0x1 means only on timeslot 0.
 MAKE_TDMA_MAPPING(RACHC5, TDMA_BEACON, false, true, 0x1, true, 51);
 
@@ -256,8 +256,8 @@ MAKE_TDMA_MAPPING(SACCH_TF_T6, TCHF_0, true, true, 0x40, true, 104);
 const unsigned SACCH_TF_T7Frames[] = {103, 25, 51, 77};
 MAKE_TDMA_MAPPING(SACCH_TF_T7, TCHF_0, true, true, 0x80, true, 104);
 
-const unsigned FACCH_TCHFFrames[] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
-				     13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24};
+const unsigned FACCH_TCHFFrames[] = {
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24};
 MAKE_TDMA_MAPPING(FACCH_TCHF, TCHF_0, true, true, 0xff, true, 26);
 
 const MappingPair GSM::gSDCCH_4_0Pair(gSDCCH_4_0DMapping, gSDCCH_4_0UMapping);
@@ -317,8 +317,14 @@ const CompleteMapping GSM::gSDCCH_8_5(gSDCCH_8_5Pair, gSACCH_C8_5Pair);
 const CompleteMapping GSM::gSDCCH_8_6(gSDCCH_8_6Pair, gSACCH_C8_6Pair);
 const CompleteMapping GSM::gSDCCH_8_7(gSDCCH_8_7Pair, gSACCH_C8_7Pair);
 const CompleteMapping GSM::gSDCCH8[8] = {
-	GSM::gSDCCH_8_0, GSM::gSDCCH_8_1, GSM::gSDCCH_8_2, GSM::gSDCCH_8_3,
-	GSM::gSDCCH_8_4, GSM::gSDCCH_8_5, GSM::gSDCCH_8_6, GSM::gSDCCH_8_7,
+	GSM::gSDCCH_8_0,
+	GSM::gSDCCH_8_1,
+	GSM::gSDCCH_8_2,
+	GSM::gSDCCH_8_3,
+	GSM::gSDCCH_8_4,
+	GSM::gSDCCH_8_5,
+	GSM::gSDCCH_8_6,
+	GSM::gSDCCH_8_7,
 };
 
 const CompleteMapping GSM::gTCHF_T0(gFACCH_TCHFPair, gSACCH_FT_T0Pair);
@@ -330,6 +336,12 @@ const CompleteMapping GSM::gTCHF_T5(gFACCH_TCHFPair, gSACCH_FT_T5Pair);
 const CompleteMapping GSM::gTCHF_T6(gFACCH_TCHFPair, gSACCH_FT_T6Pair);
 const CompleteMapping GSM::gTCHF_T7(gFACCH_TCHFPair, gSACCH_FT_T7Pair);
 const CompleteMapping GSM::gTCHF_T[8] = {
-	GSM::gTCHF_T0, GSM::gTCHF_T1, GSM::gTCHF_T2, GSM::gTCHF_T3,
-	GSM::gTCHF_T4, GSM::gTCHF_T5, GSM::gTCHF_T6, GSM::gTCHF_T7,
+	GSM::gTCHF_T0,
+	GSM::gTCHF_T1,
+	GSM::gTCHF_T2,
+	GSM::gTCHF_T3,
+	GSM::gTCHF_T4,
+	GSM::gTCHF_T5,
+	GSM::gTCHF_T6,
+	GSM::gTCHF_T7,
 };

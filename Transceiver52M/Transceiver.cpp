@@ -1,39 +1,41 @@
+/* Transceiver52M/Transceiver.cpp */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ *
+ * This software is distributed under the terms of the GNU Public License.
+ * See the COPYING file in the main directory for details.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-*
-* This software is distributed under the terms of the GNU Public License.
-* See the COPYING file in the main directory for details.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-/*
-	Compilation switches
-	TRANSMIT_LOGGING	write every burst on the given slot to a log
-*/
+ * Compilation switches
+ * TRANSMIT_LOGGING	write every burst on the given slot to a log
+ */
 
 #include <stdio.h>
 
-#include "Transceiver.h"
-#include <Logger.h>
+#include <CommonLibs/Logger.h>
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include "Transceiver.h"
 
 #define USB_LATENCY_INTRVL 10, 0
 
@@ -46,8 +48,8 @@
 /* Number of running values use in noise average */
 #define NOISE_CNT 20
 
-Transceiver::Transceiver(int wBasePort, const char *TRXAddress, int wSPS, GSM::Time wTransmitLatency,
-			 RadioInterface *wRadioInterface)
+Transceiver::Transceiver(
+	int wBasePort, const char *TRXAddress, int wSPS, GSM::Time wTransmitLatency, RadioInterface *wRadioInterface)
 	: mDataSocket(wBasePort + 2, TRXAddress, wBasePort + 102),
 	  mControlSocket(wBasePort + 1, TRXAddress, wBasePort + 101),
 	  mClockSocket(wBasePort, TRXAddress, wBasePort + 100), mNoises(NOISE_CNT), mSPSTx(wSPS), mSPSRx(1)
@@ -368,7 +370,7 @@ SoftVector *Transceiver::pullRadioVector(GSM::Time &wTime, int &RSSI, int &timin
 			estimateChannel = false;
 		float chanOffset;
 		success = analyzeTrafficBurst(*vectorBurst, mTSC, 5.0, mSPSRx, &amplitude, &TOA, mMaxExpectedDelay,
-					      estimateChannel, &channelResp, &chanOffset);
+			estimateChannel, &channelResp, &chanOffset);
 		if (success) {
 			SNRestimate[timeslot] =
 				amplitude.norm2() / (mNoiseLev * mNoiseLev + 1.0); // this is not highly accurate
@@ -379,7 +381,7 @@ SoftVector *Transceiver::pullRadioVector(GSM::Time &wTime, int &RSSI, int &timin
 				chanRespAmplitude[timeslot] = amplitude;
 				scaleVector(*channelResp, complex(1.0, 0.0) / amplitude);
 				designDFE(*channelResp, SNRestimate[timeslot], 7, &DFEForward[timeslot],
-					  &DFEFeedback[timeslot]);
+					&DFEFeedback[timeslot]);
 				channelEstimateTime[timeslot] = rxBurst->getTime();
 				LOG(DEBUG) << "SNR: " << SNRestimate[timeslot]
 					   << ", DFE forward: " << *DFEForward[timeslot]
@@ -416,7 +418,7 @@ SoftVector *Transceiver::pullRadioVector(GSM::Time &wTime, int &RSSI, int &timin
 		} else {
 			scaleVector(*vectorBurst, complex(1.0, 0.0) / amplitude);
 			burst = equalizeBurst(*vectorBurst, TOA - chanRespOffset[timeslot], mSPSRx,
-					      *DFEForward[timeslot], *DFEFeedback[timeslot]);
+				*DFEForward[timeslot], *DFEFeedback[timeslot]);
 		}
 		wTime = rxBurst->getTime();
 		RSSI = (int)floor(20.0 * log10(rxFullScale / avg));

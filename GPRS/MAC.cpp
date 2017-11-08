@@ -1,38 +1,36 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* GPRS/MAC.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
 #define LOG_GROUP LogGroup::GPRS // Can set Log.Level.GPRS for debugging
 
 #define MAC_IMPLEMENTATION 1
 
-//#include <unistd.h>
+#include <GSM/GSMCommon.h>
+#include <GSM/GSML3RRMessages.h> // for L3RRMessage
+#include <Globals/Globals.h>
+#include <SGSNGGSN/Ggsn.h> // For GgsnInit
 
-#include "MAC.h"
-#include "FEC.h"
-#include "GPRSInternal.h"
-#include "GSMCommon.h"
-#include "GSML3RRElements.h" // for L3RequestReference
-#include "GSML3RRMessages.h" // for L3RRMessage
-#include "RLCEngine.h"
-#include "RLCMessages.h"
-#include "TBF.h"
 #if INTERNAL_SGSN == 0
 #include "BSSG.h"
 #endif
-#include "Ggsn.h" // For GgsnInit
-
-#include <Globals.h>
+#include "FEC.h"
+#include "GPRSInternal.h"
+#include "MAC.h"
+#include "RLCEngine.h"
+#include "RLCMessages.h"
 
 extern bool gLogToConsole;
 
@@ -171,7 +169,14 @@ unsigned GPRSConfig::GetRAColour()
 // GSM04.60 12.24.  The T3192 code is placed in System Information 13, GSM04.08.
 // The code specifies one of the following values in msec.
 static unsigned T3192Codes[8] = {
-	500, 1000, 1500, 0, 80, 120, 160, 200,
+	500,
+	1000,
+	1500,
+	0,
+	80,
+	120,
+	160,
+	200,
 };
 
 // 3GPP 04.60 12.24 GPRS Cell Options Notes:
@@ -784,7 +789,7 @@ static void macPacchAddAdjCh(PDCHL1FEC **alist, int asize)
 			} else {
 				gL2MAC.macPacchs.push_back(alist[lastpacch]);
 				GLOG(INFO) << format("c:adding PACCH=%d asize=%d chunk=%d leftover=%d\n", lastpacch,
-						     asize, chunk, leftover); // dumpPdch();
+					asize, chunk, leftover); // dumpPdch();
 			}
 		} else {
 			// This is a lonely set of timeslots smaller than the chunk size.
@@ -1044,9 +1049,9 @@ void mac_debug()
 // Otherwise, make a reservation after afterBSN and return the reserved absolute BSN
 // as an integer, or -1 on failure.
 RLCBSN_t L1UplinkReservation::makeReservationInt(RLCBlockReservation::type restype, RLCBSN_t afterBSN, TBF *tbf,
-						 RadData *rd,
-						 int *prrbp, // RRBP 0..3 returned here.
-						 MsgTransactionType mttype)
+	RadData *rd,
+	int *prrbp, // RRBP 0..3 returned here.
+	MsgTransactionType mttype)
 {
 	ScopedLock lock(mLock);
 	RLCBSN_t bsn, first, lastplus1;
@@ -1132,10 +1137,9 @@ RLCBSN_t L1UplinkReservation::makeReservationInt(RLCBlockReservation::type resty
 }
 
 // Make an RRBP reservation if possible.  Return the rrbp (range 0 to 3), or -1 if failed.
-RLCBSN_t
-L1UplinkReservation::makeRRBPReservation(TBF *tbf,
-					 int *prrbp,		    // The RRBP result, 0..3
-					 MsgTransactionType mttype) // The sub-state that this reservation is for.
+RLCBSN_t L1UplinkReservation::makeRRBPReservation(TBF *tbf,
+	int *prrbp,		   // The RRBP result, 0..3
+	MsgTransactionType mttype) // The sub-state that this reservation is for.
 {
 	return makeReservationInt(RLCBlockReservation::ForRRBP, -1, tbf, NULL, prrbp, mttype);
 }
@@ -1168,11 +1172,10 @@ void L1UplinkReservation::clearReservation(RLCBSN_t bsn, TBF *tbf)
 
 // See if this block the MS sent to us corresponds to a reservation,
 // and if so, update the counters in the corresponding TBF.
-RLCBlockReservation::type
-L1UplinkReservation::recvReservation(RLCBSN_t bsn,  // The BSN of a received block.
-				     TBF **restbf,  // Return tbf specified by reservation here, just for debugging.
-				     RadData *prd,  // Return radio data here.
-				     PDCHL1FEC *ch) // Implicit in this pointer, but easier to pass it.
+RLCBlockReservation::type L1UplinkReservation::recvReservation(RLCBSN_t bsn, // The BSN of a received block.
+	TBF **restbf,  // Return tbf specified by reservation here, just for debugging.
+	RadData *prd,  // Return radio data here.
+	PDCHL1FEC *ch) // Implicit in this pointer, but easier to pass it.
 {
 	ScopedLock lock(mLock); // This lock is probably no longer necessary.
 	RLCBlockReservation::type result = RLCBlockReservation::None;
@@ -1387,9 +1390,9 @@ static bool disabledByDutyFactor()
 // which will actually be sent 2 blocks after this one goes out, due to the staggering
 // of incoming and outgoing block numbers.
 bool setMACFields(MACDownlinkHeader *block, PDCHL1FEC *pdch, TBF *tbf,
-		  int makeres,		     // 0 = no res, 1 = optional res, 2 = required res.
-		  MsgTransactionType mttype, // Type of reservation
-		  unsigned *pcounter)	// If non-NULL, incremented if a reservation is made.
+	int makeres,		   // 0 = no res, 1 = optional res, 2 = required res.
+	MsgTransactionType mttype, // Type of reservation
+	unsigned *pcounter)	// If non-NULL, incremented if a reservation is made.
 {
 	int rrbp = -1;
 	// Update: This block may be sent multiple times if an RLC data block is resent.
@@ -1462,11 +1465,11 @@ L3ImmediateAssignment *makeSingleBlockImmediateAssign(RachInfo *rip, unsigned af
 		return NULL;
 	}
 	RLCBSN_t RBN = chan->makeReservationInt(RLCBlockReservation::ForRACH,
-						afterBSN,       // Reservation must be after this time.
-						NULL,		// No TBF for this
-						&rip->mRadData, // We remember the timing advance.
-						NULL,		// No RRBP
-						MsgTransNone);  // Dont inform anyone else.
+		afterBSN,       // Reservation must be after this time.
+		NULL,		// No TBF for this
+		&rip->mRadData, // We remember the timing advance.
+		NULL,		// No RRBP
+		MsgTransNone);  // Dont inform anyone else.
 
 	if (!RBN.valid()) {
 		// Abject failure.  This should never happen because the reservation controller can make
@@ -1483,9 +1486,9 @@ L3ImmediateAssignment *makeSingleBlockImmediateAssign(RachInfo *rip, unsigned af
 	// the frame when the RACH was received (in reqref)
 	// 11-22 NOTE!  The downlink must be true.  If you set it to false,
 	// the multitech modem simply fails to respond.
-	GSM::L3ImmediateAssignment *result = new L3ImmediateAssignment(
-		GSM::L3RequestReference(rip->mRA, rip->mWhen), chan->packetChannelDescription(),
-		GSM::L3TimingAdvance(GetTimingAdvance(rip->mRadData.mTimingError)), true, false); // tbf, downlink
+	GSM::L3ImmediateAssignment *result = new L3ImmediateAssignment(GSM::L3RequestReference(rip->mRA, rip->mWhen),
+		chan->packetChannelDescription(), GSM::L3TimingAdvance(GetTimingAdvance(rip->mRadData.mTimingError)),
+		true, false); // tbf, downlink
 
 	// The immediate assignment has a TFI, but we do not set it for a single block assignment.
 	L3IAPacketAssignment *pa = result->packetAssign();
@@ -1560,8 +1563,7 @@ static void processRLCUplinkDataBlock(PDCHL1FEC *pdch, RLCRawBlock *src, TBF *re
 // the data will get through on the second TBF, else if there have been acknacks,
 // the data is lost as far as we are concerned.
 static void processUplinkResourceRequest(PDCHL1FEC *requestch, // The channel the request arrived on.
-					 RLCMsgPacketResourceRequest *rmsg, RLCBlockReservation::type restype,
-					 RadData &rd)
+	RLCMsgPacketResourceRequest *rmsg, RLCBlockReservation::type restype, RadData &rd)
 {
 	MSInfo *ms = rmsg->getMS(requestch, true);
 	if (!ms) {
@@ -1768,8 +1770,8 @@ static void processUplinkResourceRequest(PDCHL1FEC *requestch, // The channel th
 		ms->msCountActiveTBF(RLCDir::Up);
 }
 
-static void processResourceRequest(PDCHL1FEC *pdch, RLCMsgPacketResourceRequest *rmsg,
-				   RLCBlockReservation::type restype, RadData &rd)
+static void processResourceRequest(
+	PDCHL1FEC *pdch, RLCMsgPacketResourceRequest *rmsg, RLCBlockReservation::type restype, RadData &rd)
 {
 	int accessType = rmsg->mAccessTypePresent ? (int)rmsg->mAccessType : 0;
 	GPRSLOG(1) << "processResourceRequest " << rmsg->str();

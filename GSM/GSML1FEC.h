@@ -1,47 +1,42 @@
-/*
-* Copyright 2008-2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*/
+/* GSM/GSML1FEC.h */
+/*-
+ * Copyright 2008-2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef GSML1FEC_H
 #define GSML1FEC_H
 
 #include <assert.h>
 
-#include "Defines.h"
+#include <a53.h>
 
-#include "AmrCoder.h"
-#include "BitVector.h"
-#include "Threads.h"
-#include "ViterbiR204.h"
+#include <CommonLibs/BitVector.h>
+#include <CommonLibs/Defines.h>
+#include <CommonLibs/Threads.h>
+#include <GPRS/GPRSExport.h>
+#include <GSMShare/A51.h>
+#include <GSMShare/AmrCoder.h>
+#include <GSMShare/GSM503Tables.h>
+#include <GSMShare/ViterbiR204.h>
+#include <apps/OpenBTSConfig.h>
 
+#include "GSM610Tables.h"
 #include "GSMCommon.h"
 #include "GSMTDMA.h"
 #include "GSMTransfer.h"
-
-#include "A51.h"
-#include <a53.h>
-
-#include "GSM503Tables.h"
-#include "GSM610Tables.h"
-
-#include <OpenBTSConfig.h>
-
-#include "../GPRS/GPRSExport.h"
 
 class ARFCNManager;
 
@@ -294,9 +289,9 @@ protected:
 	//
 	//@{
 	// Z100Timer mT3101;					///< timer for new channels
-	// Z100Timer mT3109;					///< timer for loss of uplink signal.  Need to check both host and
-	// SACCH timers.  Z100Timer mT3111;					///< timer for reuse of a normally
-	// closed channel
+	// Z100Timer mT3109;					///< timer for loss of uplink signal.  Need to check both
+	// host and SACCH timers.  Z100Timer mT3111;					///< timer for reuse of a
+	// normally closed channel
 	Z100Timer mT3103; ///< timer for handover
 	//@}
 	bool mDecActive; ///< true between open() and close()
@@ -1363,7 +1358,7 @@ private:
 	//@{
 	volatile float mOrderedMSPower;  ///< ordered MS tx power level, dBm
 	volatile float mOrderedMSTiming; ///< ordered MS timing advance in symbols
-	//@}
+					 //@}
 
 public:
 	SACCHL1Encoder(unsigned wCN, unsigned wTN, const TDMAMapping &wMapping, SACCHL1FEC *wParent);

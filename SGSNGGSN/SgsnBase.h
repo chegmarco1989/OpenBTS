@@ -1,31 +1,29 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* SGSNGGSN/SgsnBase.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef SGSNBASE_H
 #define SGSNBASE_H
 
-#include "Logger.h"
+#include <CommonLibs/Logger.h>
+
 #include "miniggsn.h"
 
 #define SNDCP_IN_PDP 1
 
 namespace SGSN {
-
-#ifdef WARNING
-#undef WARNING
-#endif
 
 extern bool sgsnDebug();
 //#define GGSNLOG2(level,who,stuff) {std::cout <<who<<stuff<<"\n";}
@@ -144,6 +142,6 @@ struct SmCause {
 	static const char *name(unsigned mt, bool ornull = 0);
 };
 typedef SmCause::Cause SmCauseType;
-};
+}; // namespace SGSN
 
 #endif

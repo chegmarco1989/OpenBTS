@@ -1,33 +1,30 @@
+/* Peering/Peering.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Messages for peer-to-peer protocol */
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #define LOG_GROUP LogGroup::Control
 
+#include <CommonLibs/Logger.h>
+#include <Control/L3TranEntry.h>
+#include <GSM/GSMConfig.h>
+#include <GSM/GSMLogicalChannel.h>
+
 #include "NeighborTable.h"
 #include "Peering.h"
-#include <GSMConfig.h>
-#include <GSML3RRElements.h>
-#include <GSMLogicalChannel.h>
-#include <Globals.h>
-#include <L3TranEntry.h>
-#include <Logger.h>
-//#include <TransactionTable.h>
-
-#undef WARNING
 
 namespace Peering {
 
@@ -320,10 +317,10 @@ void PeerInterface::processNeighborParams(const struct sockaddr_in *peer, const 
 				unsigned tchTotal = gBTS.TCHTotal();
 				unsigned tchAvail = tchTotal - gBTS.TCHActive();
 				snprintf(rsp, sizeof(rsp),
-					 "RSP NEIGHBOR_PARAMS V=2 C0=%u BSIC=%u btsid=%u noise=%d arfcns=%d "
-					 "TchAvail=%u TchTotal=%u",
-					 gTRX.C0(), gBTS.BSIC(), btsid, myNoise,
-					 (int)gConfig.getNum("GSM.Radio.ARFCNs"), tchAvail, tchTotal);
+					"RSP NEIGHBOR_PARAMS V=2 C0=%u BSIC=%u btsid=%u noise=%d arfcns=%d "
+					"TchAvail=%u TchTotal=%u",
+					gTRX.C0(), gBTS.BSIC(), btsid, myNoise, (int)gConfig.getNum("GSM.Radio.ARFCNs"),
+					tchAvail, tchTotal);
 				sendMessage(peer, rsp);
 			}
 			return;
@@ -383,14 +380,14 @@ void PeerInterface::processNeighborParams(const struct sockaddr_in *peer, const 
 					logAlert(
 						format("neighbor with matching ARFCN.C0 + BSIC [Base Station "
 						       "Identifier] codes: C0=%d BSIC=%u",
-						       newentry.mC0, newentry.mBSIC));
+							newentry.mC0, newentry.mBSIC));
 				} else {
 					// Two BTS on the same ARFCN close enough to be neighbors, which is probably a
 					// bad idea, but legal. Is it worth an ALERT?
 					LOG(WARNING)
 						<< format("neighbor with matching ARFCN.C0 but different BSIC [Base "
 							  "Station Identifier] code: C0=%d, BSIC=%u, my BSIC=%u",
-							  newentry.mC0, newentry.mBSIC, gTRX.C0());
+							   newentry.mC0, newentry.mBSIC, gTRX.C0());
 				}
 			}
 
@@ -425,8 +422,8 @@ void PeerInterface::processNeighborParams(const struct sockaddr_in *peer, const 
 		LOG(ALERT) << "unrecognized Peering message: " << message;
 
 	} catch (SimpleKeyValueException &e) {
-		LOG(ERR) << format("invalid message (%s) from peer %s: %s", e.what(), sockaddr2string(peer, true),
-				   message);
+		LOG(ERR) << format(
+			"invalid message (%s) from peer %s: %s", e.what(), sockaddr2string(peer, true), message);
 	}
 }
 
@@ -570,8 +567,8 @@ void PeerInterface::processHandoverRequest(const struct sockaddr_in *peer, const
 #if 1
 	// Build the L3 HandoverCommand that BS1 will send to the phone to tell it to come to us, BS2.
 	L3HandoverCommand handoverMsg(GSM::L3CellDescription(gTRX.C0(), gBTS.NCC(), gBTS.BCC()),
-				      GSM::L3ChannelDescription2(desc), GSM::L3HandoverReference(horef),
-				      GSM::L3PowerCommandAndAccessType(), GSM::L3SynchronizationIndication(true, true));
+		GSM::L3ChannelDescription2(desc), GSM::L3HandoverReference(horef), GSM::L3PowerCommandAndAccessType(),
+		GSM::L3SynchronizationIndication(true, true));
 
 	L3Frame handoverFrame(handoverMsg);
 	string handoverHex = handoverFrame.hexstr();
@@ -656,7 +653,7 @@ void PeerInterface::processHandoverResponse(const struct sockaddr_in *peer, cons
 	int n = sscanf(message, "RSP HANDOVER %u %u 0x%80s", &transactionID, &cause, handoverCommandBuffer);
 
 	if (n < 3 ||
-	    strlen(handoverCommandBuffer) < 4) { // It is bigger than 8.  I'm just quickly checking for emptiness.
+		strlen(handoverCommandBuffer) < 4) { // It is bigger than 8.  I'm just quickly checking for emptiness.
 		LOG(ERR) << "Invalid peering handover message:" << message;
 		return;
 	}
@@ -683,7 +680,7 @@ void PeerInterface::processHandoverResponse(const struct sockaddr_in *peer, cons
 	// This is "Handover Accept" in the ladder diagram; we are "BS1" receiving it.
 	// FIXME -- Error-check for correct message format.
 	sscanf(message, "RSP HANDOVER %u %u  %u  %u %u %u  %u %u %u %u", &transactionID, &cause, &reference, &C0, &NCC,
-	       &BCC, &typeAndOffset, &TN, &TSC, &ARFCN);
+		&BCC, &typeAndOffset, &TN, &TSC, &ARFCN);
 
 	if (cause) {
 		LOG(NOTICE) << "handover of transaction " << transactionID << " refused with cause " << cause;
@@ -700,9 +697,8 @@ void PeerInterface::processHandoverResponse(const struct sockaddr_in *peer, cons
 	// The state change will trigger the call management loop
 	// to send the Handover Command to the handset.
 	transaction->setOutboundHandover(GSM::L3HandoverReference(reference), GSM::L3CellDescription(C0, NCC, BCC),
-					 GSM::L3ChannelDescription2((GSM::TypeAndOffset)typeAndOffset, TN, TSC, ARFCN),
-					 GSM::L3PowerCommandAndAccessType(),
-					 GSM::L3SynchronizationIndication(true, true));
+		GSM::L3ChannelDescription2((GSM::TypeAndOffset)typeAndOffset, TN, TSC, ARFCN),
+		GSM::L3PowerCommandAndAccessType(), GSM::L3SynchronizationIndication(true, true));
 #endif
 }
 

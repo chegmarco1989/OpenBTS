@@ -1,31 +1,33 @@
+/* GSM/GSML3MMElements.cpp */
+/*-
+ * Copyright 2008 Free Software Foundation, Inc.
+ * Copyright 2010, 2014 Kestrel Signal Processing, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file
-	@brief Elements for Mobility Management messages, GSM 04.08 9.2.
-*/
-/*
-* Copyright 2008 Free Software Foundation, Inc.
-* Copyright 2010, 2014 Kestrel Signal Processing, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+ * @brief Elements for Mobility Management messages, GSM 04.08 9.2.
+ */
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
 #include <time.h>
 
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Timeval.h>
+
 #include "GSML3MMElements.h"
-#include <Logger.h>
-#include <Timeval.h>
 
 using namespace std;
 using namespace GSM;

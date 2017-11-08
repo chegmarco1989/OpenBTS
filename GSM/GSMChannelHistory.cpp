@@ -1,28 +1,30 @@
-/*
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* GSM/GSMChannelHistory.cpp */
+/*-
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 // Written 3-2014 by Pat Thompson
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
 #include <math.h>
 
+#include <Peering/NeighborTable.h>
+
 #include "GSMChannelHistory.h"
 #include "GSML1FEC.h"
 #include "GSMLogicalChannel.h"
-#include "NeighborTable.h"
 
 namespace GSM {
 
@@ -32,7 +34,7 @@ int ChannelHistory::getAvgRxlev()
 	ScopedLock lock(mSCellLock);
 	FrameNum now = gBTS.time().FN();
 	return round(ComputeTrend(mSCellData, now, &SCellPoint::getFrameNum, &SCellPoint::getRxlev,
-				  gConfig.GSM.Handover.RXLEV_DL.History));
+		gConfig.GSM.Handover.RXLEV_DL.History));
 }
 
 bool NeighborHistory::nhGetAvgRxlev(FrameNum fn, float &avg, int algorithm)
@@ -42,7 +44,7 @@ bool NeighborHistory::nhGetAvgRxlev(FrameNum fn, float &avg, int algorithm)
 		return false;
 	}
 	avg = ComputeTrend(nhList, fn, &NCellPoint::getFrameNum, &NCellPoint::getRxlev,
-			   gConfig.GSM.Handover.RXLEV_DL.History, algorithm);
+		gConfig.GSM.Handover.RXLEV_DL.History, algorithm);
 	return true;
 }
 

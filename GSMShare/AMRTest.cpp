@@ -1,31 +1,32 @@
-/*
-* Copyright 2012, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* GSMShare/AMRTest.cpp */
+/*-
+ * Copyright 2012, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #include <string.h>
 
 #include <cstdlib>
 #include <iostream>
 
+#include <CommonLibs/Configuration.h>
+
 #include "AmrCoder.h"
-#include "BitVector.h"
 #include "GSM503Tables.cpp"
 
 using namespace std;
 
 // We must have a gConfig now to include BitVector.
-#include "Configuration.h"
 ConfigurationTable gConfig;
 
 BitVector randomBitVector(int n)
@@ -39,12 +40,11 @@ BitVector randomBitVector(int n)
 #if OLD_TEST
 // Doug wrote this AMR test code
 void testEncodeDecode(const char *label, void (*encoder)(BitVector &, BitVector &),
-		      void (*decoder)(SoftVector &, BitVector &), unsigned frameSize, unsigned iRate, unsigned order,
-		      bool debug)
+	void (*decoder)(SoftVector &, BitVector &), unsigned frameSize, unsigned iRate, unsigned order, bool debug)
 #else
 // Pat modified to use the Viterbi base class.
-void testEncodeDecode(const char *label, ViterbiBase *coder, unsigned frameSize, unsigned iRate, unsigned order,
-		      bool debug)
+void testEncodeDecode(
+	const char *label, ViterbiBase *coder, unsigned frameSize, unsigned iRate, unsigned order, bool debug)
 #endif
 {
 	const unsigned trials = 10;

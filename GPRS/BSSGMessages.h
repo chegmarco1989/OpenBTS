@@ -1,17 +1,18 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* GPRS/BSSGMessages.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef BSSGMESSAGES_H
 #define BSSGMESSAGES_H
@@ -24,14 +25,17 @@
 // directly into it.  There is no real reason to downsize it; these dont last long.
 
 namespace GPRS {
+
 extern unsigned GPRSDebug;
 };
 
+#include <CommonLibs/Defines.h>
+#include <CommonLibs/ScalarTypes.h>
+#include <CommonLibs/Utils.h>
+#include <GPRS/GPRSExport.h>
+
 #include "ByteVector.h"
-#include "Defines.h"
-#include "GPRSExport.h"
-#include "ScalarTypes.h"
-#include "Utils.h"
+
 //#ifndef OFFSETOF	// This is a standard definition in many header files.
 //#define OFFSETOF(type, field) ((int) ((char *) &((type *) 0)->field))
 //#endif

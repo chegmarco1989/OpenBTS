@@ -1,30 +1,34 @@
-/**@file @brief L3 Radio Resource messages, GSM 04.08 9.1. */
+/* GSM/GSML3RRMessages.h */
+/*-
+ * Copyright 2008, 2010 Free Software Foundation, Inc.
+ * Copyright 2011 Kestrel Signal Processing, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-/*
-* Copyright 2008, 2010 Free Software Foundation, Inc.
-* Copyright 2011 Kestrel Signal Processing, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/**@file
+ * @brief L3 Radio Resource messages, GSM 04.08 9.1.
+ */
 
 #ifndef GSML3RRMESSAGES_H
 #define GSML3RRMESSAGES_H
+
+#include <GPRS/ByteVector.h>
 
 #include "GSMCommon.h"
 #include "GSML3CommonElements.h"
 #include "GSML3Message.h"
 #include "GSML3RRElements.h"
-#include <ByteVector.h>
 
 namespace GSM {
 
@@ -196,8 +200,8 @@ public:
 		mChannelsNeeded[1] = AnyDCCHType;
 	}
 
-	L3PagingRequestType1(const L3MobileIdentity &wId1, ChannelType wType1, const L3MobileIdentity &wId2,
-			     ChannelType wType2)
+	L3PagingRequestType1(
+		const L3MobileIdentity &wId1, ChannelType wType1, const L3MobileIdentity &wId2, ChannelType wType2)
 		: L3RRMessageNRO()
 	{
 		mMobileIDs.push_back(wId1);
@@ -536,9 +540,9 @@ public:
 	}
 
 	L3ImmediateAssignment(const L3RequestReference &wRequestReference,
-			      const L3ChannelDescription &wChannelDescription,
-			      const L3TimingAdvance &wTimingAdvance = L3TimingAdvance(0), const bool forTBF = false,
-			      bool wDownlink = false)
+		const L3ChannelDescription &wChannelDescription,
+		const L3TimingAdvance &wTimingAdvance = L3TimingAdvance(0), const bool forTBF = false,
+		bool wDownlink = false)
 		: L3RRMessageRO(), mPageMode(0), mDedicatedModeOrTBF(forTBF, wDownlink),
 		  mRequestReference(wRequestReference), mChannelDescription(wChannelDescription),
 		  mTimingAdvance(wTimingAdvance)
@@ -822,7 +826,7 @@ public:
 	// data is the first argument to allow the rest to default, since that is the common case,
 	// sending a single (cr=0, first=0, last=0) RRLP (id=0) APDU wrapped in a ApplicationInformation L3 packet.
 	L3ApplicationInformation(BitVector2 &data, unsigned protocolIdentifier = 0, unsigned cr = 0,
-				 unsigned firstSegment = 0, unsigned lastSegment = 0);
+		unsigned firstSegment = 0, unsigned lastSegment = 0);
 
 	///@name Accessors.
 	//@{
@@ -943,10 +947,9 @@ protected:
 
 public:
 	L3HandoverCommand(const L3CellDescription &wCellDescription,
-			  const L3ChannelDescription2 wChannelDescriptionAfter,
-			  const L3HandoverReference &wHandoverReference,
-			  const L3PowerCommandAndAccessType &wPowerCommandAccessType,
-			  const L3SynchronizationIndication &wSynchronizationIndication)
+		const L3ChannelDescription2 wChannelDescriptionAfter, const L3HandoverReference &wHandoverReference,
+		const L3PowerCommandAndAccessType &wPowerCommandAccessType,
+		const L3SynchronizationIndication &wSynchronizationIndication)
 		: L3RRMessageNRO(), mCellDescription(wCellDescription),
 		  mChannelDescriptionAfter(wChannelDescriptionAfter), mHandoverReference(wHandoverReference),
 		  mPowerCommandAccessType(wPowerCommandAccessType),

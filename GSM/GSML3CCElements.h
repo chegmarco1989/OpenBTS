@@ -1,28 +1,31 @@
+/* GSM/GSML3CCElements.h */
+/*-
+ * Copyright 2008, 2009, 2014 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Elements for Call Control, GSM 04.08 10.5.4.  */
-/*
-* Copyright 2008, 2009, 2014 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #ifndef GSML3CCELEMENTS_H
 #define GSML3CCELEMENTS_H
 
 #include <iostream>
 
+#include <CommonLibs/Logger.h>
+#include <Control/CodecSet.h>
+
 #include "GSML3Message.h"
-#include <CodecSet.h>
-#include <Logger.h>
 
 namespace GSM {
 
@@ -174,8 +177,8 @@ public:
 	L3CallingPartyBCDNumber(const char *wDigits) : mPlan(E164Plan), mDigits(wDigits), mHaveOctet3a(false)
 	{
 		mType = (wDigits[0] == '+') ? GSM::InternationalNumber : GSM::NationalNumber;
-		// LOG(DEBUG) << "L3CallingPartyBCDNumber ctor type=" << mType << " Digits " << wDigits;		(pat)
-		// what was "ctor"?
+		// LOG(DEBUG) << "L3CallingPartyBCDNumber ctor type=" << mType << " Digits " << wDigits;
+		// (pat) what was "ctor"?
 		LOG(DEBUG) << "L3CallingPartyBCDNumber create type=" << mType << " Digits " << wDigits;
 	}
 
@@ -259,8 +262,8 @@ private:
 	Cause mCause; // 7 bits of cause, consisting of 3 bit "class" and 4 bit "value".
 
 public:
-	L3CauseElement(Cause wCause = L3Cause::Normal_Call_Clearing,
-		       Location wLocation = L3Cause::Private_Serving_Local)
+	L3CauseElement(
+		Cause wCause = L3Cause::Normal_Call_Clearing, Location wLocation = L3Cause::Private_Serving_Local)
 		: L3ProtocolElement(), mLocation(wLocation), mCause(wCause)
 	{
 	}

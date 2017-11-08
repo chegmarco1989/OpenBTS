@@ -1,51 +1,42 @@
+/* Control/L3TranEntry.cpp */
+/*-
+ * Copyright 2008, 2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Process, Inc.
+ * Copyright 2011, 2012, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file TransactionTable and related classes. */
-
-/*
-* Copyright 2008, 2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Process, Inc.
-* Copyright 2011, 2012, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #define LOG_GROUP LogGroup::Control // Can set Log.Level.Control for debugging
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <CommonLibs/Reporting.h>
+#include <CommonLibs/sqlite3util.h>
+#include <GSM/GSMConfig.h>
+#include <GSM/GSML3CCMessages.h>
+#include <GSM/GSML3MMMessages.h>
+#include <GSM/GSML3Message.h>
+#include <GSM/GSML3RRMessages.h>
+#include <GSM/GSMLogicalChannel.h>
+#include <Peering/Peering.h>
+#include <SIP/SIPUtility.h>
+
 #include "ControlCommon.h"
 #include "L3MMLayer.h"
 #include "L3TranEntry.h"
-#include <ControlTransfer.h>
-#include <GSMConfig.h>
-#include <GSML3CCElements.h>
-#include <GSML3CCMessages.h>
-#include <GSML3MMMessages.h>
-#include <GSML3Message.h>
-#include <GSML3RRMessages.h>
-#include <GSMLogicalChannel.h>
-#include <Logger.h>
-#include <Peering.h>
-#include <Reporting.h>
-#include <sqlite3util.h>
-
-//#include <CallControl.h>
-//#include <SIPEngine.h>
-//#include <SIPInterface.h>
-#include <SIPUtility.h>
-
-
-#undef WARNING
 
 // This is in the global namespace.
 Control::NewTransactionTable gNewTransactionTable;
@@ -93,8 +84,8 @@ HandoverEntry::HandoverEntry(const TranEntry *tran) : mMyTranID(tran->tranID()),
 	memset(&mOutboundPeer, 0, sizeof(mOutboundPeer));
 };
 
-HandoverEntry *
-TranEntry::getHandoverEntry(bool create) const // It is not const, but we want C++ to be a happy compiler.
+HandoverEntry *TranEntry::getHandoverEntry(
+	bool create) const // It is not const, but we want C++ to be a happy compiler.
 {
 	if (!mHandover && create) {
 		mHandover = new HandoverEntry(this);
@@ -121,8 +112,8 @@ void TranEntry::TranEntryInit()
 //#include <execinfo.h>
 
 TranEntry::TranEntry(SipDialog *wDialog,
-		     // const L3MobileIdentity& wSubscriber,
-		     const L3CMServiceType &wService)
+	// const L3MobileIdentity& wSubscriber,
+	const L3CMServiceType &wService)
 {
 	gCountTranEntry++;
 	TranEntryInit();
@@ -194,8 +185,7 @@ TranEntry *TranEntry::newMOSMS(MMContext *wChannel) { return newMO(wChannel, L3C
 TranEntry *TranEntry::newMOMM(MMContext *wChannel) { return newMO(wChannel, L3CMServiceType::LocationUpdateRequest); }
 
 // The transaction is created without an assigned channel.
-TranEntry *TranEntry::newMTC(
-	SipDialog *dialog, const FullMobileId &msid,
+TranEntry *TranEntry::newMTC(SipDialog *dialog, const FullMobileId &msid,
 	const GSM::L3CMServiceType &wService, // MobileTerminatedCall or UndefinedType for generic page from CLI.
 	const string wCallerId)
 // const L3CallingPartyBCDNumber& wCalling)
@@ -211,8 +201,7 @@ TranEntry *TranEntry::newMTC(
 }
 
 // post-l3-rewrite
-TranEntry *TranEntry::newMTSMS(
-	SipDialog *dialog, const FullMobileId &msid, const L3CallingPartyBCDNumber &wCalling,
+TranEntry *TranEntry::newMTSMS(SipDialog *dialog, const FullMobileId &msid, const L3CallingPartyBCDNumber &wCalling,
 	string smsBody, // (pat) The recommendation for C++11 is to pass-by-value parameters that will be copied.
 	string smsContentType)
 {
@@ -229,8 +218,7 @@ TranEntry *TranEntry::newMTSMS(
 
 // Form for inbound handovers.
 TranEntry *TranEntry::newHandover(const struct sockaddr_in *peer, unsigned wInboundHandoverReference,
-				  SimpleKeyValue &params, L3LogicalChannel *wChannel,
-				  unsigned wHandoverOtherBSTransactionID)
+	SimpleKeyValue &params, L3LogicalChannel *wChannel, unsigned wHandoverOtherBSTransactionID)
 {
 	MMContext *mmchan = wChannel->chanGetContext(true); // This is where we create the MMContext for a handover.
 	// TranEntry *result = new
@@ -280,14 +268,14 @@ TranEntry *TranEntry::newHandover(const struct sockaddr_in *peer, unsigned wInbo
 	// This is used for inbound handovers.
 	// We are "BS2" in the handover ladder diagram.
 	// The message string was formed by the handoverString method.
-	result->getHandoverEntry(true)->initHandoverEntry(peer, wInboundHandoverReference,
-							  wHandoverOtherBSTransactionID, params);
+	result->getHandoverEntry(true)->initHandoverEntry(
+		peer, wInboundHandoverReference, wHandoverOtherBSTransactionID, params);
 
 	return result;
 }
 
 void HandoverEntry::initHandoverEntry(const struct sockaddr_in *peer, unsigned wInboundHandoverReference,
-				      unsigned wHandoverOtherBSTransactionID, SimpleKeyValue &params)
+	unsigned wHandoverOtherBSTransactionID, SimpleKeyValue &params)
 {
 	// FIXME: This is also in the params.  Which do we want to use?  (pat) This one.
 	mInboundReference = wInboundHandoverReference;
@@ -467,7 +455,7 @@ void TranEntry::text(ostream &os) const
 		if (currentProcedure()) {
 			os << " stack=(";
 			for (list<MachineBase *>::const_iterator it = mProcStack.begin(); it != mProcStack.end();
-			     it++) {
+				it++) {
 				(*it)->machText(os);
 			}
 			os << ")";
@@ -1052,7 +1040,7 @@ TranEntry *NewTransactionTable::ttFindByL3Msg(GSM::L3Message *l3msg, L3LogicalCh
 	GSM::L3PD pd = l3msg->PD();
 	ScopedLock lock(gNewTransactionTable.mttLock, __FILE__, __LINE__);
 	for (NewTransactionMap::iterator itr = gNewTransactionTable.mTable.begin();
-	     itr != gNewTransactionTable.mTable.end(); ++itr) {
+		itr != gNewTransactionTable.mTable.end(); ++itr) {
 		TranEntry *tran = itr->second;
 		if (tran->deadOrRemoved())
 			continue;
@@ -1704,7 +1692,7 @@ void TranEntry::teCloseCallNow(TermCause cause, bool sendCause)
 	tran()->teCloseDialog(
 		cause); // Redundant with teRemove, but I want to be sure we terminate the dialog regardless of bugs.
 	if (isL3TIValid() && tran()->getGSMState() != CCState::NullState &&
-	    tran()->getGSMState() != CCState::ReleaseRequest) {
+		tran()->getGSMState() != CCState::ReleaseRequest) {
 		unsigned l3ti = getL3TI();
 		// 24.008 5.4.2: Permitted method to close call immediately.
 		if (sendCause) {
@@ -1736,9 +1724,9 @@ void writePrivateHeaders(SipMessage *msg, const L3LogicalChannel *l3chan)
 		// two handsets involved in the dialog initiated the SIP message.
 		string imsi = l3chan->chanGetImsi(true);
 		snprintf(phy_info, 200, "OpenBTS; IMSI=%s TA=%d TE=%f UpRSSI=%f TxPwr=%d DnRSSIdBm=%d time=%9.3lf",
-			 imsi.c_str(), phys->actualMSTiming(), phys->timingError(), phys->getRSSI(),
-			 phys->actualMSPower(), chan->measurementResults().RXLEV_FULL_SERVING_CELL_dBm(),
-			 phys->timestamp());
+			imsi.c_str(), phys->actualMSTiming(), phys->timingError(), phys->getRSSI(),
+			phys->actualMSPower(), chan->measurementResults().RXLEV_FULL_SERVING_CELL_dBm(),
+			phys->timestamp());
 		static const string cPhyInfoString("P-PHY-Info");
 		msg->smAddHeader(cPhyInfoString, phy_info);
 	}
@@ -1747,8 +1735,8 @@ void writePrivateHeaders(SipMessage *msg, const L3LogicalChannel *l3chan)
 	// See 3GPP 24.229 7.2.  This is a genuine specified header.
 	char cgi_3gpp[256];
 	snprintf(cgi_3gpp, 256, "3GPP-GERAN; cgi-3gpp=%s%s%04x%04x", gConfig.getStr("GSM.Identity.MCC").c_str(),
-		 gConfig.getStr("GSM.Identity.MNC").c_str(), (unsigned)gConfig.getNum("GSM.Identity.LAC"),
-		 (unsigned)gConfig.getNum("GSM.Identity.CI"));
+		gConfig.getStr("GSM.Identity.MNC").c_str(), (unsigned)gConfig.getNum("GSM.Identity.LAC"),
+		(unsigned)gConfig.getNum("GSM.Identity.CI"));
 	static const string cAccessNetworkInfoString("P-Access-Network-Info");
 	msg->smAddHeader(cAccessNetworkInfoString, cgi_3gpp);
 
@@ -1778,7 +1766,7 @@ static string lookupPhoneNumber(string imsi)
 }
 
 L3CDR *TranEntry::createCDR(bool makeCMR,
-			    TermCause cause) // If true, make a CMR instead of a CDR.  CMRs have more info.
+	TermCause cause) // If true, make a CMR instead of a CDR.  CMRs have more info.
 {
 	L3CDR *cdrp = new L3CDR(), &cdr = *cdrp; // Gotta love this language.
 	cdr.cdrToNumber = string(this->called().digits());
@@ -1888,23 +1876,15 @@ void L3CDR::cdrWriteHeader(FILE *pf)
 		const char *name;
 		const char *type;
 	} Field;
-	static Field fields[] = {
-		{"Type", "string"},
-		{"Transaction-id", "integer"},
+	static Field fields[] = {{"Type", "string"}, {"Transaction-id", "integer"},
 		{"To-IMSI", "string"}, // usually empty for MOC.
-		{"From-IMSI", "string"},
-		{"To-number", "string"},
-		{"From-number", "string"},
-		{"Peer", "string"},
+		{"From-IMSI", "string"}, {"To-number", "string"}, {"From-number", "string"}, {"Peer", "string"},
 		{"Start-time", "integer"}, // standard unix time.
 		// Connect duration, as opposed to total time, in seconds.  0 means call never successfully connected.
-		{"Connect-Duration", "integer"},
-		{"Message-size", "integer"}, // Only for SMS.
-		{"To-Handover", "string"},   // TODO
-		{"From-Handover", "string"},
-		{"Termination-Side", "char"}, // R or L for remote or local side.
-		{"Termination-Cause", "integer"},
-		{NULL, NULL}};
+		{"Connect-Duration", "integer"}, {"Message-size", "integer"}, // Only for SMS.
+		{"To-Handover", "string"},				      // TODO
+		{"From-Handover", "string"}, {"Termination-Side", "char"},    // R or L for remote or local side.
+		{"Termination-Cause", "integer"}, {NULL, NULL}};
 	// Print the field names.
 	for (Field *field = fields; field->name; field++) {
 		if (field != fields)

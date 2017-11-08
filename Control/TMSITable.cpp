@@ -1,41 +1,40 @@
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* Control/TMSITable.cpp */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::Control
 
 #include <sys/types.h>
-
 #include <sys/stat.h>
 
 #include <iomanip>
 #include <iostream>
 #include <string>
 
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Reporting.h>
+#include <CommonLibs/sqlite3util.h>
+#include <GSM/GSML3CommonElements.h>
+#include <GSM/GSML3MMMessages.h>
+#include <Globals/Globals.h>
+
 #include "ControlTransfer.h"
 #include "L3MobilityManagement.h"
 #include "TMSITable.h"
-#include <GSML3CommonElements.h>
-#include <GSML3MMMessages.h>
-#include <Globals.h>
-#include <Globals.h>
-#include <Logger.h>
-#include <Reporting.h>
-#include <sqlite3util.h>
 
 using namespace std;
 
@@ -153,7 +152,7 @@ bool TMSITable::runQuery(const char *query, int checkChanges) const
 	LOG(DEBUG) << LOGVAR(query) << LOGVAR(checkChanges);
 	// (pat) It appears that sqlite3_changes returns 0 if the value being replaced matched what was already there.
 	if (!sqlite_command(mTmsiDB, query, &resultCode) ||
-	    (checkChanges && 0 == (changes = sqlite3_changes(mTmsiDB)))) {
+		(checkChanges && 0 == (changes = sqlite3_changes(mTmsiDB)))) {
 		// The changes is only useful if checkChanges is set.
 		LOG(ERR) << "TMSI table query failed:" << LOGVAR(query) << LOGVAR(resultCode) << LOGVAR(changes)
 			 << " error:" << sqlite3_errmsg(mTmsiDB);
@@ -321,7 +320,7 @@ void TMSITable::tmsiTabSetAuthAndAssign(string imsi, int auth, int assigned)
 {
 	char query[100];
 	snprintf(query, 100, "UPDATE TMSI_TABLE SET AUTH=%u, ASSIGNED=%u WHERE IMSI == '%s'", auth, assigned,
-		 imsi.c_str());
+		imsi.c_str());
 	runQuery(query, 1);
 }
 #endif
@@ -330,8 +329,8 @@ void TMSITable::tmsiTabSetAuthAndAssign(string imsi, int auth, int assigned)
 void TMSITable::tmsiTabSetRejected(string imsi, int rejectCode)
 {
 	char query[100];
-	snprintf(query, 100, "UPDATE TMSI_TABLE SET AUTH=0,REJECT_CODE=%d WHERE IMSI == '%s'", rejectCode,
-		 imsi.c_str());
+	snprintf(
+		query, 100, "UPDATE TMSI_TABLE SET AUTH=0,REJECT_CODE=%d WHERE IMSI == '%s'", rejectCode, imsi.c_str());
 	runQuery(query, 1);
 }
 
@@ -542,8 +541,8 @@ void TMSITable::tmsiTabUpdate(string imsi, TmsiTableStore *store)
 // inform us, however there is a great deal of logic with many options between the original TMSITable lookup and
 // updating the TMSITable entry here, so I deemed it more robust and resistant to future changes if this routine ignores
 // that and does another lookup of the IMSI to see if the record already exists.
-uint32_t TMSITable::tmsiTabCreateOrUpdate(const string imsi, TmsiTableStore *store,
-					  const GSM::L3LocationAreaIdentity *lai, uint32_t oldTmsi)
+uint32_t TMSITable::tmsiTabCreateOrUpdate(
+	const string imsi, TmsiTableStore *store, const GSM::L3LocationAreaIdentity *lai, uint32_t oldTmsi)
 {
 	// Create or find an entry based on IMSI.
 	// Return assigned TMSI.
@@ -619,7 +618,7 @@ uint32_t TMSITable::tmsiTabCreateOrUpdate(const string imsi, TmsiTableStore *sto
 	if (sendTmsis) { // double check to make sure the database entry made it.
 		unsigned tmsicheck;
 		if (!sqlite3_single_lookup(mTmsiDB, "TMSI_TABLE", "IMSI", imsi.c_str(), "TMSI", tmsicheck) ||
-		    table2tmsi(tmsicheck) != tmsi) {
+			table2tmsi(tmsicheck) != tmsi) {
 			LOG(ERR) << "TMSI database inconsistancy" << LOGVAR(imsi) << LOGVAR(tmsi) << LOGVAR(tmsicheck);
 			return 0;
 		}
@@ -687,8 +686,8 @@ uint32_t TMSITable::tmsiTabAssign(const string imsi, const GSM::L3LocationAreaId
 // Create a new entry in the TMSI table.
 // This also set the AUTH status to authorized; it is only called on registration success.
 // If we are assigning TMSIs to the MS, return the new TMSI, else 0.
-uint32_t TMSITable::assign(const string imsi, const GSM::L3LocationAreaIdentity *lai, uint32_t oldTmsi,
-			   const string imei)
+uint32_t TMSITable::assign(
+	const string imsi, const GSM::L3LocationAreaIdentity *lai, uint32_t oldTmsi, const string imei)
 {
 	// Create or find an entry based on IMSI.
 	// Return assigned TMSI.
@@ -731,7 +730,7 @@ uint32_t TMSITable::assign(const string imsi, const GSM::L3LocationAreaIdentity 
 	if (sendTmsis) {
 		unsigned tmsicheck;
 		if (!sqlite3_single_lookup(mTmsiDB, "TMSI_TABLE", "IMSI", imsi.c_str(), "TMSI", tmsicheck) ||
-		    tmsicheck != tmsi) {
+			tmsicheck != tmsi) {
 			LOG(ERR) << "TMSI database inconsistancy" << LOGVAR(imsi) << LOGVAR(tmsi) << LOGVAR(tmsicheck);
 			return 0;
 		}
@@ -745,7 +744,7 @@ void TMSITable::tmsiTabTouchTmsi(unsigned TMSI) const
 {
 	char query[100];
 	snprintf(query, 100, "UPDATE TMSI_TABLE SET ACCESSED = %u WHERE TMSI == %d", (unsigned)time(NULL),
-		 tmsi2table(TMSI));
+		tmsi2table(TMSI));
 	runQuery(query);
 }
 
@@ -754,7 +753,7 @@ void TMSITable::tmsiTabTouchImsi(string IMSI) const
 {
 	char query[100];
 	snprintf(query, 100, "UPDATE TMSI_TABLE SET ACCESSED = %u WHERE IMSI == '%s'", (unsigned)time(NULL),
-		 IMSI.c_str());
+		IMSI.c_str());
 	runQuery(query);
 }
 
@@ -772,8 +771,8 @@ bool TMSITable::tmsiTabGetStore(string imsi, TmsiTableStore *store) const
 {
 	store->store_valid =
 		true; // We have either updated the store or confirmed the imsi does not exist in the TMSI_TABLE.
-	sqlQuery q11(mTmsiDB, "TMSI_TABLE", "AUTH,AUTH_EXPIRY,TMSI_ASSIGNED,REJECT_CODE,WELCOME_SENT", "IMSI",
-		     imsi.c_str());
+	sqlQuery q11(
+		mTmsiDB, "TMSI_TABLE", "AUTH,AUTH_EXPIRY,TMSI_ASSIGNED,REJECT_CODE,WELCOME_SENT", "IMSI", imsi.c_str());
 	if (!q11.sqlSuccess()) {
 		LOG(INFO) << "No TMSI_TABLE table entry for" << LOGVAR(imsi) << LOGVAR2("query", q11.mQueryString);
 		return false;
@@ -998,7 +997,7 @@ void TMSITable::setIMEI(string IMSI, string IMEI)
 			LOG(INFO) << "Updating" << LOGVAR(IMSI) << " from" << LOGVAR(oldIMEI) << " to" << LOGVAR(IMEI);
 			char query[100];
 			snprintf(query, 100, "UPDATE TMSI_TABLE SET IMEI='%s',RRLP_STATUS=0 WHERE IMSI == '%s'",
-				 IMEI.c_str(), IMSI.c_str());
+				IMEI.c_str(), IMSI.c_str());
 			runQuery(query, 1);
 		}
 	}
@@ -1010,9 +1009,9 @@ bool TMSITable::classmark(const char *IMSI, const GSM::L3MobileStationClassmark2
 	int A5Bits = classmark.getA5Bits();
 	char query[100];
 	snprintf(query, 100,
-		 "UPDATE TMSI_TABLE SET A5_SUPPORT=%u,ACCESSED=%u,POWER_CLASS=%u "
-		 " WHERE IMSI=\"%s\"",
-		 A5Bits, (unsigned)time(NULL), classmark.powerClass(), IMSI);
+		"UPDATE TMSI_TABLE SET A5_SUPPORT=%u,ACCESSED=%u,POWER_CLASS=%u "
+		" WHERE IMSI=\"%s\"",
+		A5Bits, (unsigned)time(NULL), classmark.powerClass(), IMSI);
 	runQuery(query, 1);
 	return true;
 }
@@ -1058,8 +1057,8 @@ void TMSITable::putAuthTokens(const char *IMSI, uint64_t upperRAND, uint64_t low
 {
 	char query[300];
 	snprintf(query, 300,
-		 "UPDATE TMSI_TABLE SET RANDUPPER=%llu,RANDLOWER=%llu,SRES=%u,ACCESSED=%u WHERE IMSI=\"%s\"", upperRAND,
-		 lowerRAND, SRES, (unsigned)time(NULL), IMSI);
+		"UPDATE TMSI_TABLE SET RANDUPPER=%llu,RANDLOWER=%llu,SRES=%u,ACCESSED=%u WHERE IMSI=\"%s\"", upperRAND,
+		lowerRAND, SRES, (unsigned)time(NULL), IMSI);
 	if (!(sqlite_command(mTmsiDB, query) && 1 == sqlite3_changes(mTmsiDB))) {
 		LOG(ALERT) << "cannot write to TMSI table";
 	}
@@ -1085,7 +1084,7 @@ void TMSITable::putKc(const char *imsi, string Kc, string pAssociatedUri, string
 {
 	char query[200];
 	snprintf(query, 200, "UPDATE TMSI_TABLE SET kc='%s',ASSOCIATED_URI='%s',ASSERTED_IDENTITY='%s' WHERE IMSI='%s'",
-		 Kc.c_str(), pAssociatedUri.c_str(), pAssertedIdentity.c_str(), imsi);
+		Kc.c_str(), pAssociatedUri.c_str(), pAssertedIdentity.c_str(), imsi);
 	// And I quote sqlite.org documentation for "UPDATE": "It is not an error if the WHERE clause does not evaluate
 	// true for any row in the table". So if if the IMSI is not found this does not return an error.  We have to
 	// check sqlite3_changes() to see if a row changed.

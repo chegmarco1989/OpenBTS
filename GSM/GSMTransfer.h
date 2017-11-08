@@ -1,30 +1,32 @@
-/*
-* Copyright 2008, 2014 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* GSM/GSMTransfer.h */
+/*-
+ * Copyright 2008, 2014 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef GSMTRANSFER_H
 #define GSMTRANSFER_H
 
-#include "BitVector.h"
-#include "ByteVector.h"
-#include "Defines.h"
-#include "GSM503Tables.h"
+#include <CommonLibs/BitVector.h>
+#include <CommonLibs/Defines.h>
+#include <CommonLibs/Interthread.h>
+#include <GPRS/ByteVector.h>
+#include <GSMShare/GSM503Tables.h>
+#include <GSMShare/L3Enums.h>
+#include <SIP/SIPRtp.h> // For AudioFrame
+
 #include "GSMCommon.h"
-#include "Interthread.h"
-#include "L3Enums.h"
-#include "SIPRtp.h" // For AudioFrame
 
 /* Data transfer objects for the GSM core. */
 
@@ -80,7 +82,7 @@ enum Primitive {
 				// immediately to idle mode without sending anything. Called MDL-RELEASE in 3GPP docs,
 				// example 4.06 4.1.1.9, and also "local end release" in LAPDm. Note that on ARFCN C0
 				// any release implies to start sending dummy bursts (not LAPDm idle frames.)
-	MDL_ERROR_INDICATION, // Sent from LAPDm to layer2/3 on loss of contact.  This is somewhat redundant with
+	MDL_ERROR_INDICATION,   // Sent from LAPDm to layer2/3 on loss of contact.  This is somewhat redundant with
 			      // detection of loss of radio loss in layer1; it might be also used if there are bugs in
 			      // LAPDm or the phone.
 	L3_RELEASE_INDICATION, // Sent from LAPDm to layer2/3 on normal release.
@@ -114,8 +116,8 @@ enum Primitive {
 	 *sent
 	 *	// when the channel is released or lost.
 	 *	RELEASE,		///< normal channel release
-	 *	RELEASE_CONFIRM,	///< message from LAPDm to L2LogicalChannel indicating RELEASE confirmation, which
-	 *allows using release timer T3111.
+	 *	RELEASE_CONFIRM,	///< message from LAPDm to L2LogicalChannel indicating RELEASE confirmation,
+	 *which allows using release timer T3111.
 	 *	// (pat) This is not a good idea, to have globals named "DATA" and "ERROR"; risks collisions with
 	 *libraries. DATA,			///< multiframe data transfer
 	 *	UNIT_DATA,		///< datagram-type data transfer
@@ -460,7 +462,7 @@ public:
 
 	/** Format A or B. */
 	L2Header(const L2Address &wAddress, const L2Control &wControl, const L2Length &wLength,
-		 FrameFormat wFormat = FmtB)
+		FrameFormat wFormat = FmtB)
 		: mFormat(wFormat), mAddress(wAddress), mControl(wControl), mLength(wLength)
 	{
 	}

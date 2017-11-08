@@ -1,18 +1,19 @@
-/*
-* Copyright 2008 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* TRXManager/TRXManager.h */
+/*-
+ * Copyright 2008 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef TRXMANAGER_H
 #define TRXMANAGER_H
@@ -24,14 +25,15 @@ information for this specific distribution.
 
 #include <list>
 
-#include "GSMCommon.h"
-#include "GSMTransfer.h"
-#include "Interthread.h"
-#include "Sockets.h"
-#include "Threads.h"
+#include <CommonLibs/Interthread.h>
+#include <CommonLibs/Sockets.h>
+#include <CommonLibs/Threads.h>
+#include <GSM/GSMCommon.h>
+#include <GSM/GSMTransfer.h>
 
 /* Forward refs into the GSM namespace. */
 namespace GSM {
+
 class L1Decoder;
 };
 

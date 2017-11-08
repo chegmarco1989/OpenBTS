@@ -1,31 +1,33 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* SIP/SIPDialog.h */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 // Written by Pat Thompson.
 
 #ifndef SIPDIALOG_H
 #define SIPDIALOG_H
+
+#include <Control/ControlTransfer.h>
+#include <Control/L3TermCause.h>
+#include <GSM/GSML3CCElements.h>
 
 #include "SIPBase.h"
 #include "SIPExport.h"
 #include "SIPMessage.h"
 #include "SIPRtp.h"
 #include "SIPTransaction.h"
-#include <ControlTransfer.h>
-#include <GSML3CCElements.h>
-#include <L3TermCause.h>
 
 namespace SIP {
 
@@ -239,8 +241,8 @@ public:
 
 	// Dont call this directly.  Use one of the static newSipDialog.... methods.
 	SipDialog(DialogType wDialogType,
-		  string wProxy, // The proxy IP address or DNS name.
-		  const char *wProxyProvenance)
+		string wProxy, // The proxy IP address or DNS name.
+		const char *wProxyProvenance)
 		: // A helpful message in case the proxy address cannot be resolved.
 		  mPrevDialogState(DialogState::dialogUndefined)
 	{
@@ -249,14 +251,14 @@ public:
 
 	// This is the new way:
 	static SipDialog *newSipDialogMT(DialogType dtype,
-					 SipMessage *request); // INVITE or MESSAGE.
+		SipMessage *request); // INVITE or MESSAGE.
 
 	static SipDialog *newSipDialogMOC(TranEntryId tranid, const FullMobileId &msid, const string &wCalledDigits,
-					  Control::CodecSet wCodecs, L3LogicalChannel *chan);
-	static SipDialog *newSipDialogMOUssd(TranEntryId tranid, const FullMobileId &msid, const string &wUssd,
-					     L3LogicalChannel *chan);
+		Control::CodecSet wCodecs, L3LogicalChannel *chan);
+	static SipDialog *newSipDialogMOUssd(
+		TranEntryId tranid, const FullMobileId &msid, const string &wUssd, L3LogicalChannel *chan);
 	static SipDialog *newSipDialogMOSMS(TranEntryId tranid, const FullMobileId &msid, const string &calledDigits,
-					    const string &body, const string &contentType);
+		const string &body, const string &contentType);
 	static SipDialog *newSipDialogRegister1();
 	static SipDialog *newSipDialogHandover(TranEntry *tran, string sipReferStr);
 
@@ -300,7 +302,7 @@ public:
 		@return True on success.
 	*/
 	SipMessage *makeRegisterMsg(DialogType wMethod, const L3LogicalChannel *chan, string RAND,
-				    const FullMobileId &msid, const char *SRES = NULL);
+		const FullMobileId &msid, const char *SRES = NULL);
 
 	/**
 		Send sip unregister and look at return msg.

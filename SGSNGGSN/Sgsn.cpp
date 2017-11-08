@@ -1,17 +1,18 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* SGSNGGSN/Sgsn.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #include <list>
 
@@ -23,15 +24,13 @@
 using namespace SIP;
 #endif
 
-//#include "RList.h"
-#include "LLC.h"
-//#include "MSInfo.h"
+#include <CommonLibs/Utils.h>
+#include <Globals/Globals.h>
+
 #include "GPRSL3Messages.h"
 #include "Ggsn.h"
-#include "Globals.h"
+#include "LLC.h"
 #include "Sgsn.h"
-#include "Utils.h"
-//#include "MAC.h"
 #include "miniggsn.h"
 
 using namespace Utils;
@@ -648,7 +647,7 @@ static void handleIdentityResponse(SgsnInfo *si, L3GmmMsgIdentityResponse &irmsg
 }
 
 void AttachInfo::stashMsgInfo(GMMAttach &msgIEs,
-			      bool isAttach) // true: attach request; false: RAUpdate
+	bool isAttach) // true: attach request; false: RAUpdate
 {
 	// Save the MCC and MNC from which the MS drifted in on for reporting.
 	// We only save them the first time we see them, because I am afraid
@@ -1048,7 +1047,7 @@ static void handleRAUpdateComplete(SgsnInfo *si, L3GmmMsgRAUpdateComplete &racms
 // In either case the MS signals resumption by sending us anything on the uplink.
 // WARNING: This runs in a different thread.
 bool Sgsn::handleGprsSuspensionRequest(uint32_t wTlli,
-				       const ByteVector &wraid) // The Routing Area id.
+	const ByteVector &wraid) // The Routing Area id.
 {
 	SGSNLOG("Received GPRS SuspensionRequest for" << LOGHEX2("tlli", wTlli));
 	return false; // Not handled yet.

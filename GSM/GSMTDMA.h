@@ -1,19 +1,21 @@
+/* GSM/GSMTDMA.h */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Common-use GSM declarations, most from the GSM 04.xx and 05.xx series. */
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #ifndef GSMTDMA_H
 #define GSMTDMA_H
@@ -65,7 +67,7 @@ public:
 		@param wFrameMapping "Interleaved Block TDMA Frame Mapping" -- MUST PERSIST!!
 	*/
 	TDMAMapping(TypeAndOffset wTypeAndOffset, bool wDownlink, bool wUplink, char wAllowedSlots, bool wC0Only,
-		    unsigned wRepeatLength, unsigned wNumFrames, const unsigned *wFrameMapping);
+		unsigned wRepeatLength, unsigned wNumFrames, const unsigned *wFrameMapping);
 
 	/** Given a count of frames sent, return the corresponding frame number. */
 	unsigned frameMapping(unsigned count) const { return mFrameMapping[count % mNumFrames]; }

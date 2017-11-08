@@ -1,24 +1,26 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* GPRS/FEC.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::GPRS // Can set Log.Level.GPRS for debugging
 
+#include <GSM/GSMTAPDump.h>
+#include <TransceiverRAD1/Transceiver.h> // For Transceiver::IGPRS
+
 #include "FEC.h"
-#include "../TransceiverRAD1/Transceiver.h" // For Transceiver::IGPRS
 #include "GPRSInternal.h"
-#include "GSMTAPDump.h"
 #include "RLCEngine.h"
 #include "RLCMessages.h"
 
@@ -222,9 +224,9 @@ void PDCHL1Downlink::transmit(RLCBSN_t bsn, BitVector *mI, const int *qbits, int
 		if (gConfig.getBool("Control.GSMTAP.GPRS")) {
 			// Send to GSMTAP.
 			gWriteGSMTAP(ARFCN(), TN(), gBSNNext.FN(), TDMA_PDCH,
-				     false, // not SACCH
-				     false, // this is a downlink
-				     mchBurst, GSMTAP_TYPE_UM_BURST);
+				false, // not SACCH
+				false, // this is a downlink
+				mchBurst, GSMTAP_TYPE_UM_BURST);
 		}
 #if FEC_DEBUG
 		if (1) {
@@ -256,9 +258,9 @@ void PDCHL1Downlink::send1Frame(BitVector &frame, ChannelCodingType encoding, bo
 	if (!idle && gConfig.getBool("Control.GSMTAP.GPRS")) {
 		// Send to GSMTAP.
 		gWriteGSMTAP(ARFCN(), TN(), gBSNNext.FN(), frame2GsmTapType(frame),
-			     false,  // not SACCH
-			     false,  // this is a downlink
-			     frame); // The data.
+			false,  // not SACCH
+			false,  // this is a downlink
+			frame); // The data.
 	}
 
 	switch (encoding) {
@@ -400,11 +402,11 @@ void PDCHL1Downlink::bugFixIdleFrame()
 }
 
 // Return true if we send a block on the downlink.
-bool PDCHL1Downlink::send1MsgFrame(TBF *tbf,		      // The TBF sending the message, or NULL for an idle frame.
-				   RLCDownlinkMessage *msg,   // The message.
-				   int makeres,		      // 0 = no res, 1 = optional res, 2 = required res.
-				   MsgTransactionType mttype, // Type of reservation
-				   unsigned *pcounter)	// If non-null, incremented if a reservation is made.
+bool PDCHL1Downlink::send1MsgFrame(TBF *tbf, // The TBF sending the message, or NULL for an idle frame.
+	RLCDownlinkMessage *msg,	     // The message.
+	int makeres,			     // 0 = no res, 1 = optional res, 2 = required res.
+	MsgTransactionType mttype,	   // Type of reservation
+	unsigned *pcounter)		     // If non-null, incremented if a reservation is made.
 {
 	if (!setMACFields(msg, mchParent, msg->mTBF, makeres, mttype, pcounter)) {
 		delete msg;   // oh well.
@@ -696,10 +698,10 @@ void PDCHL1Uplink::writeLowSideRx(const RxBurst &inBurst)
 			if (gConfig.getBool("Control.GSMTAP.GPRS")) {
 				// Send to GSMTAP.  Untested.
 				gWriteGSMTAP(ARFCN(), TN(), gBSNNext.FN(), // GSM::TDMA_PACCH,
-					     frame2GsmTapType(*result),
-					     false,    // not SACCH
-					     true,     // this is an uplink.
-					     *result); // The data.
+					frame2GsmTapType(*result),
+					false,    // not SACCH
+					true,     // this is an uplink.
+					*result); // The data.
 			}
 
 			mchUplinkData.write(new RLCRawBlock(bsn, *result, inBurst.RSSI(), inBurst.timingError(), cc));

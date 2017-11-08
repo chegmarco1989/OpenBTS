@@ -1,17 +1,18 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* Control/L3MobilityManagement.cpp */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 // Written by Pat Thompson
 
@@ -20,6 +21,19 @@
 #include <algorithm> // for std::remove
 #include <set>
 
+#include <CommonLibs/Interthread.h>
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Regexp.h>
+#include <CommonLibs/Timeval.h>
+#include <GSM/GSMConfig.h>
+#include <GSM/GSML3CCMessages.h>
+#include <GSM/GSML3MMMessages.h>
+#include <GSM/GSML3Message.h> // Doesnt this poor L3Message get lonely?  When apparently there are multiple L3MMMessages and L3CCMessages?
+#include <GSM/GSMLogicalChannel.h>
+#include <GSM/GSMTransfer.h>
+#include <Globals/Globals.h>
+#include <SIP/SIPExport.h>
+
 #include "ControlCommon.h"
 #include "L3CallControl.h"
 #include "L3MMLayer.h"
@@ -27,25 +41,7 @@
 #include "L3SMSControl.h"
 #include "L3SupServ.h"
 #include "L3TranEntry.h"
-#include <GSMLogicalChannel.h>
-#include <Globals.h>
-#include <Interthread.h>
-#include <Logger.h>
-#include <Timeval.h>
-
-#include "ControlCommon.h"
-#include <GSMConfig.h>
-#include <GSMTransfer.h>
-//#include <GSML3CommonElements.h>
-//#include <GSML3MMElements.h>
-//#include <GSML3CCElements.h>
-#include <GSML3CCMessages.h>
-#include <GSML3MMMessages.h>
-#include <GSML3Message.h> // Doesnt this poor L3Message get lonely?  When apparently there are multiple L3MMMessages and L3CCMessages?
-//#include <SIPDialog.h>
 #include "RRLPServer.h"
-#include <Regexp.h>
-#include <SIPExport.h>
 
 using namespace GSM;
 
@@ -115,7 +111,7 @@ void NewPagingResponseHandler(const L3PagingResponse *resp, MMContext *mmchan)
 // Evidently we need to watch the return state of the welcome message so we can resend it if necessary.
 // But this problem should be hoisted into sipauthserve.
 static void sendWelcomeMessage(MMSharedData *mmsd, const char *messageName, const char *shortCodeName,
-			       const FullMobileId &msid, L3LogicalChannel *DCCH)
+	const FullMobileId &msid, L3LogicalChannel *DCCH)
 {
 	LOG(DEBUG);
 	if (mmsd->store.getWelcomeSent()) {
@@ -162,10 +158,10 @@ static void sendWelcomeMessage(MMSharedData *mmsd, const char *messageName, cons
 	message += string(" IMSI:") + msid.mImsi;
 	// (pat) We use the short code as the originator calling number so the user can hit reply.
 	Control::TranEntry *tran = Control::TranEntry::newMTSMS(NULL, // No SipDialog
-								msid, // MS we are sending SMS to.
-								GSM::L3CallingPartyBCDNumber(shortCode.c_str()),
-								message,	       // message body
-								string("text/plain")); // message content type
+		msid,						      // MS we are sending SMS to.
+		GSM::L3CallingPartyBCDNumber(shortCode.c_str()),
+		message,	       // message body
+		string("text/plain")); // message content type
 	if (1) {
 		// This line starts the SMS immediately after the Mobility Management procedure finishes on the same
 		// channel; it works on the Blackberry but does not work on the BLU mini, but nothing works on that.
@@ -182,8 +178,8 @@ static void sendWelcomeMessage(MMSharedData *mmsd, const char *messageName, cons
 }
 
 // The L3IdentifyMachine is invoked for SMS and USSD.  It is not used during the Location Update procedure.
-MachineStatus L3IdentifyMachine::machineRunState(int state, const GSM::L3Message *l3msg,
-						 const SIP::DialogMessage *sipmsg)
+MachineStatus L3IdentifyMachine::machineRunState(
+	int state, const GSM::L3Message *l3msg, const SIP::DialogMessage *sipmsg)
 {
 	PROCLOG2(DEBUG, state) << LOGVAR(l3msg) << LOGVAR(sipmsg) << LOGVAR2("imsi", tran()->subscriber());
 	switch (state) {
@@ -351,7 +347,7 @@ bool LUBase::openRegistration() const
 		if (allow) {
 			string rejectPat(gConfig.getStr("Control.LUR.OpenRegistration.Reject"));
 			if (rejectPat.size() &&
-			    gConfig.isValidValue("Control.LUR.OpenRegistration.Reject", rejectPat)) {
+				gConfig.isValidValue("Control.LUR.OpenRegistration.Reject", rejectPat)) {
 				Regexp rxpReject(rejectPat.c_str());
 				if (rxpReject.match(getImsiCh())) {
 					LOG(DEBUG) << "Open Registration denied by match of reject pattern"
@@ -454,7 +450,7 @@ MachineStatus LUStart::stateRecvLocationUpdatingRequest(const GSM::L3LocationUpd
 			// IMSI, and if that fails, we will query for the IMSI and try again.
 			tran()->setSubscriberImsi(imsi, false); // We will need this for authorization below.
 			ludata()->setTmsi(tmsi,
-					  tmsiProvisional); // We (may have) assigned this tmsi sometime in the past.
+				tmsiProvisional); // We (may have) assigned this tmsi sometime in the past.
 			// gMMLayer.mmBlockTmsi(tmsi);
 			// gMMLayer.mmBlockImsi(imsi);
 			LOG(DEBUG) << "resolving mobile ID (table): " << ludata()->mLUMobileId;
@@ -514,8 +510,8 @@ MachineStatus LUStart::stateRecvIdentityResponse(const GSM::L3IdentityResponse *
 				// I dont know what the cause should be here, but if this ever happens, we dont care.
 				channel()->l3sendm(L3LocationUpdatingReject(failCause));
 				LOG(INFO) << "SIP term info closeChannel called in stateRecvIdentityResponse";
-				return closeChannel(L3RRCause::Normal_Event, L3_RELEASE_REQUEST,
-						    TermCause::Local(failCause));
+				return closeChannel(
+					L3RRCause::Normal_Event, L3_RELEASE_REQUEST, TermCause::Local(failCause));
 			}
 		}
 
@@ -599,7 +595,7 @@ MachineStatus LUStart::machineRunState(int state, const GSM::L3Message *l3msg, c
 
 	case stateHaveImsi: {
 		if (ludata()->mFullQuery && gConfig.defines("Control.LUR.QueryIMEI") &&
-		    ludata()->store.getImei().size() == 0) {
+			ludata()->store.getImei().size() == 0) {
 			return sendQuery(IMEIType);
 		}
 		return machineRunState(stateHaveIds);
@@ -631,8 +627,8 @@ MachineStatus LUStart::machineRunState(int state, const GSM::L3Message *l3msg, c
 			if (authExpiry && time(NULL) <= authExpiry) {
 				if (!store->isAuthorized()) {
 					// Not authorized.
-					ludata()->mRegistrationResult.regSetFail(0,
-										 (MMRejectCause)store->getRejectCode());
+					ludata()->mRegistrationResult.regSetFail(
+						0, (MMRejectCause)store->getRejectCode());
 					return callMachStart(new LUFinish(tran()));
 				} else {
 #if CACHE_AUTH
@@ -658,7 +654,7 @@ MachineStatus LUStart::machineRunState(int state, const GSM::L3Message *l3msg, c
 		string emptySRES;
 		ludata()->mPrevRegisterAttemptImsi = getImsi();
 		return machPush(new L3RegisterMachine(tran(), SIPDTRegister, emptySRES, &ludata()->mRegistrationResult),
-				stateRegister1Response);
+			stateRegister1Response);
 	}
 
 	case stateRegister1Response: {
@@ -688,8 +684,8 @@ MachineStatus LUStart::machineRunState(int state, const GSM::L3Message *l3msg, c
 
 // ====== State Machine LUAuthentication =====
 
-MachineStatus LUAuthentication::machineRunState(int state, const GSM::L3Message *l3msg,
-						const SIP::DialogMessage *sipmsg)
+MachineStatus LUAuthentication::machineRunState(
+	int state, const GSM::L3Message *l3msg, const SIP::DialogMessage *sipmsg)
 {
 	switch (state) {
 	case stateStart: {
@@ -772,8 +768,7 @@ MachineStatus LUAuthentication::machineRunState(int state, const GSM::L3Message 
 				// authentication over from scratch. Delete both the stored tmsi and the imsi stored in
 				// the transaction.
 				ludata()->setTmsi(0, tmsiFailed);
-				tran()->setSubscriberImsi(
-					string(""),
+				tran()->setSubscriberImsi(string(""),
 					false); // This IMSI was not authorized and may not be the IMSI for this TMSI.
 				ludata()->mSecondAttempt = true; // Start second attempt.
 				// Start over and this time query for the IMSI and try again.
@@ -1012,8 +1007,8 @@ MachineStatus LUFinish::stateSendLUResponse()
 			// Someday the tmsi may come from the registration server.
 			// uint32_t newTmsi =
 			// gTMSITable.tmsiTabAssign(imsi,&ludata()->mLULAI,ludata()->mOldTmsi,&ludata()->store);
-			uint32_t newTmsi = gTMSITable.tmsiTabCreateOrUpdate(imsi, &ludata()->store, &ludata()->mLULAI,
-									    ludata()->mOldTmsi);
+			uint32_t newTmsi = gTMSITable.tmsiTabCreateOrUpdate(
+				imsi, &ludata()->store, &ludata()->mLULAI, ludata()->mOldTmsi);
 			ludata()->setTmsi(newTmsi, tmsiNew);
 			break;
 		}
@@ -1028,8 +1023,8 @@ MachineStatus LUFinish::stateSendLUResponse()
 			// ludata()->setTmsiStatus(tmsiNew);  no need for this
 			ludata()->store.setAssigned(0); // Make sure TMSI database matches what the MS thinks.
 			// gTMSITable.tmsiTabUpdate(imsi,&ludata()->store);
-			uint32_t newTmsi1 = gTMSITable.tmsiTabCreateOrUpdate(imsi, &ludata()->store, &ludata()->mLULAI,
-									     ludata()->mOldTmsi);
+			uint32_t newTmsi1 = gTMSITable.tmsiTabCreateOrUpdate(
+				imsi, &ludata()->store, &ludata()->mLULAI, ludata()->mOldTmsi);
 			ludata()->setTmsi(newTmsi1, tmsiNotAssigned); // Update to reflect possible new tmsi.
 			break;
 		}
@@ -1063,8 +1058,8 @@ MachineStatus LUFinish::stateSendLUResponse()
 			string myimsi(tran()->subscriberIMSI());
 			if (checkImsi != myimsi) {
 				WATCH("TMSI Table insertion created TMSI collision for"
-				      << LOGVAR(imsi) << LOGVAR(checkImsi) << LOGVAR(ludata()->getTmsi())
-				      << LOGVAR(configTmsiTestMode()));
+					<< LOGVAR(imsi) << LOGVAR(checkImsi) << LOGVAR(ludata()->getTmsi())
+					<< LOGVAR(configTmsiTestMode()));
 			}
 		}
 
@@ -1078,8 +1073,8 @@ MachineStatus LUFinish::stateSendLUResponse()
 		channel()->l3sendm(L3LocationUpdatingReject(failCause));
 
 		sendWelcomeMessage(ludata(),
-				   "Control.LUR.FailedRegistration.Message", // Does nothing if the SQL var is not set.
-				   "Control.LUR.FailedRegistration.ShortCode", subscriber(), channel());
+			"Control.LUR.FailedRegistration.Message", // Does nothing if the SQL var is not set.
+			"Control.LUR.FailedRegistration.ShortCode", subscriber(), channel());
 
 		// tmsiTabUpdate must be after sendWelcomeMessage optionally updates the welcomeSent field.
 		gTMSITable.tmsiTabUpdate(imsi, &ludata()->store);
@@ -1144,10 +1139,10 @@ MachineStatus LUFinish::statePostAccept()
 		   << LOGVAR(ludata()->store.getWelcomeSent());
 	if (ludata()->store.getAuth() == AuthAuthorized) {
 		sendWelcomeMessage(ludata(), "Control.LUR.NormalRegistration.Message",
-				   "Control.LUR.NormalRegistration.ShortCode", subscriber(), channel());
+			"Control.LUR.NormalRegistration.ShortCode", subscriber(), channel());
 	} else {
 		sendWelcomeMessage(ludata(), "Control.LUR.OpenRegistration.Message",
-				   "Control.LUR.OpenRegistration.ShortCode", subscriber(), channel());
+			"Control.LUR.OpenRegistration.ShortCode", subscriber(), channel());
 	}
 
 	// tmsiTabUpdate must be after sendWelcomeMessage optionally updates the welcomeSent field.
@@ -1170,8 +1165,8 @@ void LURInit(const GSM::L3Message *l3msg, MMContext *mmchan)
 
 // ====== State Machine LUNetworkFailure =====
 
-MachineStatus LUNetworkFailure::machineRunState(int state, const GSM::L3Message *l3msg,
-						const SIP::DialogMessage *sipmsg)
+MachineStatus LUNetworkFailure::machineRunState(
+	int state, const GSM::L3Message *l3msg, const SIP::DialogMessage *sipmsg)
 {
 	switch (state) {
 	case stateStart:
@@ -1200,8 +1195,7 @@ MachineStatus LUNetworkFailure::machineRunState(int state, const GSM::L3Message 
 
 // ====== State Machine L3RegisterMachine =====
 
-L3RegisterMachine::L3RegisterMachine(
-	TranEntry *wTran, SIP::DialogType wMethod,
+L3RegisterMachine::L3RegisterMachine(TranEntry *wTran, SIP::DialogType wMethod,
 	string &wSRES,		     // may be NULL for the initial registration query to elicit a
 	RegistrationResult *wRResult // Result returned here: true (1), false(0), timeout (-1).
 	)
@@ -1218,8 +1212,8 @@ L3RegisterMachine::L3RegisterMachine(
 // callids for two way communication, but the registrar sends only a single response to the REGISTER method so there is
 // no dialog, so we do not need an outbound callid to respond to the registrar.
 
-MachineStatus L3RegisterMachine::machineRunState(int state, const GSM::L3Message *l3msg,
-						 const SIP::DialogMessage *sipmsg)
+MachineStatus L3RegisterMachine::machineRunState(
+	int state, const GSM::L3Message *l3msg, const SIP::DialogMessage *sipmsg)
 {
 	switch (state) {
 	case stateStart: // Start state.
@@ -1323,13 +1317,13 @@ void imsiDetach(L3MobileIdentity mobid, L3LogicalChannel *chan)
 	} else if (mobid.isTMSI()) {
 		imsi = gTMSITable.tmsiTabGetIMSI(mobid.TMSI(), NULL);
 		if (imsi.size() == 0) {
-			LOG(WARNING) << format("IMSI Detach indication with unrecognized TMSI (0x%x) ignored",
-					       mobid.TMSI());
+			LOG(WARNING) << format(
+				"IMSI Detach indication with unrecognized TMSI (0x%x) ignored", mobid.TMSI());
 			return;
 		}
 	} else {
-		LOG(WARNING) << format("IMSI Detach indication with unrecognized mobileID type (%d) ignored",
-				       mobid.type());
+		LOG(WARNING) << format(
+			"IMSI Detach indication with unrecognized mobileID type (%d) ignored", mobid.type());
 		return;
 	}
 	startUnregister(imsi, chan);

@@ -1,26 +1,24 @@
+/* SIP/SIPBase.cpp */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2011, 2012, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file SIP Base -- SIP IETF RFC-3261, RTP IETF RFC-3550. */
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2011, 2012, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #define LOG_GROUP LogGroup::SIP // Can set Log.Level.SIP for debugging
 
-#include <sys/types.h>
-
-#include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -28,19 +26,14 @@
 
 #include <config.h> // For VERSION
 
-#include <Logger.h>
-#include <OpenBTSConfig.h>
-#include <Reporting.h>
-#include <Timeval.h>
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Reporting.h>
+#include <apps/OpenBTSConfig.h>
 
 #include "SIP2Interface.h"
 #include "SIPBase.h"
-#include "SIPMessage.h"
 #include "SIPParse.h" // For SipParam
 #include "SIPRtp.h"
-#include "SIPUtility.h"
-
-#undef WARNING
 
 int gCountSipDialogs = 0;
 
@@ -368,7 +361,7 @@ void DialogStateVars::dsSetLocalHeaderMT(SipPreposition *toheader, bool addTag)
 // It should not include CONTACT because it is non-target-refresh.
 // Implicit parameters from SipBase: mCallId, mRemoteUsername, mRemoteDomain, mCSeq, etc.
 SipMessage *SipBase::makeRequest(string method, string requestUri, string whoami, SipPreposition *toHeader,
-				 SipPreposition *fromHeader, string branch)
+	SipPreposition *fromHeader, string branch)
 {
 	LOG(INFO) << "SIP term info makeRequest: " << method;
 	SipMessage *invite = new SipMessage();
@@ -415,8 +408,8 @@ SipMessage *SipBase::makeInitialRequest(string method)
 {
 	string requestUri = dsRemoteURI();
 	this->mInviteViaBranch = make_branch();
-	return makeRequest(method, requestUri, sipLocalUsername(), &mRemoteHeader, &mLocalHeader,
-			   this->mInviteViaBranch);
+	return makeRequest(
+		method, requestUri, sipLocalUsername(), &mRemoteHeader, &mLocalHeader, this->mInviteViaBranch);
 }
 
 bool SipBase::dgIsInvite() const

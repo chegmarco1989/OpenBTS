@@ -1,33 +1,32 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* SIP/SIPParse.cpp */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 // Written by Pat Thompson.
+
 #define LOG_GROUP LogGroup::SIP // Can set Log.Level.SIP for debugging
 
 #include <stdlib.h>
 #include <string.h>
 
-#include <list>
-#include <string>
+#include <Control/CodecSet.h>
+#include <GSM/GSML3CCElements.h>
 
 #include "SIPBase.h"
 #include "SIPMessage.h"
 #include "SIPParse.h"
-#include <CodecSet.h>
-#include <GSML3CCElements.h>
-#include <Logger.h>
 
 namespace SIP {
 
@@ -468,9 +467,8 @@ void SipPreposition::prepSet(const string header)
 					LOG(ERR) << "Bad SIP Contact field:" << header;
 					ep = parser.pp + strlen(parser.pp); // guess
 				}
-				mUri.uriSet(
-					string(parser.pp + 1,
-					       ep - parser.pp - 1)); // SipUri strips the < > off the ends of the URI.
+				mUri.uriSet(string(parser.pp + 1,
+					ep - parser.pp - 1)); // SipUri strips the < > off the ends of the URI.
 				parser.pp = ep;
 				mTag = extractParam(parser.pp, ";tag=");
 			} else {
@@ -559,7 +557,7 @@ void SipVia::viaParse(string vialine)
 			SipParam param;
 			while (parser.scanGenericParam(param)) {
 				if (strcaseeql(param.mName.c_str(),
-					       "branch")) { // not sure if this is case insensitive, but be safe.
+					    "branch")) { // not sure if this is case insensitive, but be safe.
 					mViaBranch = param.mValue;
 					break; // We can break; we dont care about any other parameters.
 				}
@@ -799,7 +797,7 @@ void SdpInfo::sdpParse(const char *buffer)
 		switch (*bp) {
 		case 'o':
 			if (myscanf(bp, "o=%s %s %s IN IP4 %s", &sdpUsername, &sdpSessionId, &sdpVersionId, &sdpHost) <
-			    4) {
+				4) {
 				LOG(ERR) << "SDP unrecognized o= line, sdp:" << buffer;
 			}
 			break;
@@ -854,7 +852,7 @@ string SdpInfo::sdpValue()
 	result.append("v=0\r\n"); // SDP protocol version
 	// originator, session id, ip address.
 	snprintf(buf, 300, "o=%s %s %s IN IP4 %s\r\n", sdpUsername.c_str(), sdpSessionId.c_str(), sdpVersionId.c_str(),
-		 sdpHost.c_str());
+		sdpHost.c_str());
 	result.append(buf);
 	// RFC3264 5: And I quote:
 	//	"The SDP 's=' line conveys the subject of the session, which is reasonably defined for multicast,
@@ -864,8 +862,8 @@ string SdpInfo::sdpValue()
 	result.append("s=Talk Time\r\n");
 	result.append("t=0 0\r\n"); // time session is active; 0 means unbounded.
 	snprintf(buf, 300, "m=audio %u RTP/AVP %s\r\n", sdpRtpPort,
-		 sdpCodecList.c_str()); // media name and transport address.
-	result.append(buf);		// media name and transport address.
+		sdpCodecList.c_str()); // media name and transport address.
+	result.append(buf);	    // media name and transport address.
 	// Optional connection information.  Redundant because we included in 'o='.
 	snprintf(buf, 300, "c=IN IP4 %s\r\n", sdpHost.c_str());
 	result.append(buf);

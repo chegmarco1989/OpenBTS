@@ -1,17 +1,18 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* SGSNGGSN/iputils.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #include <sys/types.h>
 #include <sys/ioctl.h> // pat added.	This defines NCC, which is bad, because used in GSMConfig.h
@@ -44,9 +45,10 @@
 #include <unistd.h>
 #include <wait.h>
 
+#include <CommonLibs/Utils.h>
+#include <Globals/Globals.h> // for gConfig
+
 #include "miniggsn.h"
-#include <Globals.h> // for gConfig
-#include <Utils.h>
 
 namespace SGSN {
 
@@ -211,14 +213,14 @@ EXPORT void ip_hdr_dump(unsigned char *packet, const char *msg)
 	char nbuf[100];
 	printf("%s: ", msg);
 	printf("%d bytes protocol=%d saddr=%s daddr=%s version=%d ihl=%d tos=%d id=%d\n", ntohs(pp->ip.tot_len),
-	       pp->ip.protocol, ip_ntoa(pp->ip.saddr, nbuf), ip_ntoa(pp->ip.daddr, NULL), pp->ip.version, pp->ip.ihl,
-	       pp->ip.tos, ntohs(pp->ip.id));
+		pp->ip.protocol, ip_ntoa(pp->ip.saddr, nbuf), ip_ntoa(pp->ip.daddr, NULL), pp->ip.version, pp->ip.ihl,
+		pp->ip.tos, ntohs(pp->ip.id));
 	printf("\tcheck=%d computed=%d frag=%d ttl=%d\n", pp->ip.check, ip_checksum(packet, sizeof(struct iphdr), NULL),
-	       ntohs(pp->ip.frag_off), pp->ip.ttl);
+		ntohs(pp->ip.frag_off), pp->ip.ttl);
 	printf("\ttcp SYN=%d ACK=%d FIN=%d RES=%d sport=%u dport=%u\n", pp->tcp.syn, pp->tcp.ack, pp->tcp.fin,
-	       pp->tcp.rst, ntohs(pp->tcp.source), ntohs(pp->tcp.dest));
+		pp->tcp.rst, ntohs(pp->tcp.source), ntohs(pp->tcp.dest));
 	printf("\t\tseq=%u ackseq=%u window=%u check=%u\n", ntohl(pp->tcp.seq), ntohl(pp->tcp.ack_seq),
-	       htons(pp->tcp.window), htons(pp->tcp.check));
+		htons(pp->tcp.window), htons(pp->tcp.check));
 }
 
 // Run the command.

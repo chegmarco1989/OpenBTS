@@ -1,30 +1,32 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* GPRS/TBF.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::GPRS // Can set Log.Level.GPRS for debugging
 
 #define TBF_IMPLEMENTATION 1
 
-#include "TBF.h"
+#include <Control/ControlTransfer.h>
+#include <GSM/GSMCCCH.h>
+
 #include "BSSG.h"
 #include "FEC.h"
 #include "MSInfo.h"
 #include "RLCEngine.h"
 #include "RLCMessages.h"
-#include <ControlTransfer.h>
-#include <GSMCCCH.h>
+#include "TBF.h"
 
 using namespace Control;
 
@@ -76,7 +78,7 @@ bool MsgTransaction::mtMsgPending()
 }
 
 TBF *TBF::newUpTBF(MSInfo *ms, RLCMsgChannelRequestDescriptionIE &mCRD, uint32_t tlli,
-		   bool onRach) // If true, request on RACH, else request on uplink ack-nack.
+	bool onRach) // If true, request on RACH, else request on uplink ack-nack.
 {
 	// Changed 5-20-2012.  There is only ONE uplink tbf,
 	// and assigning a new one just changes the priority of the existing.
@@ -397,10 +399,10 @@ static bool sendTimeslotReconfigure(
 #endif
 
 static bool sendAssignmentPacch(PDCHL1FEC *pacch, // The PACCH channel.
-				TBF *tbf,
-				bool isNewAssignment, // If false, it is a reassignment.
-				MsgTransactionType msgstate,
-				std::ostream *os) // for testing - if set, print out the message instead of sending it.
+	TBF *tbf,
+	bool isNewAssignment, // If false, it is a reassignment.
+	MsgTransactionType msgstate,
+	std::ostream *os) // for testing - if set, print out the message instead of sending it.
 {
 	MSInfo *ms = tbf->mtMS;
 	// Send assignment message on PACCH.
@@ -465,7 +467,7 @@ static bool sendAssignmentPacch(PDCHL1FEC *pacch, // The PACCH channel.
 // The MS sends the DRX info to the SGSN in the Attach message.
 // None of that implemented yet.
 L3ImmediateAssignment *gprsPageCcchStart(PDCHL1FEC *pacch, // The PACCH channel.
-					 TBF *tbf)
+	TBF *tbf)
 {
 	assert(tbf->mtDir == RLCDir::Down);
 	MSInfo *ms = tbf->mtMS;
@@ -481,7 +483,7 @@ L3ImmediateAssignment *gprsPageCcchStart(PDCHL1FEC *pacch, // The PACCH channel.
 	// in GSM 44.018 sec 10.5.2.25b: This bit is 1 only for downlink TBFs.
 	L3ImmediateAssignment *result =
 		new L3ImmediateAssignment(L3RequestReference(0, impossible), pacch->packetChannelDescription(),
-					  GSM::L3TimingAdvance(ms->msGetTA()), true, true); // for_tbf, downlink
+			GSM::L3TimingAdvance(ms->msGetTA()), true, true); // for_tbf, downlink
 
 	L3IAPacketAssignment *pa = result->packetAssign();
 	// DEBUG: I tried taking out power:
@@ -500,8 +502,8 @@ L3ImmediateAssignment *gprsPageCcchStart(PDCHL1FEC *pacch, // The PACCH channel.
 }
 
 void sendAssignmentCcch(PDCHL1FEC *pacch, // The PACCH channel where the MS will be directed to send its answer.
-			TBF *tbf,	 // The TBF that wants to initiate a downlink transfer to the MS.
-			std::ostream *os)
+	TBF *tbf,			  // The TBF that wants to initiate a downlink transfer to the MS.
+	std::ostream *os)
 {
 	MSInfo *ms = tbf->mtMS;
 	string imsi = ms->sgsnFindImsiByHandle(ms->msGetHandle());
@@ -565,8 +567,8 @@ bool gprsPageCcchSetTime(TBF *tbf, L3ImmediateAssignment *iap, unsigned afterFra
 // NOTE: If MS T3204 (GSM04.08) 1 second, started when MS sends RACH, expires before
 // receiving ImmediateAssignment, MS aborts packet access procedure.
 bool sendAssignment(PDCHL1FEC *pacch, // The PACCH channel.
-		    TBF *tbf,
-		    std::ostream *os) // for testing - if set, print out the message instead of sending it.
+	TBF *tbf,
+	std::ostream *os) // for testing - if set, print out the message instead of sending it.
 {
 	MSInfo *ms = tbf->mtMS;
 
@@ -780,7 +782,7 @@ void TBF::mtSetState(TBFState::type wstate)
 
 		if (mtState == TBFState::DataTransmit) {
 			LOGWATCHF("%s Start%s bytes=%d down/up=%zu/%zu\n", tbfid(1), mtAssignmentOnCCCH ? " CCCH" : "",
-				  engineGetBytesPending(), mtMS->msPCHDowns.size(), mtMS->msPCHUps.size());
+				engineGetBytesPending(), mtMS->msPCHDowns.size(), mtMS->msPCHUps.size());
 			// FIXME:
 			// There is some housekeeping to do.
 			// If a previous uplink TBF died for this MS, and then the MS was issued
@@ -799,7 +801,7 @@ void TBF::mtSetState(TBFState::type wstate)
 // They enter the dead state, which means their resources cannot be reused
 // until the timeout expires.
 void MSInfo::msStop(RLCDir::type dir, MSStopCause::type cause, TbfCancelMode cmode,
-		    unsigned howlong) // howlong in msecs to disable MS - unused now.
+	unsigned howlong) // howlong in msecs to disable MS - unused now.
 {
 	TBF *tbf;
 	RN_MS_FOR_ALL_TBF(this, tbf)
@@ -959,7 +961,7 @@ void MSInfo::msService()
 		TBF *blockingtbf;
 		// Make sure there is something to process
 		if (!msCountTBF2(RLCDir::Down, stallOnlyForActiveTBF ? TbfMActive : TbfMAny,
-				 &blockingtbf)) { // Look in list of TBF's
+			    &blockingtbf)) { // Look in list of TBF's
 
 			// (pat 3-2014) The 3 is just made up; allows the MS to ride out a simple bad connection.
 			// The MS may also be non-responsive due to temporary suspension, which is not supported yet.
@@ -1098,7 +1100,7 @@ void TBF::mtRetry()
 // or for reasons beyond its purview, like we are shutting down GPRS.
 // Same actions in either case.
 void TBF::mtCancel(MSStopCause::type cause,
-		   TbfCancelMode release) // When to release and whether to retry.
+	TbfCancelMode release) // When to release and whether to retry.
 {
 	// LOG(DEBUG) << "mtCancel mtState: " << mtState; //SVGDBG
 	// Clear out any reservation, in case the reservation does try to notify
@@ -1428,7 +1430,7 @@ bool TBF::mtServiceDownlink(PDCHL1Downlink *down)
 						if (!mtMsgPending()) {
 							// Send a second assignment to set up multislot.
 							if (sendAssignmentPacch(down->parent(), this, false,
-										MsgTransAssign2, NULL)) {
+								    MsgTransAssign2, NULL)) {
 								return true;
 							}
 						}
@@ -1454,7 +1456,7 @@ bool TBF::mtServiceDownlink(PDCHL1Downlink *down)
 							mtPerformReassign = false;
 						} else {
 							if (sendAssignmentPacch(down->parent(), this, false,
-										MsgTransReassign, NULL)) {
+								    MsgTransReassign, NULL)) {
 								return true;
 							}
 						}

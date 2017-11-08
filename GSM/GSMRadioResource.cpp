@@ -1,29 +1,30 @@
-/*
-* Copyright 2014, Range Networks, Inc.
-*
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-*/
+/* GSM/GSMRadioResource.cpp */
+/*-
+ * Copyright 2014, Range Networks, Inc.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ */
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
-#include "GSMRadioResource.h"
+#include <Control/ControlTransfer.h>
+#include <Control/L3TranEntry.h> // For L3TranEntryId, NewTransactionTable.
+#include <Globals/Globals.h>
+
 #include "GSMCCCH.h"
 #include "GSMCommon.h"
 #include "GSMConfig.h"
 #include "GSMLogicalChannel.h"
-#include <ControlTransfer.h>
-#include <Globals.h>
-#include <L3TranEntry.h> // For L3TranEntryId, NewTransactionTable.
+#include "GSMRadioResource.h"
 
 namespace GSM {
 
@@ -168,7 +169,7 @@ std::ostream &operator<<(std::ostream &os, const RachInfo *rach)
 // Triage the RACHes, prioritize them, put them on RachQ.
 // TODO: Merge RachInfo with ChannelRequestRecord and pass it in here.
 void AccessGrantResponder(unsigned RA, const GSM::Time &when, float RSSI, float timingError,
-			  int TN) // The TN the RACH arrived on.  Only non-0 if there are multiple beacon timeslots.
+	int TN) // The TN the RACH arrived on.  Only non-0 if there are multiple beacon timeslots.
 {
 	gReports.incr("OpenBTS.GSM.RR.RACH.TA.All", (int)(timingError));
 	gReports.incr("OpenBTS.GSM.RR.RACH.RA.All", RA);
@@ -183,8 +184,8 @@ void AccessGrantResponder(unsigned RA, const GSM::Time &when, float RSSI, float 
 		// Screen for delay.
 		int MaxTA = gConfig.getNum("GSM.MS.TA.Max");
 		if (timingError > MaxTA) {
-			RachInfo tmpRACH(RA, when,
-					 RadData(RSSI, timingError)); // Temporary just so we can print it more easily.
+			RachInfo tmpRACH(
+				RA, when, RadData(RSSI, timingError)); // Temporary just so we can print it more easily.
 			LOG(NOTICE) << "ignoring RACH burst TE > " << MaxTA << ":" << tmpRACH;
 			return;
 		}

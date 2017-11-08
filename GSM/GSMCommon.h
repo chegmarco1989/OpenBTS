@@ -1,21 +1,22 @@
+/* GSM/GSMCommon.h */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Common-use GSM declarations, most from the GSM 04.xx and 05.xx series. */
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #ifndef GSMCOMMON_H
 #define GSMCOMMON_H
@@ -27,11 +28,11 @@
 #include <ostream>
 #include <vector>
 
-#include "Defines.h"
-#include <BitVector.h>
-#include <ScalarTypes.h>
-#include <Threads.h>
-#include <Timeval.h>
+#include <CommonLibs/BitVector.h>
+#include <CommonLibs/Defines.h>
+#include <CommonLibs/ScalarTypes.h>
+#include <CommonLibs/Threads.h>
+#include <CommonLibs/Timeval.h>
 
 namespace GSM {
 
@@ -99,10 +100,9 @@ const unsigned T200ms = 900; ///< LAPDm ACK timeout, set for typical turnaround 
 //@}
 /**@name GSM timeouts for radio resource management, GSM 04.08 11.1. */
 //@{
-// const unsigned T3101ms = 4000;		///< L1 timeout for SDCCH assignment (pat) Started on Immediate Assignment,
-// stopped when MS seizes channel.
-// (pat 4-2014) Increase T3101 to allow time for a SACCH init first, and additionally the old value seemed too low
-// anyway, so add 2 secs.
+// const unsigned T3101ms = 4000;		///< L1 timeout for SDCCH assignment (pat) Started on Immediate
+// Assignment, stopped when MS seizes channel. (pat 4-2014) Increase T3101 to allow time for a SACCH init first, and
+// additionally the old value seemed too low anyway, so add 2 secs.
 const unsigned T3101ms = 6000; ///< L1 timeout for SDCCH assignment (pat) Started on Immediate Assignment, stopped when
 			       ///< MS seizes channel.
 const unsigned T3107ms = 3000; ///< L1 timeout for TCH/FACCH assignment (pat) or any change of channel assignment.

@@ -1,26 +1,28 @@
-/*
-* Copyright 2013, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
+/* Control/L3LogicalChannel.cpp */
+/*-
+ * Copyright 2013, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 // Written by Pat Thompson
 
 #define LOG_GROUP LogGroup::Control // Can set Log.Level.Control for debugging
 
+#include <GSM/GSMConfig.h>	 // For gBTS
+#include <GSM/GSMLogicalChannel.h> // Needed for getL2Channel()
+
 #include "L3LogicalChannel.h"
 #include "L3MMLayer.h"
-#include <GSMConfig.h>	 // For gBTS
-#include <GSMLogicalChannel.h> // Needed for getL2Channel()
 
 namespace Control {
 

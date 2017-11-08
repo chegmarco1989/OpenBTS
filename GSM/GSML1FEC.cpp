@@ -1,46 +1,37 @@
-/*
-* Copyright 2008-2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2012, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* GSM/GSML1FEC.cpp */
+/*-
+ * Copyright 2008-2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2012, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
 #define TESTTCHL1FEC
 
-#include <assert.h>
 #include <math.h>
 #include <time.h>
 
-#include "GSMCommon.h"
-#include "GSML1FEC.h"
-#include "GSMTransfer.h"
-//#include "GSMSAPMux.h"
+#include <CommonLibs/Logger.h>
+#include <Control/ControlCommon.h>
+#include <Control/TMSITable.h>
+#include <TRXManager/TRXManager.h>
+
 #include "GSMConfig.h"
+#include "GSML1FEC.h"
 #include "GSMLogicalChannel.h"
 #include "GSMTAPDump.h"
-#include "GSMTDMA.h"
-#include <ControlCommon.h>
-#include <Logger.h>
-#include <OpenBTSConfig.h>
-#include <TMSITable.h>
-#include <TRXManager.h>
-
-#include "../GPRS/GPRSExport.h"
-
-#undef WARNING
 
 namespace GSM {
 
@@ -107,10 +98,10 @@ static const int powerCommandLowBand[32] = {
 	35, 33, 31, 29, // 4-7
 	27, 25, 23, 21, // 8-11
 	19, 17, 15, 13, // 12-15
-	11, 9,  7,  5,  // 16-19
-	5,  5,  5,  5,  // 20-23
-	5,  5,  5,  5,  // 24-27
-	5,  5,  5,  5   // 28-31
+	11, 9, 7, 5,    // 16-19
+	5, 5, 5, 5,     // 20-23
+	5, 5, 5, 5,     // 24-27
+	5, 5, 5, 5      // 28-31
 };
 
 /** Power control codes for DCS1800 from GSM 05.05 4.1.1. */
@@ -118,11 +109,11 @@ static const int powerCommand1800[32] = {
 	30, 28, 26, 24, // 0-3
 	22, 20, 18, 16, // 4-7
 	14, 12, 10, 8,  // 8-11
-	6,  4,  2,  0,  // 12-15
-	0,  0,  0,  0,  // 16-19
-	0,  0,  0,  0,  // 20-23
-	0,  0,  0,  0,  // 24-27
-	0,  36, 24, 23  // 28-31
+	6, 4, 2, 0,     // 12-15
+	0, 0, 0, 0,     // 16-19
+	0, 0, 0, 0,     // 20-23
+	0, 0, 0, 0,     // 24-27
+	0, 36, 24, 23   // 28-31
 };
 
 /** Power control codes for PCS1900 from GSM 05.05 4.1.1. */
@@ -130,11 +121,11 @@ static const int powerCommand1900[32] = {
 	30, 28, 26, 24, // 0-3
 	22, 20, 18, 16, // 4-7
 	14, 12, 10, 8,  // 8-11
-	6,  4,  2,  0,  // 12-15
-	0,  0,  0,  0,  // 16-19
-	0,  0,  0,  0,  // 20-23
-	0,  0,  0,  0,  // 24-27
-	0,  0,  0,  0,  // 28-31
+	6, 4, 2, 0,     // 12-15
+	0, 0, 0, 0,     // 16-19
+	0, 0, 0, 0,     // 20-23
+	0, 0, 0, 0,     // 24-27
+	0, 0, 0, 0,     // 28-31
 };
 
 const int *pickTable()
@@ -911,8 +902,8 @@ void XCCHL1Decoder::handleGoodFrame()
 		// Send all bits to GSMTAP
 		if (gConfig.getBool("Control.GSMTAP.GSM")) {
 			// FIXME -- This repeatLengh>51 is a bit of a hack.
-			gWriteGSMTAP(ARFCN(), TN(), mReadTime.FN(), typeAndOffset(), mMapping.repeatLength() > 51, true,
-				     mD);
+			gWriteGSMTAP(
+				ARFCN(), TN(), mReadTime.FN(), typeAndOffset(), mMapping.repeatLength() > 51, true, mD);
 		}
 		// Build an L2 frame and pass it up.
 		const BitVector2 L2Part(mD.tail(headerOffset()));
@@ -1050,8 +1041,8 @@ void XCCHL1Encoder::sendFrame(const L2Frame &frame)
 	// Send to GSMTAP
 	frame.copyToSegment(mU, headerOffset());
 	if (gConfig.getBool("Control.GSMTAP.GSM")) {
-		gWriteGSMTAP(ARFCN(), TN(), mNextWriteTime.FN(), typeAndOffset(), mMapping.repeatLength() > 51, false,
-			     mU);
+		gWriteGSMTAP(
+			ARFCN(), TN(), mNextWriteTime.FN(), typeAndOffset(), mMapping.repeatLength() > 51, false, mU);
 	}
 
 	// Copy the L2 frame into u[] for processing.
@@ -1645,8 +1636,7 @@ static bool isSIDFrame(BitVector &frame)
 {
 	// A SID frame is marked by all zeros in particular positions in the RPE pulse data.
 	// If all the above bits are 0, it is a SID frame.
-	const char *frameMarker[4] = {
-		// There are 13 RPE pulses per frame.
+	const char *frameMarker[4] = {// There are 13 RPE pulses per frame.
 		// In the first three sub-frames, two bits of each RPE pulse are considered.
 		// I dont know which direction the bits go within each variable.
 		"00x00x00x00x00x00x00x00x00x00x00x00x00x", "00x00x00x00x00x00x00x00x00x00x00x00x00x",
@@ -1841,7 +1831,7 @@ bool TCHFRL1Decoder::decodeTCH_GSM(bool stolen, const SoftVector *wC)
 			mGsmPrevGoodFrame.clone(mGsmVFrame);
 #endif
 			mTCHD.unmap(g610BitOrder, 260,
-				    mPrevGoodFrame);      // Put the completed decoded data in mPrevGoodFrame.
+				mPrevGoodFrame);	  // Put the completed decoded data in mPrevGoodFrame.
 			newFrame->append(mPrevGoodFrame); // And copy it into the RTP audio frame.
 			mNumBadFrames = 0;
 		}
@@ -1969,7 +1959,7 @@ bool TCHFRL1Decoder::decodeTCH_AFS(bool stolen, const SoftVector *wC)
 			// mAmrPrevGoodFrame.clone(mAmrVFrame);
 
 			mTCHD.unmap(mAMRBitOrder, mPrevGoodFrame.size(),
-				    mPrevGoodFrame);      // Put the completed decoded data in mPrevGoodFrame.
+				mPrevGoodFrame);	  // Put the completed decoded data in mPrevGoodFrame.
 			newFrame->append(mPrevGoodFrame); // And copy it into the RTP audio frame.
 		}
 	}
@@ -2237,7 +2227,7 @@ void TCHFACCHL1Encoder::dispatch()
 		// Send to GSMTAP
 		if (gConfig.getBool("Control.GSMTAP.GSM")) {
 			gWriteGSMTAP(ARFCN(), TN(), mNextWriteTime.FN(), typeAndOffset(), mMapping.repeatLength() > 51,
-				     false, *fFrame);
+				false, *fFrame);
 		}
 		// Copy the L2 frame into u[] for processing.
 		// GSM 05.03 4.1.1.

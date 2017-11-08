@@ -1,20 +1,20 @@
-/*
-* Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
-* Copyright 2010 Kestrel Signal Processing, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* Control/TMSITable.h */
+/*-
+ * Copyright 2008, 2009, 2010 Free Software Foundation, Inc.
+ * Copyright 2010 Kestrel Signal Processing, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef TMSITABLE_H
 #define TMSITABLE_H
@@ -22,9 +22,11 @@
 #include <map>
 #include <vector>
 
-#include <ScalarTypes.h>
-#include <Threads.h>
-#include <Timeval.h>
+#include <CommonLibs/Defines.h> // for devassert
+#include <CommonLibs/Logger.h>  // devassert uses Logger
+#include <CommonLibs/ScalarTypes.h>
+#include <CommonLibs/Threads.h>
+#include <CommonLibs/Timeval.h>
 
 struct sqlite3;
 
@@ -196,8 +198,8 @@ public:
 	// TmsiTableStore *store);  uint32_t assign(const string IMSI, const GSM::L3LocationAreaIdentity * lur, uint32_t
 	// oldTmsi, const string imei);  uint32_t assign(const string imsi, const MMSharedData *shdata);
 	void tmsiTabUpdate(string imsi, TmsiTableStore *store);
-	uint32_t tmsiTabCreateOrUpdate(const string imsi, TmsiTableStore *store, const GSM::L3LocationAreaIdentity *lai,
-				       uint32_t oldTmsi);
+	uint32_t tmsiTabCreateOrUpdate(
+		const string imsi, TmsiTableStore *store, const GSM::L3LocationAreaIdentity *lai, uint32_t oldTmsi);
 	bool dropTmsi(uint32_t tmsi);
 	bool dropImsi(const char *imsi);
 	unsigned allocateTmsi();
@@ -226,8 +228,8 @@ public:
 
 	std::vector<std::vector<std::string>> tmsiTabView(int verbosity, bool rawFlag, unsigned maxrows) const;
 	/** Write entries as text to a stream. */
-	void tmsiTabDump(int verbosity, bool rawFlag, std::ostream &, bool ShowAll = false,
-			 bool taboption = false) const;
+	void tmsiTabDump(
+		int verbosity, bool rawFlag, std::ostream &, bool ShowAll = false, bool taboption = false) const;
 
 	/** Clear the table completely. */
 	void tmsiTabClear();

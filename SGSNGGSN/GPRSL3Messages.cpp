@@ -1,25 +1,24 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* SGSNGGSN/GPRSL3Messages.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #include <ostream>
 
 #include "GPRSL3Messages.h"
-//#include "TBF.h"
 #include "Ggsn.h"
 #include "Sgsn.h"
-#include "Utils.h"
 
 namespace SGSN {
 
@@ -845,10 +844,10 @@ const char *AccessCapabilities::CapName(CapType type) const
 	}
 }
 
-void AccessCapabilities::parseAccessCapabilities(ByteVector &bv,	   // bytevector we are parsing
-						 size_t &rp,		   // location in bytevector
-						 AccessCapabilities *prev, // Previous capabilities or null.
-						 size_t end)		   // end of capabilities list
+void AccessCapabilities::parseAccessCapabilities(ByteVector &bv, // bytevector we are parsing
+	size_t &rp,						 // location in bytevector
+	AccessCapabilities *prev,				 // Previous capabilities or null.
+	size_t end)						 // end of capabilities list
 {
 	mCaps[RFPowerCapability] = bv.readField(rp, 3);
 	if (bv.readField(rp, 1)) {
@@ -1487,7 +1486,7 @@ GMMRoutingAreaIdIE::GMMRoutingAreaIdIE()
 void GMMRoutingAreaIdIE::text(std::ostream &os) const
 {
 	os << format("MCC=%c%c%c MNC=%c%c%c", DEHEXIFY(mMCC[0]), DEHEXIFY(mMCC[1]), DEHEXIFY(mMCC[2]),
-		     DEHEXIFY(mMNC[0]), DEHEXIFY(mMNC[1]), DEHEXIFY(mMNC[2]));
+		DEHEXIFY(mMNC[0]), DEHEXIFY(mMNC[1]), DEHEXIFY(mMNC[2]));
 	os << LOGVAR2("LAC", mLAC + 0) << LOGVAR2("RAC", mRAC + 0);
 }
 

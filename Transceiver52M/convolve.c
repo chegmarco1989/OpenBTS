@@ -1,5 +1,5 @@
-/*
- * SSE Convolution
+/* Transceiver52M/convolve.c */
+/*-
  * Copyright (C) 2012, 2013 Thomas Tsou <tom@tsou.cc>
  *
  * This library is free software; you can redistribute it and/or
@@ -16,6 +16,8 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+/* SSE Convolution */
 
 #include <malloc.h>
 #include <string.h>

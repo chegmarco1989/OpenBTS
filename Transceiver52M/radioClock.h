@@ -1,4 +1,5 @@
-/*
+/* Transceiver52M/radioClock.h */
+/*-
  * Written by Thomas Tsou <ttsou@vt.edu>
  * Based on code by Harvind S Samra <hssamra@kestrelsp.com>
  *
@@ -22,7 +23,7 @@
 #ifndef RADIOCLOCK_H
 #define RADIOCLOCK_H
 
-#include "GSMCommon.h"
+#include <GSM/GSMCommon.h>
 
 class RadioClock {
 public:

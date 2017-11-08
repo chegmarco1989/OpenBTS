@@ -1,17 +1,18 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* GPRS/GPRSExport.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 // (pat) This is the GPRS exported include for use by clients in other directories.
 
@@ -20,15 +21,16 @@
 
 #include <ostream>
 
-#include <CLI.h>
+#include <CLI/CLI.h>
 
 // The user of this file must include these first, to avoid circular .h files:
-//#include "GSMConfig.h"		// For Time
-//#include "GSMCommon.h"		// For ChannelType
+//#include <GSM/GSMConfig.h>		// For Time
+//#include <GSM/GSMCommon.h>		// For ChannelType
 
 // You must not include anything from the GSM directory to avoid circular calls
 // that read files out of order, but we need transparent pointers to these classes,
 // so they must be defined first.
+
 namespace GSM {
 
 class RxBurst;

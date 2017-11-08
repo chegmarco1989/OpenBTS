@@ -1,4 +1,5 @@
-/*
+/* Transceiver52M/radioInterfaceResamp.cpp */
+/*-
  * Radio device interface with sample rate conversion
  * Written by Thomas Tsou <tom@tsou.cc>
  *
@@ -19,14 +20,11 @@
  * See the COPYING file in the main directory for details.
  */
 
-#include <Logger.h>
-#include <radioInterface.h>
+#include <CommonLibs/Logger.h>
 
 #include "Resampler.h"
-
-extern "C" {
 #include "convert.h"
-}
+#include "radioInterface.h"
 
 /* Resampling parameters for 64 MHz clocking */
 #define RESAMP_64M_INRATE 65
@@ -177,7 +175,7 @@ void RadioInterfaceResamp::pullBuffer()
 
 	/* Write to the end of the inner receive buffer */
 	rc = dnsampler->rotate((float *)outerRecvBuffer->begin(), resamp_outchunk,
-			       (float *)(innerRecvBuffer->begin() + recvCursor), resamp_inchunk);
+		(float *)(innerRecvBuffer->begin() + recvCursor), resamp_inchunk);
 	if (rc < 0) {
 		LOG(ALERT) << "Sample rate upsampling error";
 	}
@@ -203,8 +201,8 @@ void RadioInterfaceResamp::pushBuffer()
 	outer_len = chunks * resamp_outchunk;
 
 	/* Always send from the beginning of the buffer */
-	rc = upsampler->rotate((float *)innerSendBuffer->begin(), inner_len, (float *)outerSendBuffer->begin(),
-			       outer_len);
+	rc = upsampler->rotate(
+		(float *)innerSendBuffer->begin(), inner_len, (float *)outerSendBuffer->begin(), outer_len);
 	if (rc < 0) {
 		LOG(ALERT) << "Sample rate downsampling error";
 	}

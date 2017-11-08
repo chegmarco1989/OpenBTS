@@ -1,24 +1,26 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* GPRS/BSSGMessages.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::GPRS // Can set Log.Level.GPRS for debugging
 
-#include "BSSGMessages.h"
+#include <Globals/Globals.h>
+
 #include "BSSG.h"
+#include "BSSGMessages.h"
 #include "GPRSInternal.h"
-#include "Globals.h"
 #include "LLC.h"
 
 #define CASENAME(x) \
@@ -437,7 +439,7 @@ static void BVCAddCellIdentifier(ByteVector *vec)
 // GSM 08.18 sec 10 describes the PDU messages that the SGSN can send to the BSS.
 // Cause values: 08.18 sec 11.3.8
 BSSGUplinkMsg *BVCFactory(BSPDUType::type bstype,
-			  int arg1) // For reset, the bvci to reset; for others may be cause or tag .
+	int arg1) // For reset, the bvci to reset; for others may be cause or tag .
 {
 	BSSGUplinkMsg *vec = new BSSGUplinkMsg(80); // Big enough for any message.
 	BVCI::type bvci;
@@ -528,7 +530,7 @@ void BSSGMsg::text(std::ostream &os) const
 std::string BSSGMsg::briefDescription() const { return BSPDUType::name(getPDUType()); }
 
 BSSGMsgULUnitData::BSSGMsgULUnitData(unsigned wLen, // Length of the PDU to be sent.
-				     uint32_t wTLLI)
+	uint32_t wTLLI)
 	: BSSGUplinkMsg(wLen + HeaderLength)
 {
 	QoSProfile qos; // Both we and the SGSN ignore the contents of this.

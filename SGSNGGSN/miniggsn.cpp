@@ -1,17 +1,18 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* SGSNGGSN/miniggsn.cpp */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 // TODO - include the TCP sequence number in the message,
 // and identify the duplicate packets,
@@ -106,9 +107,10 @@
 #include <unistd.h>
 #include <wait.h>
 
+#include <CommonLibs/Configuration.h>
+
 #include "Ggsn.h"
 #include "miniggsn.h"
-#include <Configuration.h>
 
 #undef NCC // Make sure.  This is defined in ioctl.h, but used as a name in GSMConfig.h.
 
@@ -357,16 +359,16 @@ static int mg_toss_dup_packet(mg_con_t *mgp, unsigned char *packet, int packetle
 		// The tot_len includes headers, but if they are not the same in the duplicate packet, oh well.
 		// TODO: If the connection is reset we should zero out our history.
 		if (mgp->mg_packets[i].saddr == iph->saddr && mgp->mg_packets[i].daddr == iph->daddr &&
-		    mgp->mg_packets[i].totlen == iph->tot_len &&
-		    // mgp->mg_packets[i].ipfragoff == iph->frag_off &&
-		    // mgp->mg_packets[i].ipid == iph->id &&
-		    mgp->mg_packets[i].seq == tcph->seq && mgp->mg_packets[i].source == tcph->source &&
-		    mgp->mg_packets[i].dest == tcph->dest) {
+			mgp->mg_packets[i].totlen == iph->tot_len &&
+			// mgp->mg_packets[i].ipfragoff == iph->frag_off &&
+			// mgp->mg_packets[i].ipid == iph->id &&
+			mgp->mg_packets[i].seq == tcph->seq && mgp->mg_packets[i].source == tcph->source &&
+			mgp->mg_packets[i].dest == tcph->dest) {
 			const char *what = ggConfig.mgIpTossDup ? "discarding " : "";
 			char buf1[40], buf2[40];
 			MGINFO("ggsn: %sduplicate %d byte packet seq=%d frag=%d id=%d src=%s:%d dst=%s:%d", what,
-			       packetlen, tcph->seq, iph->frag_off, iph->id, ip_ntoa(iph->saddr, buf1), tcph->source,
-			       ip_ntoa(iph->daddr, buf2), tcph->dest);
+				packetlen, tcph->seq, iph->frag_off, iph->id, ip_ntoa(iph->saddr, buf1), tcph->source,
+				ip_ntoa(iph->daddr, buf2), tcph->dest);
 			return ggConfig.mgIpTossDup; // Toss duplicate tcp packet if option set.
 		}
 	}
@@ -580,7 +582,7 @@ bool miniggsn_init()
 		}
 		if (route_masknl == 0) {
 			MGWARN("miniggsn: %s is not a valid route, /mask part missing or invalid: %sn", SQL_IP_ROUTE,
-			       route_str);
+				route_str);
 			// but use it anyway.
 		}
 
@@ -588,7 +590,7 @@ bool miniggsn_init()
 		// which is tricky, but check the most common case:
 		if ((route_basenl & route_masknl) != (mgIpBasenl & route_masknl)) {
 			MGWARN("miniggsn: %s = %s ip address does not appear to be in range of %s = %s", SQL_IP_BASE,
-			       ip_base_str, SQL_IP_ROUTE, route_str);
+				ip_base_str, SQL_IP_ROUTE, route_str);
 			// but use it anyway.
 		}
 	} else {

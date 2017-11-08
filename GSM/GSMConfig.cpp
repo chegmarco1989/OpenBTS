@@ -1,31 +1,33 @@
-/*
-* Copyright 2008, 2009, 2010, 2014 Free Software Foundation, Inc.
-* Copyright 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses; see the COPYING file in the main directory for licensing
-information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
+/* GSM/GSMConfig.cpp */
+/*-
+ * Copyright 2008, 2009, 2010, 2014 Free Software Foundation, Inc.
+ * Copyright 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
-#include "GSMConfig.h"
-#include "GPRSExport.h"
+#include <CommonLibs/Logger.h>
+#include <CommonLibs/Reporting.h>
+#include <Control/ControlCommon.h>
+#include <GPRS/GPRSExport.h>
+#include <Globals/Globals.h>
+#include <Peering/NeighborTable.h>
+
 #include "GSMCCCH.h"
+#include "GSMConfig.h"
 #include "GSMLogicalChannel.h"
 #include "GSMTransfer.h"
-#include <ControlCommon.h>
-#include <Globals.h>
-#include <Logger.h>
-#include <NeighborTable.h>
-#include <Reporting.h>
 
 using namespace std;
 using namespace GSM;
@@ -410,7 +412,7 @@ SDCCHLogicalChannel *GSMConfig::getSDCCH()
 // 6-2014 pat: The channel is now returned with T3101 running but un-started, which means it is not yet transmitting.
 // The caller is responsible for setting the Timing Advance and then starting it.
 TCHFACCHLogicalChannel *GSMConfig::getTCH(bool forGPRS, // If true, allocate the channel to gprs, else to RR use.
-					  bool onlyCN0) // If true, allocate only channels on the lowest ARFCN.
+	bool onlyCN0)					// If true, allocate only channels on the lowest ARFCN.
 {
 	LOG(DEBUG);
 	ScopedLock lock(mLock);
@@ -560,8 +562,8 @@ void GSMConfig::createCBCH(ARFCNManager *radio, TypeAndOffset type, int CN, int 
 		isCBSRunning = true;
 		CBCHControlThread.start((void *(*)(void *))Control::SMSCBSender, NULL);
 	}
-	mCBCHDescription = L3ChannelDescription(type, TN, gConfig.getNum("GSM.Identity.BSIC.BCC"),
-						gConfig.getNum("GSM.Radio.C0") + CN);
+	mCBCHDescription = L3ChannelDescription(
+		type, TN, gConfig.getNum("GSM.Identity.BSIC.BCC"), gConfig.getNum("GSM.Radio.C0") + CN);
 	regenerateBeacon(); // To update SI4 with the new CBCH timeslot.
 }
 
@@ -608,7 +610,7 @@ public:
 				continue;
 			C0T0SDCCH[i]->downstream(radio);
 			C0T0SDCCHControlThread[i].start((void *(*)(void *))Control::DCCHDispatcher,
-							dynamic_cast<L3LogicalChannel *>(C0T0SDCCH[i]));
+				dynamic_cast<L3LogicalChannel *>(C0T0SDCCH[i]));
 			C0T0SDCCH[i]->lcinit();
 			C0T0SDCCH[i]->lcstart(); // Everything on channel 0 needs to broadcast constantly.
 			gBTS.addSDCCH(C0T0SDCCH[i]);
@@ -659,13 +661,13 @@ void GSMConfig::getChanVector(L2ChanList &result)
 	result.clear();
 	result.reserve(64); // Enough for a 2 ARFCN system.
 	for (GSM::SDCCHList::const_iterator sChanItr = gBTS.SDCCHPool().begin(); sChanItr != gBTS.SDCCHPool().end();
-	     ++sChanItr) {
+		++sChanItr) {
 		result.push_back(*sChanItr);
 	}
 
 	// TCHs
 	for (GSM::TCHList::const_iterator tChanItr = gBTS.TCHPool().begin(); tChanItr != gBTS.TCHPool().end();
-	     ++tChanItr) {
+		++tChanItr) {
 		result.push_back(*tChanItr);
 	}
 }

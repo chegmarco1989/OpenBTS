@@ -1,29 +1,30 @@
+/* Control/L3TermCause.cpp */
+/*-
+ * Copyright 2013 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
 /**@file Declarations for common-use control-layer functions. */
-/*
-* Copyright 2013 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-*/
 
 #define LOG_GROUP LogGroup::Control
 
 #include <stdio.h> // For snprintf
 
-#include <Defines.h>
-#include <L3TermCause.h>
-#include <Logger.h>
-#include <OpenBTSConfig.h>
-#include <SIPDialog.h>
+#include <CommonLibs/Defines.h>
+#include <SIP/SIPDialog.h>
+#include <apps/OpenBTSConfig.h>
+
+#include "L3TermCause.h"
 
 namespace Control {
 
@@ -461,8 +462,8 @@ static int sipCode2AnyCauseFromConfig(int sipcode)
 	return 0;
 }
 
-int sipCode2AnyCause(int sipcode,  // The sip code from the dialog error.
-		     bool alerted) // True if we ever received sip code 180.
+int sipCode2AnyCause(int sipcode, // The sip code from the dialog error.
+	bool alerted)		  // True if we ever received sip code 180.
 {
 	int acause = sipCode2AnyCauseFromConfig(sipcode);
 	// Look up a default L3 cause from the SIP code.
@@ -549,7 +550,7 @@ TermCause dialog2TermCause(SIP::SipDialog *dialog)
 std::ostream &operator<<(std::ostream &os, TermCause &cause)
 {
 	os << format("l3cause=%d=0x%x(%s) SipCode=%d(%s)", cause.tcGetValue(), cause.tcGetValue(),
-		     L3Cause::AnyCause2Str(cause.mtcAnyCause), (int)cause.mtcSipCode, cause.mtcSipReason.c_str());
+		L3Cause::AnyCause2Str(cause.mtcAnyCause), (int)cause.mtcSipCode, cause.mtcSipReason.c_str());
 	return os;
 }
 

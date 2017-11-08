@@ -1,32 +1,32 @@
-/*
-* Copyright 2011, 2014 Range Networks, Inc.
-*
-* This software is distributed under multiple licenses;
-* see the COPYING file in the main directory for licensing
-* information for this specific distribution.
-*
-* This use of this software may be subject to additional restrictions.
-* See the LEGAL file in the main directory for details.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-*/
+/* SGSNGGSN/GPRSL3Messages.h */
+/*-
+ * Copyright 2011, 2014 Range Networks, Inc.
+ *
+ * This software is distributed under multiple licenses;
+ * see the COPYING file in the main directory for licensing
+ * information for this specific distribution.
+ *
+ * This use of this software may be subject to additional restrictions.
+ * See the LEGAL file in the main directory for details.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 #ifndef _GPRSL3MESSAGES_H_
 #define _GPRSL3MESSAGES_H_
 
 #include <stdio.h>
 
-//#include "GPRSInternal.h"
-#include "ByteVector.h"
-#include "Configuration.h"
-#include "GSMCommon.h"
-#include "GSML3Message.h"
-#include "ScalarTypes.h"
+#include <CommonLibs/Configuration.h>
+#include <CommonLibs/ScalarTypes.h>
+#include <CommonLibs/Utils.h>
+#include <GPRS/ByteVector.h>
+#include <GSM/GSMCommon.h>
+#include <GSM/GSML3Message.h>
+
 #include "SgsnBase.h"
-#include "Utils.h"
-//#include "GPRSL3New.h"
 
 using namespace std;
 
@@ -790,8 +790,8 @@ struct L3GmmMsgRAUpdateAccept : L3GmmDlMsg {
 	uint32_t mAllocatedPTmsi; // Allocated p-tmsi, or 0
 	uint32_t mTmsi;		  // tmsi or 0, for combined raupdate, sent in the mobile-id ie.
 
-	L3GmmMsgRAUpdateAccept(RAUpdateType updatetype, PdpContextStatus wPdpContextStatus, uint32_t ptmsi,
-			       uint32_t tmsi)
+	L3GmmMsgRAUpdateAccept(
+		RAUpdateType updatetype, PdpContextStatus wPdpContextStatus, uint32_t ptmsi, uint32_t tmsi)
 		: L3GmmDlMsg(senseReply), mUpdateResult((unsigned)updatetype),
 		  mPdpContextStatusCurrent(wPdpContextStatus), mAllocatedPTmsi(ptmsi), mTmsi(tmsi)
 	// mMobileId(mid),
