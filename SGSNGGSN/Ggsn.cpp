@@ -114,7 +114,7 @@ void *miniGgsnReadServiceLoop(void *arg)
 {
 	Ggsn *ggsn = (Ggsn *)arg;
 	sethighpri();
-	while (ggsn->active() && !gBTS.btsShutdown()) {
+	while (ggsn->active() && !gBTS->btsShutdown()) {
 		struct pollfd fds[1];
 		fds[0].fd = tun_fd;
 		fds[0].events = POLLIN;
@@ -135,7 +135,7 @@ void *miniGgsnWriteServiceLoop(void *arg)
 {
 	sethighpri();
 	Ggsn *ggsn = (Ggsn *)arg;
-	while (ggsn->active() && !gBTS.btsShutdown()) {
+	while (ggsn->active() && !gBTS->btsShutdown()) {
 		// 8-6-2012 This interthreadqueue is clumping things up.  Try taking out the timeout.
 		// PdpPdu *npdu = ggsn->mTxQ.read(ggsn->mStopTimeout);
 		PdpPdu *npdu = ggsn->mTxQ.read();
@@ -175,7 +175,7 @@ void *miniGgsnShellServiceLoop(void *arg)
 {
 	Ggsn *ggsn = (Ggsn *)arg;
 	std::string shname = gConfig.getStr(SQL_SHELLSCRIPT);
-	while (ggsn->active() && !gBTS.btsShutdown()) {
+	while (ggsn->active() && !gBTS->btsShutdown()) {
 		ShellRequest *req = ggsn->mShellQ.read(ggsn->mStopTimeout);
 		if (!req)
 			continue;

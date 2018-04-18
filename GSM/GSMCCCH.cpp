@@ -160,7 +160,7 @@ static L2LogicalChannel *preallocateChForRach(RachInfo *rach, bool *deleteMe)
 {
 	*deleteMe = false;
 
-	Time now = gBTS.time();
+	Time now = gBTS->time();
 	int age = now - rach->mWhen; // The result is number of frames and could be negative.
 	if (age > sMaxAge) {
 		LOG(WARNING) << "ignoring RACH burst with age " << age;
@@ -173,13 +173,13 @@ static L2LogicalChannel *preallocateChForRach(RachInfo *rach, bool *deleteMe)
 	if (chtype == PSingleBlock1PhaseType || chtype == PSingleBlock2PhaseType) {
 		return NULL; // this routine does nothing for this.
 	} else if (chtype == TCHFType) {
-		LCH = gBTS.getTCH();
+		LCH = gBTS->getTCH();
 	} else if (chtype == SDCCHType) {
-		LCH = gBTS.getSDCCH();
+		LCH = gBTS->getSDCCH();
 	} else {
 		LOG(NOTICE) << "RACH burst for unsupported service RA=" << rach->mRA;
 		// (pat) 4-2014: Stop allocating channels for this.  We get a lot of false RACHes so lets ignore those
-		// with unrecognized RA. LCH = gBTS.getSDCCH();
+		// with unrecognized RA. LCH = gBTS->getSDCCH();
 		*deleteMe = true;
 		return NULL;
 	}
@@ -192,7 +192,7 @@ static L2LogicalChannel *preallocateChForRach(RachInfo *rach, bool *deleteMe)
 
 	int initialTA = rach->initialTA();
 	assert(initialTA >= 0 && initialTA <= 62); // enforced by AccessGrantResponder.
-	LCH->l1InitPhy(rach->RSSI(), initialTA, gBTS.clock().systime(rach->mWhen.FN()));
+	LCH->l1InitPhy(rach->RSSI(), initialTA, gBTS->clock().systime(rach->mWhen.FN()));
 	LCH->lcstart();
 	rach->mChan = LCH;
 	Time sacchStart = LCH->getSACCH()->getNextWriteTime();
@@ -200,7 +200,7 @@ static L2LogicalChannel *preallocateChForRach(RachInfo *rach, bool *deleteMe)
 	// There is a race whether the thread that runs SACCH can run before sacchStart time, and if not
 	// the SACCH will not be transmitted at this time.
 	// Therefore, if sacchStart time is close, add a whole sacch frame, 104 frames == 480ms.
-	now = gBTS.time();		   // Must update this because getTCH blocked.
+	now = gBTS->time();		   // Must update this because getTCH blocked.
 	int diff = rach->mReadyTime - now; // Returns number of 4.8ms frames.  // positive diff is in the future.
 	if (diff < 26) {		   // very conservative.
 		// (pat) We are making SURE the SACCH has transmitted a frame before we tell the handset to use the
@@ -271,7 +271,7 @@ int getAGCHPending() { return 0; }
 bool CCCHLogicalChannel::processRaches()
 {
 	while (RachInfo *rach = gRachq.readNoBlock()) {
-		Time now = gBTS.time();
+		Time now = gBTS->time();
 		int age = now - rach->mWhen; // The result is number of frames and could be negative.
 		if (age > sMaxAge) {
 			LOG(WARNING) << "ignoring RACH burst with age " << age;
@@ -314,11 +314,11 @@ bool CCCHLogicalChannel::processRaches()
 //		L2LogicalChannel *LCH;
 //		if (chtype == TCHFType) {
 //			// FIXME: This blocks at L2LAPDm::sendIdle!
-//			LCH = gBTS.getTCH();
+//			LCH = gBTS->getTCH();
 //		} else if (chtype == SDCCHType) {
 //			// We may reserve some SDCCH for CC and SMS.
 //			if (requestingLUR(rach->mRA)) {
-//				int SDCCHAvailable = gBTS.SDCCHAvailable();
+//				int SDCCHAvailable = gBTS->SDCCHAvailable();
 //				int SDCCHReserve = gConfig.getNum("GSM.Channels.SDCCHReserve");
 //				if (requestingLUR(rach->mRA) && SDCCHAvailable <= SDCCHReserve) {
 //					// (pat 2-2014) Changed this message and downgraded from CRIT.
@@ -327,10 +327,10 @@ bool CCCHLogicalChannel::processRaches()
 //				}
 //			}
 //
-//			LCH = gBTS.getSDCCH();
+//			LCH = gBTS->getSDCCH();
 //		} else {
 //			LOG(NOTICE) << "RACH burst for unsupported service RA=" << rach->mRA;
-//			LCH = gBTS.getSDCCH();	// Try anyway.
+//			LCH = gBTS->getSDCCH();	// Try anyway.
 //		}
 //
 //
@@ -350,8 +350,8 @@ bool CCCHLogicalChannel::processRaches()
 		// Success.  Send an ImmediateAssignment.
 		int initialTA = rach->initialTA();
 		assert(initialTA >= 0 && initialTA <= 62); // enforced by AccessGrantResponder.
-		// LCH->l1InitPhy(rach->RSSI(),initialTA,gBTS.clock().systime(rach->mWhen.FN()));
-		gReports.incr("OpenBTS.GSM.RR.RACH.TA.Accepted", (int)(initialTA));
+		// LCH->l1InitPhy(rach->RSSI(),initialTA,gBTS->clock().systime(rach->mWhen.FN()));
+		gReports->incr("OpenBTS.GSM.RR.RACH.TA.Accepted", (int)(initialTA));
 		L2LogicalChannel *LCH = rach->mChan;
 
 		// TODO: Update T3101.
@@ -363,7 +363,7 @@ bool CCCHLogicalChannel::processRaches()
 		if (0) { // This was for debugging.  Adding this delay made the layer1 connection reliable.
 			// Delay the channel assignment until the SACCH is known to be transmitting...
 			Time sacchStart = LCH->getSACCH()->getNextWriteTime();
-			now = gBTS.time(); // Must update this because getTCH blocked.
+			now = gBTS->time(); // Must update this because getTCH blocked.
 			int msecsDelay = ((sacchStart - now.FN()).FN() * gFrameMicroseconds) / 1000;
 			// Add an extra gratuitous 250ms delay for testing.
 			// msecsDelay += 250;
@@ -422,7 +422,7 @@ bool CCCHLogicalChannel::ccchServiceQueue()
 	// All the l2sendm/l2sendp calls below block using waitToSend()
 	// on the mPrevWriteTime set by the getNextWriteTime call.
 	mCcchNextWriteTime = getNextWriteTime();
-	if (gBTS.btsHold()) {
+	if (gBTS->btsHold()) {
 		return false;
 	}
 
@@ -510,7 +510,7 @@ void CCCHLogicalChannel::ccchServiceLoop()
 	mRevPCH[16] = 0;
 
 	int cnt = 0;
-	while (!gBTS.btsShutdown()) {
+	while (!gBTS->btsShutdown()) {
 
 		if (!ccchServiceQueue()) {
 			// Nothing to send on CCCH frame, so just send an idle frame.
@@ -547,7 +547,7 @@ size_t NewPager::pagingEntryListSize()
 void NewPager::serviceLoop()
 {
 	Timeval nextTime;
-	while (!gBTS.btsShutdown()) {
+	while (!gBTS->btsShutdown()) {
 		// Wait for pending activity to clear PCH.
 		if (unsigned load = gPagingQ.getPagingLoad()) {
 			LOG(DEBUG) << "Pager waiting with load " << load;

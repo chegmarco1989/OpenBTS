@@ -700,7 +700,7 @@ MachineStatus MOSSDMachine::machineRunState(int state, const GSM::L3Message *l3m
 		WATCH("SS CMServiceAccept");
 		channel()->l3sendm(GSM::L3CMServiceAccept()); // On SAPI0
 
-		gReports.incr("OpenBTS.GSM.SMS.MOSMS.Start");
+		gReports->incr("OpenBTS.GSM.SMS.MOSMS.Start");
 		return MachineStatusOK;
 	}
 

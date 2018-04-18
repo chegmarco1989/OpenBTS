@@ -29,7 +29,11 @@
 #include "RAD1Device.h"
 
 ConfigurationKeyMap getAllConfigurationKeys();
-ConfigurationTable gConfig("/etc/OpenBTS/OpenBTS.db", "PowerScanner", getAllConfigurationKeys());
+ConfigurationTable *gConfigObject;
+
+#ifndef gCofnig
+#define gConfig gConfigTable
+#endif
 
 using namespace std;
 
@@ -69,6 +73,8 @@ public:
 
 int main(int argc, char *argv[])
 {
+	gConfigObject = new ConfigurationTable("/etc/OpenBTS/OpenBTS.db", "PowerScanner", getAllConfigurationKeys());
+
 	try {
 		GSM::GSMBand band = (GSM::GSMBand)gConfig.getNum("GSM.Radio.Band");
 		SpectrumMap spectrumMap(gConfig.getStr("PowerScanner.DBPath").c_str());
@@ -111,6 +117,8 @@ int main(int argc, char *argv[])
 		cout << "Required configuration parameter " << e.key() << " not defined, exiting.";
 		return -1;
 	}
+
+	delete gConfigObject;
 
 	return 0;
 }

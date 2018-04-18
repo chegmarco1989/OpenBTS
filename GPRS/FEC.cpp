@@ -99,7 +99,7 @@ void PDCHL1FEC::mchStart()
 	// just to make sure they get through in case someone is triaging somewhere.
 	// Sending all 12 blocks is 2x overkill because the modulus in Transceiver::setModulus
 	// for type IGPRS is set the same as type I which is only 26, not 52.
-	RLCBSN_t bsn = FrameNumber2BSN(gBTS.time().FN()) + 1;
+	RLCBSN_t bsn = FrameNumber2BSN(gBTS->time().FN()) + 1;
 	for (int i = 0; i < 12; i++, bsn = bsn + 1) {
 		GPRSLOG(1) << "sendIdleFrame" << LOGVAR2("TN", TN()) << LOGVAR(bsn) << LOGVAR(i);
 		mchDownlink->sendIdleFrame(bsn);
@@ -377,12 +377,12 @@ void PDCHL1Downlink::bugFixIdleFrame()
 		// For this debug purpose, the mssage is sent on the next frame
 		// TODO: debug purpose only! This only works for one channel!
 		// Time tnext(gBSNNext.FN());
-		// gBTS.clock().wait(tnext);
+		// gBTS->clock().wait(tnext);
 	}
 
 	// Did we make it in time?
 	{
-		Time tnow = gBTS.time();
+		Time tnow = gBTS->time();
 		int fn = tnow.FN();
 		int mfn = (fn / 13);	 // how many 13-multiframes
 		int rem = (fn - (mfn * 13)); // how many blocks within the last multiframe.
@@ -733,7 +733,7 @@ void PDCHL1Downlink::mchResync()
 {
 	// If the encoder's clock is far from the current BTS clock,
 	// get it caught up to something reasonable.
-	Time now = gBTS.time();
+	Time now = gBTS->time();
 	int32_t delta = mchNextWriteTime-now;
 	GPRSLOG(8) << "PDCHL1Downlink" <<LOGVAR(mchNextWriteTime)
 			<<LOGVAR(now)<< LOGVAR(delta);
@@ -782,7 +782,7 @@ void PDCHL1Downlink::dlService()
 	// the entire GPRS machinery and start over when we get turned back on.
 	// if (! active()) {
 	//	mNextWriteTime += 52;	// Wait for a PCH multiframe.
-	//	gBTS.clock().wait(mNextWriteTime);
+	//	gBTS->clock().wait(mNextWriteTime);
 	//	return;
 	//}
 
@@ -918,7 +918,7 @@ int GetTimingAdvance(float timingError)
 		// TODO: This is not thread safe.  It would not work either,
 		// because the TRXManager function asserts that nobody got the channel earlier.
 		// Can we hook the channel inside the logical channel?
-		gBTS.addTCH(mlogchan);
+		gBTS->addTCH(mlogchan);
 	}
 #endif
 

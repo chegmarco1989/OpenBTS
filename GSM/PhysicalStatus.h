@@ -76,4 +76,7 @@ private:
 
 }; // namespace GSM
 
+/** The physical status reporting table */
+extern GSM::PhysicalStatus *gPhysStatus;
+
 #endif

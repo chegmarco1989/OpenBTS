@@ -120,7 +120,7 @@ void GSMConfig::regenerateBeacon()
 		return;
 	noRecursionPlease++;
 
-	gReports.incr("OpenBTS.GSM.RR.BeaconRegenerated");
+	gReports->incr("OpenBTS.GSM.RR.BeaconRegenerated");
 	mChangemark++;
 	gConfig.set("GSM.ChangeMark", mChangemark);
 
@@ -136,7 +136,7 @@ void GSMConfig::regenerateBeacon()
 	// MCC/MNC/LAC
 	mLAI = L3LocationAreaIdentity();
 
-	std::vector<unsigned> neighbors = gNeighborTable.ARFCNList();
+	std::vector<unsigned> neighbors = gNeighborTable->ARFCNList();
 	// if the neighbor list is emtpy, put ourselves on it
 	if (neighbors.size() == 0)
 		neighbors.push_back(gConfig.getNum("GSM.Radio.C0"));
@@ -232,7 +232,7 @@ void GSMConfig::regenerateBeacon()
 
 void GSMConfig::regenerateSI5()
 {
-	std::vector<unsigned> neighbors = gNeighborTable.ARFCNList();
+	std::vector<unsigned> neighbors = gNeighborTable->ARFCNList();
 	// if the neighbor list is emtpy, put ourselves on it
 	if (neighbors.size() == 0)
 		neighbors.push_back(gConfig.getNum("GSM.Radio.C0"));
@@ -440,7 +440,7 @@ TCHFACCHLogicalChannel *GSMConfig::getTCH(bool forGPRS, // If true, allocate the
 			chan->lcGetL1()->setGPRS(true, NULL);
 			return chan;
 		}
-		gReports.incr("OpenBTS.GSM.RR.ChannelAssignment");
+		gReports->incr("OpenBTS.GSM.RR.ChannelAssignment");
 		chan->lcinit();
 	} else {
 		// LOG(DEBUG)<<"getTCH returns NULL";
@@ -542,7 +542,7 @@ void GSMConfig::createCombinationI(TransceiverManager &TRX, unsigned CN, unsigne
 	chan->lcinit();
 	if (CN == 0 && !testStart)
 		chan->lcstart(); // Everything on C0 must broadcast continually.
-	gBTS.addTCH(chan);
+	gBTS->addTCH(chan);
 }
 
 class Beacon {
@@ -557,7 +557,7 @@ void GSMConfig::createCBCH(ARFCNManager *radio, TypeAndOffset type, int CN, int 
 	CBCHLogicalChannel *CBCH = new CBCHLogicalChannel(CN, TN, type == SDCCH_4_2 ? gSDCCH4[2] : gSDCCH8[2]);
 	CBCH->downstream(radio);
 	CBCH->cbchOpen();
-	gBTS.addCBCH(CBCH);
+	gBTS->addCBCH(CBCH);
 	if (!isCBSRunning) { // As of 8-2014, this is only called once so this test is irrelevant.
 		isCBSRunning = true;
 		CBCHControlThread.start((void *(*)(void *))Control::SMSCBSender, NULL);
@@ -613,11 +613,11 @@ public:
 				dynamic_cast<L3LogicalChannel *>(C0T0SDCCH[i]));
 			C0T0SDCCH[i]->lcinit();
 			C0T0SDCCH[i]->lcstart(); // Everything on channel 0 needs to broadcast constantly.
-			gBTS.addSDCCH(C0T0SDCCH[i]);
+			gBTS->addSDCCH(C0T0SDCCH[i]);
 		}
 		// Install CBCH if used.
 		if (SMSCB) {
-			gBTS.createCBCH(radio, SDCCH_4_2, 0, 0);
+			gBTS->createCBCH(radio, SDCCH_4_2, 0, 0);
 		}
 	}
 };
@@ -638,7 +638,7 @@ void GSMConfig::createCombinationVII(TransceiverManager &TRX, unsigned CN, unsig
 		chan->lcinit();
 		if (CN == 0 && !testStart)
 			chan->lcstart(); // Everything on C0 must broadcast continually.
-		gBTS.addSDCCH(chan);
+		gBTS->addSDCCH(chan);
 	}
 }
 
@@ -660,13 +660,13 @@ void GSMConfig::getChanVector(L2ChanList &result)
 {
 	result.clear();
 	result.reserve(64); // Enough for a 2 ARFCN system.
-	for (GSM::SDCCHList::const_iterator sChanItr = gBTS.SDCCHPool().begin(); sChanItr != gBTS.SDCCHPool().end();
+	for (GSM::SDCCHList::const_iterator sChanItr = gBTS->SDCCHPool().begin(); sChanItr != gBTS->SDCCHPool().end();
 		++sChanItr) {
 		result.push_back(*sChanItr);
 	}
 
 	// TCHs
-	for (GSM::TCHList::const_iterator tChanItr = gBTS.TCHPool().begin(); tChanItr != gBTS.TCHPool().end();
+	for (GSM::TCHList::const_iterator tChanItr = gBTS->TCHPool().begin(); tChanItr != gBTS->TCHPool().end();
 		++tChanItr) {
 		result.push_back(*tChanItr);
 	}

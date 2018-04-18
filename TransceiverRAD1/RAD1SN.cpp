@@ -39,7 +39,7 @@
 
 using namespace std;
 
-ConfigurationTable gConfig;
+ConfigurationTable *gConfigObject;
 
 char *prog_name;
 
@@ -119,6 +119,8 @@ static void chk_result(bool ok)
 
 int main(int argc, char **argv)
 {
+	gConfigObject = new ConfigurationTable();
+
 	int ch;
 	// bool verbose = false;
 	int which_board = 0;
@@ -180,4 +182,8 @@ int main(int argc, char **argv)
 	}
 
 	delete core;
+
+	delete gConfigObject;
+
+	return 0;
 }

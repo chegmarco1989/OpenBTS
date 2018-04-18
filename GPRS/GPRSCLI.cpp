@@ -213,7 +213,7 @@ static CLIStatus gprsStats(int argc, char **argv, int argi, ostream &os)
 		os << "GPRS is not enabled.  See 'GPRS.Enable' option.\n";
 		return FAILURE;
 	}
-	GSM::Time now = gBTS.time();
+	GSM::Time now = gBTS->time();
 	os << "GSM FN=" << now.FN() << " GPRS BSN=" << gBSNNext << "\n";
 	os << "Current number of"
 	   << " PDCH=" << gL2MAC.macPDCHs.size() << " MS=" << gL2MAC.macMSs.size() << " TBF=" << gL2MAC.macTBFs.size()
@@ -294,7 +294,7 @@ static CLIStatus gprsStop(int argc, char **argv, int argi, ostream &os)
 #if NO_LONGER_WORKING // (pat 2-2014) This code has eroded so I just disabled it.
 static CLIStatus gprsTestRach(int argc, char **argv, int argi, ostream &os)
 {
-	GSM::Time now = gBTS.time();
+	GSM::Time now = gBTS->time();
 	unsigned RA = 15 << 5;
 	GPRSProcessRACH(RA, now, -20, 0.5);
 	return SUCCESS;
@@ -340,7 +340,7 @@ static CLIStatus gprsTestMsg(int argc, char **argv, int argi, ostream &os)
 		return FAILURE;
 	}
 
-	Time gsmfn = gBTS.clock().FN();
+	Time gsmfn = gBTS->clock().FN();
 	os << "Test Messages, Current time:" << LOGVAR(gsmfn) << LOGVAR(gBSNNext) << "\n";
 
 	// Create a dummy RLCRawBLock for the uplink messages to parse.
@@ -620,11 +620,6 @@ static CLIStatus gprsSet(int argc, char **argv, int argi, ostream &os)
 			gFixSyncUseClock = atoi(val);
 		}
 		os << LOGVAR(gFixSyncUseClock) << "\n";
-	} else if (strmatch(what, "console")) {
-		if (val) {
-			gLogToConsole = atoi(val);
-		}
-		os << LOGVAR(gLogToConsole) << "\n";
 	} else {
 		os << "gprs set: unrecognized argument: " << what << "\n";
 	}
@@ -642,16 +637,6 @@ static CLIStatus gprsStep(int argc, char **argv, int argi, ostream &os)
 	++gBSNNext;
 	gL2MAC.macServiceLoop();
 	return FAILURE;
-}
-
-static CLIStatus gprsConsole(int argc, char **argv, int argi, ostream &os)
-{
-	gLogToConsole = !gLogToConsole; // Default: toggle.
-	if (argi < argc) {
-		gLogToConsole = atoi(argv[argi++]);
-	}
-	os << "LogToConsole=" << gLogToConsole << "\n";
-	return SUCCESS;
 }
 
 static struct GprsSubCmds {
@@ -677,9 +662,6 @@ static struct GprsSubCmds {
 #if INTERNAL_SGSN == 0
 	{"testul", gprsTestUl, "testul [-r]   # Send a test PDU through the RLCEngine; -r => randomize order "},
 #endif
-	{"console", gprsConsole,
-		"console [0|1]  # Send messages to console as well as /var/log/OpenBTS.log;\n\t\t (default=1 for "
-		"debugging)"},
 	{"mem", gprsMem, "mem   # Memory leak detector - print numbers of structs in use"},
 	{"test", gprsTest, "test   # Temporary test"},
 	// Dont have the source code for pinghttp linked in yet.
@@ -710,7 +692,6 @@ static void debugdefaults()
 	if (!inited) {
 		inited = 1;
 		GPRSDebug = 3;
-		gLogToConsole = 1;
 	}
 }
 *******/

@@ -51,7 +51,7 @@ static void abortInboundHandover(RefCntPointer<TranEntry> transaction, RRCause c
 {
 	LOG(DEBUG) << "aborting inbound handover " << *transaction;
 	unsigned holdoff = gConfig.getNum("GSM.Handover.FailureHoldoff");
-	gPeerInterface.sendHandoverFailure(transaction->getHandoverEntry(true), cause, holdoff);
+	gPeerInterface->sendHandoverFailure(transaction->getHandoverEntry(true), cause, holdoff);
 }
 
 // How did we get here you ask?  Peering received a handover request on BTS2 (us), allocated a channel and set the
@@ -198,7 +198,7 @@ static BestNeighbor HandoverDecision(const L3MeasurementResults *measurements, S
 	int margin = gConfig.GSM.Handover.Margin;
 
 	Peering::NeighborEntry nentry;
-	if (!gNeighborTable.ntFindByArfcn(bestn.mARFCN, bestn.mBSIC, &nentry)) {
+	if (!gNeighborTable->ntFindByArfcn(bestn.mARFCN, bestn.mBSIC, &nentry)) {
 		LOG(ERR) << "Could not find best neighbor entry from :" << LOGVAR2("ARFCN", bestn.mARFCN)
 			 << LOGVAR2("BSIC", bestn.mBSIC);
 		return NoHandover(bestn);
@@ -233,13 +233,13 @@ void HandoverDetermination(const L3MeasurementResults *measurements, SACCHLogica
 	}
 
 	string whatswrong; // pass by reference to getAddress()
-	string peerstr = gNeighborTable.getAddress(bestn.mARFCN, bestn.mBSIC, whatswrong);
+	string peerstr = gNeighborTable->getAddress(bestn.mARFCN, bestn.mBSIC, whatswrong);
 	if (peerstr.empty()) {
 		LOG(INFO) << "measurement for unknown neighbor" << LOGVAR2("ARFCN", bestn.mARFCN)
 			  << LOGVAR2("BSIC", bestn.mBSIC) << " " << whatswrong;
 		return;
 	}
-	if (gNeighborTable.holdingOff(peerstr.c_str())) {
+	if (gNeighborTable->holdingOff(peerstr.c_str())) {
 		LOG(NOTICE) << "skipping " << bestn.mHandoverCause << " handover to " << peerstr << " due to holdoff";
 		return;
 	}
@@ -304,7 +304,7 @@ void HandoverDetermination(const L3MeasurementResults *measurements, SACCHLogica
 	// Form and send the message.
 	// This message is re-sent every 0.5s (the periodicity of measurement reports) until the peer answers.
 	// pats TODO: we could surely do this a better way.
-	gPeerInterface.sendHandoverRequest(peerstr, tran, bestn.mHandoverCause);
+	gPeerInterface->sendHandoverRequest(peerstr, tran, bestn.mHandoverCause);
 }
 
 // (pat) TODO: This should be merged into the InCallProcedure state machine, but lets just get it working first.

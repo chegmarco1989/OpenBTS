@@ -409,9 +409,9 @@ void L3SIType4RestOctets::writeText(std::ostream &os) const
 L3SystemInformationType4::L3SystemInformationType4() : L3RRMessageRO(), mHaveCBCH(false)
 {
 	// Dont advertise CBCH unless and until we have a valid channel description for it.
-	if (isCBSEnabled() && gBTS.mCBCHDescription.initialized()) {
+	if (isCBSEnabled() && gBTS->mCBCHDescription.initialized()) {
 		mHaveCBCH = true;
-		mCBCHChannelDescription = gBTS.mCBCHDescription;
+		mCBCHChannelDescription = gBTS->mCBCHDescription;
 	}
 }
 
@@ -566,7 +566,7 @@ void L3ImmediateAssignment::text(ostream &os) const
 	os << " RequestReference=(" << mRequestReference << ")";
 	os << " TimingAdvance=" << mTimingAdvance;
 	if (mStartTimePresent) {
-		Time now = gBTS.time();
+		Time now = gBTS->time();
 		int msecsFuture = ((Time(mStartTimeFrame) - now.FN()).FN() * gFrameMicroseconds) / 1000;
 		os << LOGVARM(mStartTimeFrame) << "(" << msecsFuture << "ms)";
 	}

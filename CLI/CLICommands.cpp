@@ -61,9 +61,6 @@ extern CommandLine::CLIStatus sgsnCLI(int argc, char **argv, std::ostream &os);
 
 #undef WARNING
 
-extern TransceiverManager gTRX;
-extern NodeManager gNodeManager;
-
 namespace CommandLine {
 
 using namespace std;
@@ -107,23 +104,23 @@ static CLIStatus uptime(int argc, char **argv, ostream &os)
 	os << "Local time " << now << ", " << timestring << std::endl;
 	os << "watchdog timer expires in " << (gWatchdogRemaining() / 60) << " minutes" << endl;
 
-	int seconds = gBTS.uptime();
+	int seconds = gBTS->uptime();
 	if (seconds < 120) {
-		os << "uptime " << seconds << " seconds, frame " << gBTS.time() << endl;
+		os << "uptime " << seconds << " seconds, frame " << gBTS->time() << endl;
 		return SUCCESS;
 	}
 	float minutes = seconds / 60.0F;
 	if (minutes < 120) {
-		os << "uptime " << minutes << " minutes, frame " << gBTS.time() << endl;
+		os << "uptime " << minutes << " minutes, frame " << gBTS->time() << endl;
 		return SUCCESS;
 	}
 	float hours = minutes / 60.0F;
 	if (hours < 48) {
-		os << "uptime " << hours << " hours, frame " << gBTS.time() << endl;
+		os << "uptime " << hours << " hours, frame " << gBTS->time() << endl;
 		return SUCCESS;
 	}
 	float days = hours / 24.0F;
-	os << "uptime " << days << " days, frame " << gBTS.time() << endl;
+	os << "uptime " << days << " days, frame " << gBTS->time() << endl;
 
 	return SUCCESS;
 }
@@ -151,11 +148,11 @@ static CLIStatus exit_function(int argc, char **argv, ostream &os)
 		wait = atoi(argv[1]);
 
 	if (wait != 0)
-		os << "waiting up to " << wait << " seconds for clearing of " << gBTS.TCHActive() << " active calls"
+		os << "waiting up to " << wait << " seconds for clearing of " << gBTS->TCHActive() << " active calls"
 		   << endl;
 
 	// Block creation of new channels.
-	gBTS.setBtsHold(true);
+	gBTS->setBtsHold(true);
 
 	// Turn off GPRS if running.
 	GPRS::gprsStop();
@@ -163,18 +160,18 @@ static CLIStatus exit_function(int argc, char **argv, ostream &os)
 	// Wait up to the timeout for active channels to release.
 	time_t finish = time(NULL) + wait;
 	while (time(NULL) < finish) {
-		unsigned load = gBTS.SDCCHActive() + gBTS.TCHActive();
+		unsigned load = gBTS->SDCCHActive() + gBTS->TCHActive();
 		if (load == 0)
 			break;
 		sleep(1);
 	}
 	bool loads = false;
-	if (gBTS.SDCCHActive() > 0) {
-		LOG(WARNING) << "dropping " << gBTS.SDCCHActive() << " control transactions on exit";
+	if (gBTS->SDCCHActive() > 0) {
+		LOG(WARNING) << "dropping " << gBTS->SDCCHActive() << " control transactions on exit";
 		loads = true;
 	}
-	if (gBTS.TCHActive() > 0) {
-		LOG(WARNING) << "dropping " << gBTS.TCHActive() << " calls on exit";
+	if (gBTS->TCHActive() > 0) {
+		LOG(WARNING) << "dropping " << gBTS->TCHActive() << " calls on exit";
 		loads = true;
 	}
 	if (loads) {
@@ -183,8 +180,8 @@ static CLIStatus exit_function(int argc, char **argv, ostream &os)
 	}
 
 	// (pat) Shut down all the other threads.  If we dont, we may get a crash when we exit.
-	gReports.reportShutdown();
-	gBTS.setBtsShutdown();
+	gReports->reportShutdown();
+	gBTS->setBtsShutdown();
 	sleep(2); // Wait for all the threads and serviceloops to exit.
 
 	LOG(ALERT) << "exiting OpenBTS as directed by command line..."; // This is sent to the log file.
@@ -233,7 +230,7 @@ static CLIStatus tmsis(int argc, char **argv, ostream &os)
 	bool showAll = options.count("-a");
 	if (options.count("clear")) {
 		os << "clearing TMSI table" << endl;
-		gTMSITable.tmsiTabClear();
+		gTMSITable->tmsiTabClear();
 		return SUCCESS;
 	}
 	if (options.count("dump")) {
@@ -245,19 +242,19 @@ static CLIStatus tmsis(int argc, char **argv, ostream &os)
 		}
 		os << "dumping TMSI table to " << filename << endl;
 		fileout.open(filename.c_str(), ios::out); // erases existing!
-		gTMSITable.tmsiTabDump(verbose, options.count("-r"), fileout, showAll, taboption);
+		gTMSITable->tmsiTabDump(verbose, options.count("-r"), fileout, showAll, taboption);
 		return SUCCESS;
 	}
 	if (options.count("delete")) {
 		if (tmsiopt.size()) {
-			if (gTMSITable.dropTmsi(tmsi)) {
+			if (gTMSITable->dropTmsi(tmsi)) {
 				os << format("Deleted TMSI table entry for 0x%x", tmsi) << endl;
 			} else {
 				os << format("Cound not delete TMSI table entry for 0x%x", tmsi) << endl;
 				return FAILURE;
 			}
 		} else if (imsiopt.size()) {
-			if (gTMSITable.dropImsi(imsiopt.c_str())) {
+			if (gTMSITable->dropImsi(imsiopt.c_str())) {
 				os << format("Deleted TMSI table entry for %s", imsiopt) << endl;
 			} else {
 				os << format("Cound not delete TMSI table entry for %s", imsiopt) << endl;
@@ -283,7 +280,7 @@ static CLIStatus tmsis(int argc, char **argv, ostream &os)
 	if (options.count("query")) {
 		myquery = options["query"];
 	runmyquery:
-		if (gTMSITable.runQuery(myquery.c_str(), 0)) {
+		if (gTMSITable->runQuery(myquery.c_str(), 0)) {
 			os << "Query success." << endl;
 			return SUCCESS;
 		} else {
@@ -291,7 +288,7 @@ static CLIStatus tmsis(int argc, char **argv, ostream &os)
 			return FAILURE;
 		}
 	}
-	gTMSITable.tmsiTabDump(verbose, options.count("-r"), os, showAll, taboption);
+	gTMSITable->tmsiTabDump(verbose, options.count("-r"), os, showAll, taboption);
 	return SUCCESS;
 }
 
@@ -585,11 +582,11 @@ static CLIStatus printStats(int argc, char **argv, ostream &os)
 	if (argc != 1)
 		return BAD_NUM_ARGS;
 	os << "== GSM ==" << endl;
-	os << "SDCCH load/available: " << gBTS.SDCCHActive() << '/' << gBTS.SDCCHTotal() << endl;
-	os << "TCH/F load/available: " << gBTS.TCHActive() << '/' << gBTS.TCHTotal() << endl;
+	os << "SDCCH load/available: " << gBTS->SDCCHActive() << '/' << gBTS->SDCCHTotal() << endl;
+	os << "TCH/F load/available: " << gBTS->TCHActive() << '/' << gBTS->TCHTotal() << endl;
 	// paging table size
-	os << "PCH load: active, total: " << gBTS.PCHLoad() << ", " << GSM::gPager.pagingEntryListSize() << endl;
-	os << "AGCH load: active, pending: " << gBTS.AGCHLoad() << ", " << getAGCHPending() << endl;
+	os << "PCH load: active, total: " << gBTS->PCHLoad() << ", " << GSM::gPager.pagingEntryListSize() << endl;
+	os << "AGCH load: active, pending: " << gBTS->AGCHLoad() << ", " << getAGCHPending() << endl;
 	os << "== GPRS ==" << endl;
 	// (pat) We are not using dynamic channel allocation so I removed GPRS.Channels.Max until such time as we do.
 	// Also I did not understand what is the point of printing out something that is in the config?
@@ -636,7 +633,7 @@ static CLIStatus cellID(int argc, char **argv, ostream &os)
 		return BAD_VALUE;
 	}
 
-	gTMSITable.tmsiTabClear();
+	gTMSITable->tmsiTabClear();
 	gConfig.set("GSM.Identity.MCC", argv[1]);
 	gConfig.set("GSM.Identity.MNC", argv[2]);
 	gConfig.set("GSM.Identity.LAC", argv[3]);
@@ -676,7 +673,7 @@ static CLIStatus handover(int argc, char **argv, ostream &os)
 	}
 
 	string cause = options["-cause"]; // Empty string if it does not exist.
-	if (!gPeerInterface.sendHandoverRequest(peer, tran, cause)) {
+	if (!gPeerInterface->sendHandoverRequest(peer, tran, cause)) {
 		return BAD_VALUE;
 	}
 	return SUCCESS; // success of the handover CLI command, not success of the handover.
@@ -770,7 +767,7 @@ static CLIStatus trxfactory(int argc, char **argv, ostream &os)
 	if (argc != 1)
 		return BAD_NUM_ARGS;
 
-	signed val = gTRX.ARFCN(0)->getFactoryCalibration("sdrsn");
+	signed val = gTRX->ARFCN(0)->getFactoryCalibration("sdrsn");
 	if (val == 0 || val == 65535) {
 		os << "Reading factory calibration not supported on this radio." << endl;
 		return SUCCESS;
@@ -778,10 +775,10 @@ static CLIStatus trxfactory(int argc, char **argv, ostream &os)
 	os << "Factory Information" << endl;
 	os << "  SDR Serial Number = " << val << endl;
 
-	val = gTRX.ARFCN(0)->getFactoryCalibration("rfsn");
+	val = gTRX->ARFCN(0)->getFactoryCalibration("rfsn");
 	os << "  RF Serial Number = " << val << endl;
 
-	val = gTRX.ARFCN(0)->getFactoryCalibration("band");
+	val = gTRX->ARFCN(0)->getFactoryCalibration("band");
 	os << "  GSM.Radio.Band = ";
 	if (val == 0) {
 		os << "multi-band";
@@ -790,13 +787,13 @@ static CLIStatus trxfactory(int argc, char **argv, ostream &os)
 	}
 	os << endl;
 
-	val = gTRX.ARFCN(0)->getFactoryCalibration("rxgain");
+	val = gTRX->ARFCN(0)->getFactoryCalibration("rxgain");
 	os << "  GSM.Radio.RxGain = " << val << endl;
 
-	val = gTRX.ARFCN(0)->getFactoryCalibration("txgain");
+	val = gTRX->ARFCN(0)->getFactoryCalibration("txgain");
 	os << "  TRX.TxAttenOffset = " << val << endl;
 
-	val = gTRX.ARFCN(0)->getFactoryCalibration("freq");
+	val = gTRX->ARFCN(0)->getFactoryCalibration("freq");
 	os << "  TRX.RadioFrequencyOffset = " << val << endl;
 
 	return SUCCESS;
@@ -828,7 +825,7 @@ static CLIStatus audit(int argc, char **argv, ostream &os)
 	}
 
 	// factory calibration warnings
-	signed sdrsn = gTRX.ARFCN(0)->getFactoryCalibration("sdrsn");
+	signed sdrsn = gTRX->ARFCN(0)->getFactoryCalibration("sdrsn");
 	if (sdrsn != 0 && sdrsn != 65535) {
 		string factoryValue;
 		string configValue;
@@ -836,7 +833,7 @@ static CLIStatus audit(int argc, char **argv, ostream &os)
 		factoryValue = gConfig.mSchema["GSM.Radio.Band"].getDefaultValue();
 		configValue = gConfig.getStr("GSM.Radio.Band");
 		// only warn on band changes if the unit is not multi-band
-		if (gTRX.ARFCN(0)->getFactoryCalibration("band") != 0 && configValue.compare(factoryValue) != 0) {
+		if (gTRX->ARFCN(0)->getFactoryCalibration("band") != 0 && configValue.compare(factoryValue) != 0) {
 			ss << "GSM.Radio.Band \"" << configValue << "\" (\"" << factoryValue << "\")" << endl;
 		}
 
@@ -918,7 +915,7 @@ static CLIStatus audit(int argc, char **argv, ostream &os)
 	}
 
 	// unapplied values
-	std::map<std::string, std::string> dirtyKeys = gNodeManager.getDirtyConfigurationKeysMap();
+	std::map<std::string, std::string> dirtyKeys = gNodeManager->getDirtyConfigurationKeysMap();
 	std::map<std::string, std::string>::iterator dk = dirtyKeys.begin();
 	while (dk != dirtyKeys.end()) {
 		ss << dk->first << " \"" << gConfig.getStr(dk->first) << "\" (\"" << dk->second << "\")" << endl;
@@ -1299,7 +1296,7 @@ static void addChanInfo(vector<string> &row, // Result returned here.
 			bool singleNeighborColumn = true;
 			if (chan->getSACCH() && meas.NO_NCELL()) {
 				unsigned CN = meas.BCCH_FREQ_NCELL(0);
-				std::vector<unsigned> ARFCNList = gNeighborTable.ARFCNList();
+				std::vector<unsigned> ARFCNList = gNeighborTable->ARFCNList();
 				if (CN >= ARFCNList.size()) {
 					LOG(NOTICE) << "BCCH index " << CN << " does not match ARFCN list of size "
 						    << ARFCNList.size();
@@ -1343,7 +1340,7 @@ static void addChanInfo(vector<string> &row, // Result returned here.
 			if (!tran.isNULL()) {
 				HandoverEntry *hep = tran->getHandoverEntry(false);
 				Peering::NeighborEntry entry;
-				if (hep && gNeighborTable.ntFindByPeerAddr(&hep->mInboundPeer, &entry)) {
+				if (hep && gNeighborTable->ntFindByPeerAddr(&hep->mInboundPeer, &entry)) {
 					handoverInfo = entry.neC0PlusBSIC();
 				}
 			}
@@ -1433,11 +1430,11 @@ CLIStatus printChansV4(std::ostream &os, bool showAll, int verbosity, bool tabSe
 
 	using namespace GSM;
 
-	// gPhysStatus.dump(os);
+	// gPhysStatus->dump(os);
 	// os << endl << "Old data reporting: " << endl;
 
 	L2ChanList chans;
-	gBTS.getChanVector(chans);
+	gBTS->getChanVector(chans);
 	LOG(DEBUG);
 	Control::TranEntryList tids;
 	for (L2ChanList::iterator it = chans.begin(); it != chans.end(); it++) {
@@ -1509,7 +1506,7 @@ void printChanInfo(unsigned transID, const GSM::L2LogicalChannel *chan, ostream 
 		return;
 	}
 	unsigned CN = meas.BCCH_FREQ_NCELL(0);
-	std::vector<unsigned> ARFCNList = gNeighborTable.ARFCNList();
+	std::vector<unsigned> ARFCNList = gNeighborTable->ARFCNList();
 	if (CN >= ARFCNList.size()) {
 		LOG(NOTICE) << "BCCH index " << CN << " does not match ARFCN list of size " << ARFCNList.size();
 		os << endl;
@@ -1527,11 +1524,11 @@ CLIStatus printChansV4(std::ostream &os, bool showAll)
 	   << endl;
 	os << "CN TN type      id                       pct    dB   dBm  sym   dBm      pct    ARFCN    dBm" << endl;
 
-	// gPhysStatus.dump(os);
+	// gPhysStatus->dump(os);
 	// os << endl << "Old data reporting: " << endl;
 
 	L2ChanList chans;
-	gBTS.getChanVector(chans);
+	gBTS->getChanVector(chans);
 	Control::TranEntryList tids;
 	for (L2ChanList::iterator it = chans.begin(); it != chans.end(); it++) {
 		const L2LogicalChannel *chan = *it;
@@ -1616,7 +1613,7 @@ static CLIStatus rxgain(int argc, char **argv, ostream &os)
 		return BAD_VALUE;
 	}
 
-	int newGain = gTRX.ARFCN(0)->setRxGain(atoi(argv[1]));
+	int newGain = gTRX->ARFCN(0)->setRxGain(atoi(argv[1]));
 	os << "new RX gain is " << newGain << " dB" << endl;
 
 	gConfig.set("GSM.Radio.RxGain", newGain);
@@ -1638,7 +1635,7 @@ static CLIStatus txatten(int argc, char **argv, ostream &os)
 		return BAD_VALUE;
 	}
 
-	int newAtten = gTRX.ARFCN(0)->setTxAtten(atoi(argv[1]));
+	int newAtten = gTRX->ARFCN(0)->setTxAtten(atoi(argv[1]));
 	os << "new TX attenuation is " << newAtten << " dB" << endl;
 
 	gConfig.set("TRX.TxAttenOffset", newAtten);
@@ -1660,7 +1657,7 @@ static CLIStatus freqcorr(int argc, char **argv, ostream &os)
 		return BAD_VALUE;
 	}
 
-	int newOffset = gTRX.ARFCN(0)->setFreqOffset(atoi(argv[1]));
+	int newOffset = gTRX->ARFCN(0)->setFreqOffset(atoi(argv[1]));
 	os << "new freq. offset is " << newOffset << endl;
 
 	gConfig.set("TRX.RadioFrequencyOffset", newOffset);
@@ -1673,7 +1670,7 @@ static CLIStatus noise(int argc, char **argv, ostream &os)
 	if (argc != 1)
 		return BAD_NUM_ARGS;
 
-	int noise = gTRX.ARFCN(0)->getNoiseLevel();
+	int noise = gTRX->ARFCN(0)->getNoiseLevel();
 	int target = abs(gConfig.getNum("GSM.Radio.RSSITarget"));
 	int diff = noise - target;
 
@@ -1699,25 +1696,25 @@ static CLIStatus sysinfo(int argc, char **argv, ostream &os)
 	if (argc != 1)
 		return BAD_NUM_ARGS;
 
-	const GSM::L3SystemInformationType1 *SI1 = gBTS.SI1();
+	const GSM::L3SystemInformationType1 *SI1 = gBTS->SI1();
 	if (SI1)
 		os << *SI1 << endl;
-	const GSM::L3SystemInformationType2 *SI2 = gBTS.SI2();
+	const GSM::L3SystemInformationType2 *SI2 = gBTS->SI2();
 	if (SI2)
 		os << *SI2 << endl;
-	const GSM::L3SystemInformationType3 *SI3 = gBTS.SI3();
+	const GSM::L3SystemInformationType3 *SI3 = gBTS->SI3();
 	if (SI3)
 		os << *SI3 << endl;
-	const GSM::L3SystemInformationType4 *SI4 = gBTS.SI4();
+	const GSM::L3SystemInformationType4 *SI4 = gBTS->SI4();
 	if (SI4)
 		os << *SI4 << endl;
-	const GSM::L3SystemInformationType5 *SI5 = gBTS.SI5();
+	const GSM::L3SystemInformationType5 *SI5 = gBTS->SI5();
 	if (SI5)
 		os << *SI5 << endl;
-	const GSM::L3SystemInformationType6 *SI6 = gBTS.SI6();
+	const GSM::L3SystemInformationType6 *SI6 = gBTS->SI6();
 	if (SI6)
 		os << *SI6 << endl;
-	const GSM::L3SystemInformationType13 *SI13 = gBTS.SI13();
+	const GSM::L3SystemInformationType13 *SI13 = gBTS->SI13();
 	if (SI13)
 		os << *SI13 << endl;
 
@@ -1766,7 +1763,7 @@ static CLIStatus neighbors(int argc, char **argv, ostream &os)
 			// the data.
 			if (vh.size() >= 2) {
 				int arfcn = atoi(vh[1].c_str());
-				int freqIndex = gNeighborTable.getFreqIndexForARFCN(arfcn);
+				int freqIndex = gNeighborTable->getFreqIndexForARFCN(arfcn);
 				vh.push_back(format("%d", freqIndex));
 			}
 			tab.push_back(vh);
@@ -1777,14 +1774,14 @@ static CLIStatus neighbors(int argc, char **argv, ostream &os)
 #else
 
 	vector<Peering::NeighborEntry> nvec;
-	gNeighborTable.getNeighborVector(nvec);
+	gNeighborTable->getNeighborVector(nvec);
 	for (vector<NeighborEntry>::iterator it = nvec.begin(); it != nvec.end(); it++) {
 		NeighborEntry &entry = *it;
 		vh.clear();
 		vh.push_back(entry.mIPAddress);
 		vh.push_back(format("%d", (int)entry.mC0));
 		vh.push_back(format("%d", (int)entry.mBSIC));
-		int freqIndex = gNeighborTable.getFreqIndexForARFCN(entry.mC0);
+		int freqIndex = gNeighborTable->getFreqIndexForARFCN(entry.mC0);
 		vh.push_back(format("%d", freqIndex));
 		vh.push_back(format("%d", (int)entry.mNoise));
 		vh.push_back(format("%d", (int)entry.mNumArfcns));
@@ -1813,7 +1810,7 @@ static CLIStatus stats(int argc, char **argv, ostream &os)
 	char cmd[BUFSIZ];
 	if (argc == 2) {
 		if (strcmp(argv[1], "clear") == 0) {
-			gReports.clear();
+			gReports->clear();
 			os << "stats table (gReporting) cleared" << endl;
 			return SUCCESS;
 		}

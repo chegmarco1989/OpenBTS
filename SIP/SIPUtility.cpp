@@ -275,9 +275,9 @@ string globallyUniqueId(const char *start)
 static unsigned cellid()
 {
 	// Cell id:
-	unsigned c0 = gTRX.C0();   // 10 bits
-	unsigned bcc = gBTS.BCC(); // 3 bits
-	unsigned ncc = gBTS.NCC(); // 3 bits
+	unsigned c0 = gTRX->C0();   // 10 bits
+	unsigned bcc = gBTS->BCC(); // 3 bits
+	unsigned ncc = gBTS->NCC(); // 3 bits
 	return (c0 << 16) + (bcc << 3) + ncc;
 }
 
@@ -290,7 +290,7 @@ static unsigned cellid()
 string globallyUniqueId(const char *start)
 {
 	// This is a a globally unique callid.
-	GSM::L3LocationAreaIdentity lai = gBTS.LAI(); // 3 digit MCC, 3 digit MNC, 16-bit LAC.
+	GSM::L3LocationAreaIdentity lai = gBTS->LAI(); // 3 digit MCC, 3 digit MNC, 16-bit LAC.
 	char buf[80];
 	snprintf(buf, 80, "%s%03u%02u%x%x-%x%x", start, lai.MCC(), lai.MNC(), lai.LAC(), cellid(), timeUniquifier(),
 		(unsigned)(0xffffffff & random()));

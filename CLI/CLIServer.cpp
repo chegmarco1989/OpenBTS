@@ -35,7 +35,7 @@ void Parser::Prompt() const
 int Parser::Execute(bool console, const char cmdbuf[], int outfd)
 {
 	// step 2 - execute
-	gReports.incr("OpenBTS.CLI.Command");
+	gReports->incr("OpenBTS.CLI.Command");
 	const char *type = console ? "Console: " : "Socket: ";
 	LOG(INFO) << type << "received command \"" << cmdbuf << "\"";
 	std::ostringstream sout;
@@ -49,7 +49,7 @@ int Parser::Execute(bool console, const char cmdbuf[], int outfd)
 	if (console) {
 		if (write(outfd, rsp, len) != len) {
 			LOG(ERR) << type << "can't send CLI response";
-			gReports.incr("OpenBTS.CLI.Command.ResponseFailure");
+			gReports->incr("OpenBTS.CLI.Command.ResponseFailure");
 		}
 		this->Prompt();
 	} else {
@@ -58,12 +58,12 @@ int Parser::Execute(bool console, const char cmdbuf[], int outfd)
 		int sentLen = 0;
 		if ((sentLen = send(outfd, &len, sendLen, 0)) != sendLen) {
 			LOG(ERR) << type << "can't send CLI response";
-			gReports.incr("OpenBTS.CLI.Command.ResponseFailure");
+			gReports->incr("OpenBTS.CLI.Command.ResponseFailure");
 		} else {
 			sendLen = strlen(rsp);
 			if ((sentLen = send(outfd, rsp, sendLen, 0)) != sendLen) {
 				LOG(ERR) << type << "can't send CLI response";
-				gReports.incr("OpenBTS.CLI.Command.ResponseFailure");
+				gReports->incr("OpenBTS.CLI.Command.ResponseFailure");
 			}
 		}
 	}
@@ -106,7 +106,7 @@ void Parser::cliServer()
 		if (netSockFd < 0) {
 			perror("creating CLI network stream socket");
 			LOG(ALERT) << "cannot create network tcp socket for CLI";
-			gReports.incr("OpenBTS.Exit.CLI.Socket");
+			gReports->incr("OpenBTS.Exit.CLI.Socket");
 			exit(1);
 		}
 		int optval = 1;
@@ -114,7 +114,7 @@ void Parser::cliServer()
 		if (bind(netSockFd, (struct sockaddr *)&servAddr, sizeof(struct sockaddr_in))) {
 			perror("binding name to network socket");
 			LOG(ALERT) << "cannot bind socket for CLI at " << (netTcp ? "tcp:" : "udp:") << netPort;
-			gReports.incr("OpenBTS.Exit.CLI.Socket");
+			gReports->incr("OpenBTS.Exit.CLI.Socket");
 			exit(1);
 		}
 		if (netTcp)
@@ -173,7 +173,7 @@ void Parser::cliServer()
 										 // interesting to know who it's from.
 						if (fd < 0) {
 							LOG(ERR) << "can't accept network stream connection";
-							gReports.incr("OpenBTS.CLI.Command.ResponseFailure");
+							gReports->incr("OpenBTS.CLI.Command.ResponseFailure");
 							break;
 						}
 						// (pat) Could make an argument that we should always print this message
@@ -201,7 +201,7 @@ void Parser::cliServer()
 					int nread = recv(i, &len, sizeof(len), 0);
 					if (nread < 0) {
 						LOG(ERR) << "can't read CLI request from stream";
-						gReports.incr("OpenBTS.CLI.Command.ResponseFailure");
+						gReports->incr("OpenBTS.CLI.Command.ResponseFailure");
 						break;
 					}
 					if (len == 0) // clsoe
@@ -219,7 +219,7 @@ void Parser::cliServer()
 							"bytes\n",
 							sizeof(len), len);
 						LOG(ERR) << buf;
-						gReports.incr("OpenBTS.CLI.Command.ResponseFailure");
+						gReports->incr("OpenBTS.CLI.Command.ResponseFailure");
 						break;
 					}
 					len = ntohl(len);
@@ -228,7 +228,7 @@ void Parser::cliServer()
 						nread = recv(i, &cmdbuf[off], len, 0);
 						if (nread < 0) {
 							LOG(ERR) << "can't read CLI request from stream";
-							gReports.incr("OpenBTS.CLI.Command.ResponseFailure");
+							gReports->incr("OpenBTS.CLI.Command.ResponseFailure");
 							break;
 						}
 						if (nread == 0) // close

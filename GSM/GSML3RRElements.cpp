@@ -855,7 +855,7 @@ void L3SI13RestOctets::writeV(L3Frame &dest, size_t &wp) const
 	// startup the changemark is always the same value, so if you kill OpenBTS,
 	// change something that affects the beacon, and restart, the MS does not read
 	// the changed beacon because the changemark is the same.
-	dest.writeField(wp, gBTS.changemark() % 8, 3); // BCCH_CHANGE_MARK
+	dest.writeField(wp, gBTS->changemark() % 8, 3); // BCCH_CHANGE_MARK
 
 	dest.writeField(wp, 0, 4); // SI13_CHANGE_FIELD
 

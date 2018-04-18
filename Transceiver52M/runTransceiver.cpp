@@ -50,8 +50,11 @@ std::vector<std::string> configurationCrossCheck(const std::string &key);
 static const char *cOpenBTSConfigEnv = "OpenBTSConfigFile";
 
 // Load configuration from a file.
-ConfigurationTable gConfig(
-	getenv(cOpenBTSConfigEnv) ? getenv(cOpenBTSConfigEnv) : CONFIGDB, "transceiver", getConfigurationKeys());
+ConfigurationTable *gConfigObject;
+
+#ifndef gCofnig
+#define gConfig gConfigTable
+#endif
 
 volatile bool gbShutdown = false;
 
@@ -112,6 +115,8 @@ int testConfig(const char *filename)
 
 int main(int argc, char **argv)
 {
+	gConfigObject = new ConfigurationTable(getenv(cOpenBTSConfigEnv) ? getenv(cOpenBTSConfigEnv) : CONFIGDB, "transceiver", getConfigurationKeys());
+
 	int trxPort, radioType, fail = 0;
 	std::string deviceArgs, logLevel, trxAddr, refstr;
 	RadioDevice *usrp = NULL;
@@ -213,6 +218,8 @@ shutdown:
 	delete trx;
 	delete radio;
 	delete usrp;
+
+	delete gConfigObject;
 
 	if (fail)
 		return EXIT_FAILURE;

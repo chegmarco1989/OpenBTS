@@ -43,7 +43,7 @@
 using namespace std;
 
 // We must have a gConfig now to include BitVector.
-ConfigurationTable gConfig;
+ConfigurationTable *gConfigObject;
 
 void origTest()
 {
@@ -241,6 +241,8 @@ void testPunctureUnpuncture(const char *label, const unsigned int *punk, size_t 
 
 int main(int argc, char **argv)
 {
+	gConfigObject = new ConfigurationTable();
+
 	struct timeval tv;
 
 	gettimeofday(&tv, NULL);
@@ -248,6 +250,8 @@ int main(int argc, char **argv)
 
 	origTest();
 	testEncodeDecode("ViterbiR204", new ViterbiR2O4(), 378, 2, 4, false);
+
+	delete gConfigObject;
 
 	return 0;
 }

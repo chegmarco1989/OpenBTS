@@ -43,8 +43,6 @@
 #include "radioDevice.h"
 #include "rnrad1.h"
 
-extern ConfigurationTable gConfig;
-
 /** A class to handle a USRP rev 4, with a two RFX900 daughterboards */
 class RAD1Device : public RadioDevice {
 

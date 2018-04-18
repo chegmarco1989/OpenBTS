@@ -541,7 +541,7 @@ void L2LogicalChannel::serviceHost()
 
 void *L2LogicalChannel::ControlServiceLoop(L2LogicalChannel *hostchan)
 {
-	while (!gBTS.btsShutdown()) {
+	while (!gBTS->btsShutdown()) {
 		sleepFrames(26); // We dont have to do this very often.
 		if (hostchan->l1active()) {
 			hostchan->serviceHost();
@@ -568,7 +568,7 @@ void *L2LogicalChannel::ControlServiceLoop(L2LogicalChannel *hostchan)
 void *L2LogicalChannel::MessageServiceLoop(L2LogicalChannel *hostchan)
 {
 	WATCHINFO("Starting MessageServiceLoop for " << hostchan);
-	while (!gBTS.btsShutdown()) {
+	while (!gBTS->btsShutdown()) {
 		L3Frame *l3fp = hostchan->mL3In.read(52 * 4); // Add a delay so will exit at BTS shutdown.
 		// (pat) The frames may be L3_DATA which will block until delivered, which could take minutes,
 		// which is why we need a separate thread to drive this.
@@ -801,7 +801,7 @@ bool SACCHLogicalChannel::processMeasurementReport(L3Frame *rrFrame)
 			//}
 			// Add the measurement results to the sql table (pat - no longer used)
 			// Note that the typeAndOffset of a SACCH match the host channel.
-			gPhysStatus.setPhysical(this, mMeasurementResults);
+			gPhysStatus->setPhysical(this, mMeasurementResults);
 			// Check for handover requirement.
 			// (pat) TODO: This may block while waiting for a reply from a Peer BTS.
 			Control::HandoverDetermination(&mMeasurementResults, this);
@@ -831,9 +831,9 @@ void SACCHLogicalChannel::serviceSACCH(unsigned &count)
 		// (pat) blocks using waitToSend until L1Encoder::mPrevWriteTime
 		OBJLOG(DEBUG) << "sending SI5/6 on SACCH";
 		if (count % 2)
-			sapWriteFromL3(gBTS.SI5Frame());
+			sapWriteFromL3(gBTS->SI5Frame());
 		else
-			sapWriteFromL3(gBTS.SI6Frame());
+			sapWriteFromL3(gBTS->SI6Frame());
 		count++;
 	}
 
@@ -846,8 +846,8 @@ void *SACCHLogicalChannel::SACCHServiceLoop(SACCHLogicalChannel *sacch)
 {
 	WATCHINFO("Starting SACCHServiceLoop for " << sacch);
 	unsigned count = 0;
-	while (!gBTS.btsShutdown()) {
-		// if (gBTS.time().FN() % 104 == 0) { OBJLOG(DEBUG) <<LOGVAR(l1active()) <<LOGVAR(recyclable()); }
+	while (!gBTS->btsShutdown()) {
+		// if (gBTS->time().FN() % 104 == 0) { OBJLOG(DEBUG) <<LOGVAR(l1active()) <<LOGVAR(recyclable()); }
 
 		// Throttle back if not active.
 		// This is equivalent to testing if the L2LAPDm is in 'null' state as defined in GSM 4.06.

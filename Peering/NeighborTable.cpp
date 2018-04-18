@@ -366,7 +366,7 @@ void NeighborTable::pingPeer(string ipString)
 		LOG(ERR) << "cannot resolve neighbor address=" << ipString;
 	} else {
 		LOG(INFO) << "sending neighbor param request to:" << ipString;
-		gPeerInterface.sendNeighborParamsRequest(&address);
+		gPeerInterface->sendNeighborParamsRequest(&address);
 	}
 }
 

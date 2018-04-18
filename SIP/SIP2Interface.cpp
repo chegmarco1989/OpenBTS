@@ -47,7 +47,7 @@
 #include <Control/L3TranEntry.h>
 #include <GSM/GSMConfig.h>
 #include <GSM/GSMLogicalChannel.h>
-#include <Globals/Globals.h> // For gReports.
+#include <Globals/Globals.h>
 #include <apps/OpenBTSConfig.h>
 
 #include "SIP2Interface.h"
@@ -635,11 +635,11 @@ bool MySipInterface::newCheckInvite(SipMessage *msg)
 	// Check channel availability now, too,
 	// even if we are not actually assigning the channel yet.
 	if (msg->isINVITE()) {
-		gReports.incr("OpenBTS.SIP.INVITE.In");
+		gReports->incr("OpenBTS.SIP.INVITE.In");
 		handleInvite(msg, true);
 		return true;
 	} else if (msg->isMESSAGE()) {
-		gReports.incr("OpenBTS.SIP.MESSAGE.In");
+		gReports->incr("OpenBTS.SIP.MESSAGE.In");
 		handleInvite(msg, false);
 		return true;
 	} else {
@@ -696,7 +696,7 @@ void SipInterface::siDrive2()
 // This is the thread that processes all in comming SIP messages
 static void driveLoop2(MySipInterface *si)
 {
-	while (!gBTS.btsShutdown()) {
+	while (!gBTS->btsShutdown()) {
 		si->siDrive2();
 	}
 }
@@ -704,7 +704,7 @@ static void driveLoop2(MySipInterface *si)
 // (pat) Every now and then check every SipDialog engine for SIP timer expiration.
 static void periodicServiceLoop(MySipInterface *si)
 {
-	while (!gBTS.btsShutdown()) {
+	while (!gBTS->btsShutdown()) {
 		si->tuMapPeriodicService();
 		si->dmPeriodicService();
 		si->purgeDeadDialogs();

@@ -130,7 +130,7 @@ static const int powerCommand1900[32] = {
 
 const int *pickTable()
 {
-	unsigned band = gBTS.band();
+	unsigned band = gBTS->band();
 
 	switch (band) {
 	case GSM850:
@@ -182,9 +182,9 @@ unsigned encodePower(int power)
 
 L1Encoder::L1Encoder(unsigned wCN, unsigned wTN, const TDMAMapping &wMapping, L1FEC *wParent)
 	: mDownstream(NULL), mMapping(wMapping), mCN(wCN), mTN(wTN),
-	  mTSC(gBTS.BCC()), // Note that TSC (Training Sequence Code) is hardcoded to the BCC.
-	  mParent(wParent), mTotalFrames(0), mPrevWriteTime(gBTS.time().FN(), wTN),
-	  mNextWriteTime(gBTS.time().FN(), wTN), mRunning(false), mEncrypted(ENCRYPT_NO), mEncryptionAlgorithm(0)
+	  mTSC(gBTS->BCC()), // Note that TSC (Training Sequence Code) is hardcoded to the BCC.
+	  mParent(wParent), mTotalFrames(0), mPrevWriteTime(gBTS->time().FN(), wTN),
+	  mNextWriteTime(gBTS->time().FN(), wTN), mRunning(false), mEncrypted(ENCRYPT_NO), mEncryptionAlgorithm(0)
 {
 	assert((int)mCN < gConfig.getNum("GSM.Radio.ARFCNs"));
 #ifndef TESTTCHL1FEC
@@ -225,7 +225,7 @@ void L1Encoder::encInit()
 	ScopedLock lock(mEncLock, __FILE__, __LINE__);
 	mTotalFrames = 0;
 	resync(true);		      // (pat 4-2014) Force mNextWriteTime to be recalculated at channel initiation.
-	mPrevWriteTime = gBTS.time(); // (pat) Prevents the first write after opening the channel from blocking in
+	mPrevWriteTime = gBTS->time(); // (pat) Prevents the first write after opening the channel from blocking in
 				      // waitToSend called from transmit.
 	// (doug) Turning off encryption when the channel closes would be a nightmare
 	// (catching all the ways, and performing the handshake under less than
@@ -289,7 +289,7 @@ void L1Encoder::resync(bool force)
 {
 	// If the encoder's clock is far from the current BTS clock,
 	// get it caught up to something reasonable.
-	Time now = gBTS.time();
+	Time now = gBTS->time();
 	int32_t delta = mNextWriteTime - now;
 	OBJLOG(DEBUG) << "L1Encoder next=" << mNextWriteTime << " now=" << now << " delta=" << delta;
 	if (force || (delta < 0) || (delta > (51 * 26))) {
@@ -316,7 +316,7 @@ void L1Encoder::waitToSend() const
 {
 	// Block until the BTS clock catches up to the
 	// most recently transmitted burst.
-	gBTS.clock().wait(mPrevWriteTime);
+	gBTS->clock().wait(mPrevWriteTime);
 }
 
 void L1Encoder::sendDummyFill()
@@ -337,7 +337,7 @@ void L1Encoder::sendDummyFill()
 			mDownstream->writeHighSideTx(mFillerBurst, "dummy");
 			rollForward();
 		}
-		mFillerSendTime = gBTS.clock().systime2(
+		mFillerSendTime = gBTS->clock().systime2(
 			mNextWriteTime); // (pat) The time when the last burst of the filler will be delivered.
 	}
 }
@@ -364,7 +364,7 @@ int unhex(const char c)
 // Given IMSI, copy Kc.  Return true iff there *is* a Kc.
 bool imsi2kc(string wIMSI, unsigned char *wKc)
 {
-	string kc = gTMSITable.getKc(wIMSI.c_str());
+	string kc = gTMSITable->getKc(wIMSI.c_str());
 	if (kc.length() == 0)
 		return false;
 	while (kc.length() < 16) {
@@ -631,7 +631,7 @@ void RACHL1Decoder::writeLowSideRx(const RxBurst &burst)
 	unsigned sentParity = ~mU.peekField(8, 6);
 	unsigned checkParity = mD.parity(mParity);
 	unsigned encodedBSIC = (sentParity ^ checkParity) & 0x03f;
-	if (encodedBSIC != gBTS.BSIC()) {
+	if (encodedBSIC != gBTS->BSIC()) {
 		countBadFrame(1);
 		return;
 	}
@@ -649,7 +649,7 @@ void RACHL1Decoder::writeLowSideRx(const RxBurst &burst)
 	unsigned RA = mD.peekField(0, 8);
 	OBJLOG(INFO) << "RACHL1Decoder received RA=" << RA << " at time " << burst.time()
 		     << " with RSSI=" << burst.RSSI() << " timingError=" << burst.timingError() << LOGVAR(TN());
-	// gBTS.channelRequest(new ChannelRequestRecord(RA,burst.time(),burst.RSSI(),burst.timingError()));
+	// gBTS->channelRequest(new ChannelRequestRecord(RA,burst.time(),burst.RSSI(),burst.timingError()));
 	AccessGrantResponder(RA, burst.time(), burst.RSSI(), burst.timingError(), TN());
 }
 
@@ -928,7 +928,7 @@ void MSPhysReportInfo::processPhysInfo(const RxBurst &inBurst)
 	mTimingError = (inBurst.timingError() + count * mTimingError) / (count + 1);
 
 	// Timestamp
-	mTimestamp = gBTS.clock().systime(inBurst.time());
+	mTimestamp = gBTS->clock().systime(inBurst.time());
 
 	OBJLOG(INFO) << "SACCHL1Decoder "
 		     << " RSSI=" << mRSSI << " burst.RSSI=" << inBurst.RSSI() << " timestamp=" << mTimestamp
@@ -1176,7 +1176,7 @@ void *GeneratorL1EncoderServiceLoopAdapter(GeneratorL1Encoder *gen)
 
 void GeneratorL1Encoder::serviceLoop()
 {
-	while (mRunning && !gBTS.btsShutdown()) {
+	while (mRunning && !gBTS->btsShutdown()) {
 		resync();
 		waitToSend();
 		generate();
@@ -1201,7 +1201,7 @@ void SCHL1Encoder::generate()
 	assert(mDownstream);
 	// Data, GSM 04.08 9.1.30
 	size_t wp = 0;
-	mD.writeField(wp, gBTS.BSIC(), 6);
+	mD.writeField(wp, gBTS->BSIC(), 6);
 	mD.writeField(wp, mNextWriteTime.T1(), 11);
 	mD.writeField(wp, mNextWriteTime.T2(), 5);
 	mD.writeField(wp, mNextWriteTime.T3p(), 3);
@@ -1255,7 +1255,7 @@ void *NDCCHL1EncoderServiceLoopAdapter(NDCCHL1Encoder *gen)
 
 void NDCCHL1Encoder::serviceLoop()
 {
-	while (mRunning && !gBTS.btsShutdown()) {
+	while (mRunning && !gBTS->btsShutdown()) {
 		generate();
 	}
 }
@@ -1269,29 +1269,29 @@ void BCCHL1Encoder::generate()
 	switch (mNextWriteTime.TC()) {
 	// (pat) Maps to: XCCHL1Encoder::writeHighSide.
 	case 0:
-		writeHighSide(gBTS.SI1Frame());
+		writeHighSide(gBTS->SI1Frame());
 		return;
 	case 1:
-		writeHighSide(gBTS.SI2Frame());
+		writeHighSide(gBTS->SI2Frame());
 		return;
 	case 2:
-		writeHighSide(gBTS.SI3Frame());
+		writeHighSide(gBTS->SI3Frame());
 		return;
 	case 3:
-		writeHighSide(gBTS.SI4Frame());
+		writeHighSide(gBTS->SI4Frame());
 		return;
-	// case 4: writeHighSide(GPRS::GPRSConfig::IsEnabled() ? gBTS.SI13Frame() : gBTS.SI3Frame());
+	// case 4: writeHighSide(GPRS::GPRSConfig::IsEnabled() ? gBTS->SI13Frame() : gBTS->SI3Frame());
 	case 4:
-		writeHighSide(gBTS.SI13() ? gBTS.SI13Frame() : gBTS.SI3Frame());
+		writeHighSide(gBTS->SI13() ? gBTS->SI13Frame() : gBTS->SI3Frame());
 		return;
 	case 5:
-		writeHighSide(gBTS.SI2Frame());
+		writeHighSide(gBTS->SI2Frame());
 		return;
 	case 6:
-		writeHighSide(gBTS.SI3Frame());
+		writeHighSide(gBTS->SI3Frame());
 		return;
 	case 7:
-		writeHighSide(gBTS.SI4Frame());
+		writeHighSide(gBTS->SI4Frame());
 		return;
 	default:
 		assert(0);
@@ -1406,7 +1406,7 @@ void TCHFACCHL1Decoder::writeLowSideRx(const RxBurst &inBurst)
 		unsigned encodedBSIC = (sentParity ^ checkParity) & 0x03f;
 		OBJLOG(DEBUG) << "handover access sentParity " << sentParity << " checkParity " << checkParity
 			      << " endcodedBSIC " << encodedBSIC;
-		if (encodedBSIC != gBTS.BSIC())
+		if (encodedBSIC != gBTS->BSIC())
 			return;
 		// OK.  So we got a burst.
 		mHD.LSB8MSB();
@@ -1420,7 +1420,7 @@ void TCHFACCHL1Decoder::writeLowSideRx(const RxBurst &inBurst)
 		if (ref == mHandoverRef) {
 			OBJLOG(NOTICE) << "queuing HANDOVER_ACCESS ref=" << ref;
 			mT3103.reset();
-			double when = gBTS.clock().systime(inBurst.time());
+			double when = gBTS->clock().systime(inBurst.time());
 			mHandoverRecord = HandoverRecord(inBurst.RSSI(), inBurst.timingError(), when);
 			mUpstream->writeLowSide(L2Message(HANDOVER_ACCESS));
 			// (pat) FIXME: We need to set the PHY params from the handover burst so that SACCH will be
@@ -2011,7 +2011,7 @@ bool TCHFRL1Decoder::decodeTCH(bool stolen, const SoftVector *wC) // result goes
 
 void TCHFACCHL1EncoderRoutine(TCHFACCHL1Encoder *encoder)
 {
-	while (!gBTS.btsShutdown()) {
+	while (!gBTS->btsShutdown()) {
 		encoder->dispatch();
 	}
 }
@@ -2202,7 +2202,7 @@ void TCHFACCHL1Encoder::dispatch()
 			ScopedLock lock(mWriteTimeLock, __FILE__, __LINE__); // (pat) Protects getNextWriteTime.
 			mNextWriteTime += 26;
 		}
-		gBTS.clock().wait(mNextWriteTime);
+		gBTS->clock().wait(mNextWriteTime);
 		return;
 	}
 

@@ -39,7 +39,11 @@
 
 using namespace std;
 
-ConfigurationTable gConfig;
+ConfigurationTable *gConfigObject;
+
+#ifndef gCofnig
+#define gConfig gConfigTable
+#endif
 
 char *prog_name;
 
@@ -153,6 +157,8 @@ static bool get_on_off(const char *s)
 
 int main(int argc, char **argv)
 {
+	gConfigObject = new ConfigurationTable();
+
 	int ch;
 	// bool verbose = false;
 	int which_board = 0;
@@ -294,6 +300,8 @@ int main(int argc, char **argv)
 	} else {
 		usage();
 	}
+
+	delete gConfigObject;
 
 	return 0;
 

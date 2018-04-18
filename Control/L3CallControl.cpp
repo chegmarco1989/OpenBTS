@@ -439,7 +439,7 @@ MachineStatus MOCMachine::handleSetupMsg(const L3Setup *setup)
 	// pat fixed.  See comments at MOCInitiated. setGSMState(CCState::MOCInitiated);
 
 	PROCLOG(INFO) << *setup;
-	gReports.incr("OpenBTS.GSM.CC.MOC.Setup");
+	gReports->incr("OpenBTS.GSM.CC.MOC.Setup");
 	if (setup->mFacility.mExtant)
 		WATCH(setup); // USSD DEBUG!
 
@@ -595,7 +595,7 @@ MachineStatus MOCMachine::machineRunState(int state, const GSM::L3Message *l3msg
 			if (mobileID.type()==IMSIType) {
 				string imsi(mobileID.digits());
 				tran()->setSubscriberImsi(string(mobileID.digits()),true);
-				if (!gTMSITable.tmsiTabCheckAuthorization(imsi)) {
+				if (!gTMSITable->tmsiTabCheckAuthorization(imsi)) {
 					return sendCMServiceReject(L3RejectCause::Requested_Service_Option_Not_Subscribed,true);
 				}
 				return serviceAccept();
@@ -604,7 +604,7 @@ MachineStatus MOCMachine::machineRunState(int state, const GSM::L3Message *l3msg
 			// If we got a TMSI, find the IMSI.
 			if (mobileID.type()==TMSIType) {
 				unsigned authorized;
-				string imsi = gTMSITable.tmsiTabGetIMSI(mobileID.TMSI(),&authorized);
+				string imsi = gTMSITable->tmsiTabGetIMSI(mobileID.TMSI(),&authorized);
 				if (imsi.size()) {
 					// TODO: We need to authenticate this.
 					// But for now, just accept it.
@@ -636,7 +636,7 @@ MachineStatus MOCMachine::machineRunState(int state, const GSM::L3Message *l3msg
 			if (mobileID.type()==IMSIType) {
 				string imsi(mobileID.digits());
 				tran()->setSubscriberImsi(imsi,true);
-				if (!gTMSITable.tmsiTabCheckAuthorization(imsi)) {
+				if (!gTMSITable->tmsiTabCheckAuthorization(imsi)) {
 					return sendCMServiceReject(L3RejectCause::Requested_Service_Option_Not_Subscribed,true);
 				}
 				return serviceAccept();
@@ -711,7 +711,7 @@ MachineStatus MOCMachine::machineRunState(int state, const GSM::L3Message *l3msg
 
 		if (gConfig.getBool("GSM.Cipher.Encrypt")) {
 			int encryptionAlgorithm =
-				gTMSITable.tmsiTabGetPreferredA5Algorithm(tran()->subscriberIMSI().c_str());
+				gTMSITable->tmsiTabGetPreferredA5Algorithm(tran()->subscriberIMSI().c_str());
 			if (!encryptionAlgorithm) {
 				LOG(DEBUG) << "A5/3 and A5/1 not supported: NOT sending Ciphering Mode Command on "
 					   << *channel() << " for " << tran()->subscriberIMSI();
@@ -1072,7 +1072,7 @@ MachineStatus MTCMachine::machineRunState(int state, const GSM::L3Message *l3msg
 		// stateStart.
 		if (gConfig.getBool("GSM.Cipher.Encrypt")) {
 			int encryptionAlgorithm =
-				gTMSITable.tmsiTabGetPreferredA5Algorithm(tran()->subscriberIMSI().c_str());
+				gTMSITable->tmsiTabGetPreferredA5Algorithm(tran()->subscriberIMSI().c_str());
 			if (!encryptionAlgorithm) {
 				LOG(DEBUG) << "A5/3 and A5/1 not supported: NOT sending Ciphering Mode Command on "
 					   << *channel() << " for IMSI" << tran()->subscriberIMSI();
@@ -1177,7 +1177,7 @@ MachineStatus InboundHandoverMachine::machineRunState(
 		getDialog()->MOCSendACK();
 
 		// Send completion to peer BTS.  TODO: This should be in a separate thread.
-		gPeerInterface.sendHandoverComplete(tran()->getHandoverEntry(true));
+		gPeerInterface->sendHandoverComplete(tran()->getHandoverEntry(true));
 
 		// Convert to a normal call.  The Active status will (hopefully) cause RTP data to start
 		// being transferred by the service loop as soon as we return...

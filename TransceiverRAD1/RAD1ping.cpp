@@ -33,10 +33,11 @@
 
 using namespace std;
 
-ConfigurationTable gConfig("/etc/OpenBTS/OpenBTS.db");
+ConfigurationTable *gConfigObject;
 
 int main(int argc, char **argv)
 {
+	gConfigObject = new ConfigurationTable("/etc/OpenBTS/OpenBTS.db");
 
 	// Configure logger.
 	if (argc > 1)
@@ -110,4 +111,8 @@ int main(int argc, char **argv)
 			// usrp->writeSamples((short*) data2,512*numpkts,&underrun,timestamp+1000);
 		}
 	}
+
+	delete gConfigObject;
+
+	return 0;
 }

@@ -197,7 +197,7 @@ void L3LogicalChannel::chanFreeContext(TermCause cause)
 bool L3LogicalChannel::reassignAllocNextTCH() // For a channel reassignment procedure.
 {
 	ScopedLock lock(gMMLock, __FILE__, __LINE__);
-	GSM::TCHFACCHLogicalChannel *tch = gBTS.getTCH();
+	GSM::TCHFACCHLogicalChannel *tch = gBTS->getTCH();
 	if (tch == NULL) {
 		LOG(DEBUG) << LOGVAR2("curchan", this) << LOGVAR2("nextchan", "null,congestion");
 		return false;
@@ -484,7 +484,7 @@ bool L3LogicalChannel::isSDCCH() const { return chtype() == GSM::SDCCHType; }
 void printChansInfo(std::ostream &os)
 {
 	L2ChanList chans;
-	gBTS.getChanVector(chans);
+	gBTS->getChanVector(chans);
 	for (L2ChanList::iterator it = chans.begin(); it != chans.end(); it++) {
 		L3LogicalChannel *chan = dynamic_cast<L3LogicalChannel *>(*it);
 		os << chan;

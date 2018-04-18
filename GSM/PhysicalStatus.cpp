@@ -40,8 +40,6 @@
 #include "GSMLogicalChannel.h"
 #include "PhysicalStatus.h"
 
-extern NodeManager gNodeManager;
-
 using namespace std;
 using namespace GSM;
 
@@ -139,7 +137,7 @@ bool PhysicalStatus::setPhysical(const SACCHLogicalChannel *chan, const L3Measur
 		CN = measResults.BCCH_FREQ_NCELL(0);
 	int ARFCN = -1;
 	if (CN >= 0) {
-		std::vector<unsigned> ARFCNList = gNeighborTable.ARFCNList();
+		std::vector<unsigned> ARFCNList = gNeighborTable->ARFCNList();
 		size_t sz = ARFCNList.size();
 		if (sz != 0) {
 			if (CN < (int)sz)
@@ -194,7 +192,7 @@ bool PhysicalStatus::setPhysical(const SACCHLogicalChannel *chan, const L3Measur
 		}
 		eData["reports"]["neighboringCells"] = JsonBox::Array(neighbors);
 
-		gNodeManager.publishEvent("PhysicalStatus", "0.1", eData);
+		gNodeManager->publishEvent("PhysicalStatus", "0.1", eData);
 	}
 
 #if RN_DISABLE_PHYSICAL_DB

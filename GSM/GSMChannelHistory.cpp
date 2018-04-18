@@ -32,7 +32,7 @@ namespace GSM {
 int ChannelHistory::getAvgRxlev()
 {
 	ScopedLock lock(mSCellLock);
-	FrameNum now = gBTS.time().FN();
+	FrameNum now = gBTS->time().FN();
 	return round(ComputeTrend(mSCellData, now, &SCellPoint::getFrameNum, &SCellPoint::getRxlev,
 		gConfig.GSM.Handover.RXLEV_DL.History));
 }
@@ -119,7 +119,7 @@ void ChannelHistory::chAddPoint(SCellPoint &spt, FrameNum now)
 Control::BestNeighbor ChannelHistory::neighborFindBest(Control::NeighborPenalty penalty)
 {
 	Control::BestNeighbor best;
-	FrameNum sampleFN = gBTS.time().FN();
+	FrameNum sampleFN = gBTS->time().FN();
 	LOG(DEBUG) << LOGVAR(penalty);
 	for (NeighborMap::iterator it = mNeighborData.begin(); it != mNeighborData.end(); it++) {
 		NeighborHistory &nh = it->second;
@@ -140,7 +140,7 @@ Control::BestNeighbor ChannelHistory::neighborFindBest(Control::NeighborPenalty 
 		}
 		if (!best.mValid || thisRxlev > best.mRxlev) {
 			// Check for congestion in the neighbor.
-			if (gNeighborTable.neighborCongestion(nh.nhARFCN, nh.nhBSIC)) {
+			if (gNeighborTable->neighborCongestion(nh.nhARFCN, nh.nhBSIC)) {
 				LOG(DEBUG) << "skipping, neighborCongestion";
 				continue;
 			}
@@ -183,7 +183,7 @@ void ChannelHistory::neighborAddMeasurement(FrameNum when, unsigned arfcn, unsig
 bool ChannelHistory::neighborAddMeasurements(SACCHLogicalChannel *SACCH, const L3MeasurementResults *measurements)
 {
 
-	Time sampleTime = gBTS.time(); // This thread could be running behind the clock, but it is close enough for
+	Time sampleTime = gBTS->time(); // This thread could be running behind the clock, but it is close enough for
 				       // government work.
 
 	this->mReportTimestamp++;
@@ -216,7 +216,7 @@ bool ChannelHistory::neighborAddMeasurements(SACCHLogicalChannel *SACCH, const L
 			continue;
 		}
 		int thisBSCI = measurements->BSIC_NCELL(i);
-		int arfcn = gNeighborTable.getARFCN(thisFreq);
+		int arfcn = gNeighborTable->getARFCN(thisFreq);
 		if (arfcn < 0) {
 			LOG(INFO) << "Measurement report with invalid freq index:" << thisFreq << " arfcn:"
 				  << arfcn; // SVGDBG seeing this error  (pat) Maybe fixed 10-17-2014 by ticket #1915

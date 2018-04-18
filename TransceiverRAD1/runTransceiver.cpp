@@ -35,7 +35,13 @@ ConfigurationKeyMap getConfigurationKeys();
 // ahead of other classes, a giant foo-bar.
 static const char *cOpenBTSConfigEnv = "OpenBTSConfigFile";
 static const char *configFile = getenv(cOpenBTSConfigEnv) ? getenv(cOpenBTSConfigEnv) : "/etc/OpenBTS/OpenBTS.db";
-ConfigurationTable gConfig(configFile, "transceiver", getConfigurationKeys());
+
+ConfigurationTable *gConfigObject;
+
+#ifndef gCofnig
+#define gConfig gConfigTable
+#endif
+
 FactoryCalibration gFactoryCalibration;
 
 volatile bool gbShutdown = false;
@@ -49,6 +55,8 @@ static void ctrlCHandler(int signo)
 
 int main(int argc, char *argv[])
 {
+	gConfigObject = new ConfigurationTable(configFile, "transceiver", getConfigurationKeys());
+
 	if (signal(SIGINT, ctrlCHandler) == SIG_ERR) {
 		LOG(ERR) << "Couldn't install signal handler for SIGINT";
 		cerr << "Couldn't install signal handler for SIGINT" << endl;
@@ -170,6 +178,10 @@ int main(int argc, char *argv[])
 	//  trx->stop();
 	delete trx;
 	//  delete radio;
+
+	delete gConfigObject;
+
+	return 0;
 }
 
 ConfigurationKeyMap getConfigurationKeys()

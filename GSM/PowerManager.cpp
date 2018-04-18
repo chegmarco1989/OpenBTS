@@ -25,8 +25,6 @@
 
 #define LOG_GROUP LogGroup::GSM // Can set Log.Level.GSM for debugging
 
-extern TransceiverManager gTRX;
-
 namespace GSM {
 
 PowerManager gPowerManager;
@@ -35,7 +33,7 @@ void PowerManager::pmSetAttenDirect(int atten)
 {
 	mRadio->setPower(atten);
 	mAtten = atten;
-	LOG(INFO) << "setting power to -" << mAtten << " dB at uptime=" << gBTS.uptime();
+	LOG(INFO) << "setting power to -" << mAtten << " dB at uptime=" << gBTS->uptime();
 }
 
 void PowerManager::pmSetAtten(int atten)
@@ -48,7 +46,7 @@ void PowerManager::pmSetAtten(int atten)
 void PowerManager::pmStart()
 {
 	LOG(INFO);
-	mRadio = gTRX.ARFCN(0);
+	mRadio = gTRX->ARFCN(0);
 	pmSetAttenDirect(gConfig.getNum("GSM.Radio.PowerManager.MaxAttenDB"));
 }
 

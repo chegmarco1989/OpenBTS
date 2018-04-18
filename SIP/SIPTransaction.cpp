@@ -166,7 +166,7 @@ void SipTransaction::sendAuthOKMessage(SipMessage *sipmsg)
 	if (!dmsg->dmKc.empty()) {
 		LOG(DEBUG) << "Storing Kc:" << LOGVAR(imsi)
 			   << LOGVAR(dmsg->dmKc.size()); // We dont put Kc itself in the log.
-		// gTMSITable.putKc(imsi.c_str()+4, kc, pAssociatedUri, pAssertedIdentity);
+		// gTMSITable->putKc(imsi.c_str()+4, kc, pAssociatedUri, pAssertedIdentity);
 	} else {
 		LOG(NOTICE) << "No Kc in SIP REGISTER response:" << sipmsg->msmContent;
 	}

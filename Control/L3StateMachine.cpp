@@ -547,7 +547,7 @@ static bool checkPrimitive(Primitive prim, L3LogicalChannel *lch, int sapi)
 		// establishment so we will pass it on.
 		// One of these comes in when the channel is inited.
 		// Pat took out this gReports temporarily because it is delaying channel establishment.
-		// gReports.incr("OpenBTS.GSM.RR.ChannelSeized");
+		// gReports->incr("OpenBTS.GSM.RR.ChannelSeized");
 		return true;
 	case HANDOVER_ACCESS:
 		LOG(ALERT) << "Received HANDOVER_ACCESS on established channel";
@@ -876,7 +876,7 @@ static void l3CallTrafficLoop(L3LogicalChannel *dcch)
 	// the state by a different thread, so we just the same method for all cases and terminate by changing the
 	// channel state.
 	unsigned alternate = 0;
-	while (dcch->chanRunning() && !gBTS.btsShutdown()) {
+	while (dcch->chanRunning() && !gBTS->btsShutdown()) {
 		if (tch->radioFailure()) {
 			LOG(NOTICE) << "radio link failure, dropped call" << LOGVAR(dcch);
 			// gNewTransactionTable.ttLostChannel(dcch);
@@ -984,7 +984,7 @@ static void l3CallTrafficLoop(L3LogicalChannel *dcch)
 		// (pat) When we are using blocking mode in the RTP library, we never get here.
 		if (needReports) {
 			LOG(DEBUG) << dcch << "calling gReports CC.CallMinutes";
-			gReports.incr("OpenBTS.GSM.CC.CallMinutes");
+			gReports->incr("OpenBTS.GSM.CC.CallMinutes");
 			LOG(DEBUG) << dcch << " after gReports CC.CallMinutes";
 			needReports = false;
 			continue;
@@ -1008,7 +1008,7 @@ static void l3CallTrafficLoop(L3LogicalChannel *dcch)
 static void L3SDCCHLoop(L3LogicalChannel *dcch)
 {
 	assert(dcch->chtype() == SDCCHType);
-	while (dcch->chanRunning() && !gBTS.btsShutdown()) {
+	while (dcch->chanRunning() && !gBTS->btsShutdown()) {
 		if (dcch->radioFailure()) { // Checks expiry of T3109, set at 30s.
 			LOG(NOTICE) << "radio link failure, dropped call";
 			// gNewTransactionTable.ttLostChannel(dcch);

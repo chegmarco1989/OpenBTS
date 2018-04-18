@@ -31,7 +31,10 @@
 
 using namespace GSM;
 
-extern ConfigurationTable gConfig;
+#ifndef gCofnig
+#define gConfig gConfigTable
+#endif
+
 extern FactoryCalibration gFactoryCalibration;
 
 Transceiver::Transceiver(int wBasePort, const char *TRXAddress, int wSamplesPerSymbol, GSM::Time wTransmitLatency,

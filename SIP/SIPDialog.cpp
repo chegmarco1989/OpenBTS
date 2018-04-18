@@ -20,7 +20,7 @@
 
 #include <algorithm>
 
-#include <CommonLibs/Reporting.h> // For gReports.
+#include <CommonLibs/Reporting.h>
 #include <Control/L3StateMachine.h>
 #include <Control/L3TranEntry.h>
 #include <GSM/GSML3MMElements.h> // for L3CMServiceType
@@ -255,7 +255,7 @@ void SipInviteServerTransactionLayerBase::SipMTCancel(SipMessage *sipmsg)
 void SipInviteServerTransactionLayerBase::SipMTBye(SipMessage *sipmsg)
 {
 	assert(sipmsg->isBYE());
-	gReports.incr("OpenBTS.SIP.BYE.In");
+	gReports->incr("OpenBTS.SIP.BYE.In");
 	SipMessageReply byeok(sipmsg, 200, string("OK"), this);
 	sipWrite(&byeok);
 	if (dsPeer()->ipIsReliableTransport()) {
@@ -352,7 +352,7 @@ void SipMOInviteClientTransactionLayer::MOSMSSendMESSAGE(const string &messageTe
 {
 	LOG(INFO) << "SIP send to " << dsRequestToHeader() << " MESSAGE " << messageText << sdbText();
 	assert(mDialogType == SIPDTMOSMS);
-	gReports.incr("OpenBTS.SIP.MESSAGE.Out");
+	gReports->incr("OpenBTS.SIP.MESSAGE.Out");
 
 	static const string cMessagestr("MESSAGE");
 	SipMessage *msg = makeInitialRequest(cMessagestr);
@@ -403,7 +403,7 @@ void SipMTInviteServerTransactionLayer::MTCSendTrying()
 	SipMessage *invite = getInvite();
 	if (invite == NULL) {
 		setSipState(SSFail);
-		gReports.incr("OpenBTS.SIP.Failed.Local");
+		gReports->incr("OpenBTS.SIP.Failed.Local");
 	}
 	LOG(INFO) << sdbText();
 	if (getSipState() == SSFail)
@@ -434,7 +434,7 @@ void SipMTInviteServerTransactionLayer::MTCSendOK(CodecSet wCodec, const L3Logic
 		devassert(0);
 	}
 	SipMessage *invite = getInvite();
-	gReports.incr("OpenBTS.SIP.INVITE-OK.Out");
+	gReports->incr("OpenBTS.SIP.INVITE-OK.Out");
 	mRTPPort = allocateRTPPorts();
 	mCodec = wCodec;
 	LOG(INFO) << sdbText();
@@ -808,7 +808,7 @@ SipDialog *SipDialog::newSipDialogMOUssd(TranEntryId tranid,
 	}
 	SipDialog *dialog = new SipDialog(SIPDTMOUssd, proxy, proxyOption);
 	dialog->dsSetLocalMO(fromMsId, true);
-	gReports.incr("OpenBTS.SIP.INVITE.Out");
+	gReports->incr("OpenBTS.SIP.INVITE.Out");
 	// Must lock once we do dmAddCallDialog to prevent the SIPInterface threads from accessing this dialog
 	// while we finish construction.
 	ScopedLock lock(dialog->mDialogLock, __FILE__, __LINE__); // Must lock before dmAddCallDialog.
@@ -866,7 +866,7 @@ SipDialog *SipDialog::newSipDialogMOC(TranEntryId tranid,
 	dialog->dsSetLocalMO(fromMsId, true);
 
 	{
-		gReports.incr("OpenBTS.SIP.INVITE.Out");
+		gReports->incr("OpenBTS.SIP.INVITE.Out");
 		dialog->dsSetRemoteUri(makeUri(wCalledDigits, dialog->localIP()));
 	}
 
@@ -874,7 +874,7 @@ SipDialog *SipDialog::newSipDialogMOC(TranEntryId tranid,
 	if (username.length()) {
 		devassert(username.substr(0, 4) == "IMSI");
 		string pAssociatedUri, pAssertedIdentity;
-		gTMSITable.getSipIdentities(username.substr(4), pAssociatedUri,
+		gTMSITable->getSipIdentities(username.substr(4), pAssociatedUri,
 			pAssertedIdentity); // They may be empty.
 		dialog->dsPAssociatedUri = pAssociatedUri;
 		dialog->dsPAssertedIdentity = pAssertedIdentity;
@@ -1428,7 +1428,7 @@ void SipDialog::handleInviteResponse(int status,
 	case 380: // Alternative Service
 		LOG(NOTICE) << "redirection not supported code " << status << sdbText();
 		dialogPushState(SSFail, status, 'D');
-		gReports.incr("OpenBTS.SIP.Failed.Remote.3xx");
+		gReports->incr("OpenBTS.SIP.Failed.Remote.3xx");
 		// TODO: What if it is not MOC?
 		if (sendAck)
 			MOCSendACK();
@@ -1442,7 +1442,7 @@ void SipDialog::handleInviteResponse(int status,
 		// We must not ACK to "405 Method Not Allowed" or you could have an infinite loop.  Saw this with
 		// smqueue.
 		dialogPushState(SSFail, status, 'D');
-		gReports.incr("OpenBTS.SIP.Failed.Remote.4xx");
+		gReports->incr("OpenBTS.SIP.Failed.Remote.4xx");
 		break;
 
 	case 400: // Bad Request
@@ -1471,7 +1471,7 @@ void SipDialog::handleInviteResponse(int status,
 	case 485: // Ambiguous
 		LOG(NOTICE) << "request failure code " << status << sdbText();
 		dialogPushState(SSFail, status, 'D');
-		gReports.incr("OpenBTS.SIP.Failed.Remote.4xx");
+		gReports->incr("OpenBTS.SIP.Failed.Remote.4xx");
 		if (sendAck)
 			MOCSendACK();
 		break;
@@ -1489,7 +1489,7 @@ void SipDialog::handleInviteResponse(int status,
 	case 493: // Undecipherable: Could not decrypt S/MIME body part
 		LOG(NOTICE) << "request failure code " << status << sdbText();
 		dialogPushState(SSFail, status, 'D');
-		gReports.incr("OpenBTS.SIP.Failed.Remote.4xx");
+		gReports->incr("OpenBTS.SIP.Failed.Remote.4xx");
 		if (sendAck)
 			MOCSendACK();
 		break;
@@ -1504,7 +1504,7 @@ void SipDialog::handleInviteResponse(int status,
 	case 513: // Message Too Large
 		LOG(NOTICE) << "server failure code " << status << sdbText();
 		dialogPushState(SSFail, status, 'D');
-		gReports.incr("OpenBTS.SIP.Failed.Remote.5xx");
+		gReports->incr("OpenBTS.SIP.Failed.Remote.5xx");
 		// TODO: What if it is not MOC?
 		if (sendAck)
 			MOCSendACK();
@@ -1521,14 +1521,14 @@ void SipDialog::handleInviteResponse(int status,
 	case 606: // Not Acceptable
 		LOG(NOTICE) << "global failure code " << status << sdbText();
 		dialogPushState(SSFail, status, 'D');
-		gReports.incr("OpenBTS.SIP.Failed.Remote.6xx");
+		gReports->incr("OpenBTS.SIP.Failed.Remote.6xx");
 		if (sendAck)
 			MOCSendACK();
 		break;
 	default:
 		LOG(NOTICE) << "unhandled status code " << status << sdbText();
 		dialogPushState(SSFail, status, 'D');
-		gReports.incr("OpenBTS.SIP.Failed.Remote.xxx");
+		gReports->incr("OpenBTS.SIP.Failed.Remote.xxx");
 		if (sendAck)
 			MOCSendACK();
 		break;

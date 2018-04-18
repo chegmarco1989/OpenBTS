@@ -34,10 +34,11 @@
 using namespace std;
 
 /* tomr had to add direct path to OpenBTS.db */
-ConfigurationTable gConfig("/etc/OpenBTS/OpenBTS.db");
+ConfigurationTable *gConfigObject;
 
 int main(int argc, char **argv)
 {
+	gConfigObject = new ConfigurationTable("/etc/OpenBTS/OpenBTS.db");
 
 	gLogInit("openbts", "INFO", LOG_LOCAL7);
 
@@ -127,6 +128,8 @@ int main(int argc, char **argv)
 			timestamp += rd;
 		}
 	}
+
+	delete gConfigObject;
 
 	return 0;
 }

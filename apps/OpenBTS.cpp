@@ -21,6 +21,7 @@
 #include <sys/wait.h>
 
 #include <assert.h>
+#include <getopt.h>
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
@@ -59,459 +60,93 @@
 
 #include "OpenBTSConfig.h"
 
-std::vector<std::string> configurationCrossCheck(const std::string &key);
-std::string getARFCNsString(unsigned band);
-
-// Load configuration from a file.
-static const char *cOpenBTSConfigEnv = "OpenBTSConfigFile";
-static const char *cOpenBTSConfigFile =
-	getenv(cOpenBTSConfigEnv) ? getenv(cOpenBTSConfigEnv) : "/etc/OpenBTS/OpenBTS.db";
-OpenBTSConfig gConfig(cOpenBTSConfigFile, "OpenBTS", getConfigurationKeys());
-
-Log dummy("openbts", gConfig.getStr("Log.Level").c_str(), LOG_LOCAL7);
-
-// Set up the performance reporter.
-ReportingTable gReports(gConfig.getStr("Control.Reporting.StatsTable").c_str());
-
 using namespace std;
 using namespace GSM;
 
-const char *gDateTime = TIMESTAMP_ISO;
-
-// All of the other globals that rely on the global configuration file need to
-// be declared here.
-// (pat) That is because the order that constructors are called is indeterminate, and we must
-// ensure that the ConfigurationTable is constructed before any other classes.
-// In general it is unwise to put non-trivial initialization code in constructors for this reason.
-// If you dont call gConfig in your class constructor, you dont need to init your class here.
-// Another way to handle this would be to substitute gConfig.get...(...) throughout OpenBTS with
-// a function call that inits the ConfigurationTable if needed.
-// It would be much kinder on the compiler as well.  And if someone goes to that effort, while you
-// are at it change the char* arguments to constants.
-
-// The TMSI Table.
-// moved to Control directory: Control::TMSITable gTMSITable;
-
-// The transaction table.
-// moved to Control directory: Control::TransactionTable gTransactionTable;
-
-// Physical status reporting
-GSM::PhysicalStatus gPhysStatus;
-
-// Configure the BTS object based on the config file.
-// So don't create this until AFTER loading the config file.
-GSMConfig gBTS;
-
-// Note to all from pat:
-// It is inadvisable to statically initialize any non-trivial entity here because
-// the underlying dependencies may not yet have undergone their static initialization.
-// For example, if any of these throw an alarm, the system will crash because
-// the Logger may not have been initialized yet.
-
-// Our interface to the software-defined radio.
-TransceiverManager gTRX(
-	gConfig.getNum("GSM.Radio.ARFCNs"), gConfig.getStr("TRX.IP").c_str(), gConfig.getNum("TRX.Port"));
-
-/** The global peering interface. */
-Peering::PeerInterface gPeerInterface;
-
-/** The global neighbor table. */
-Peering::NeighborTable gNeighborTable;
-
-/** The remote node manager. */
-NodeManager gNodeManager;
-
 /** Define a function to call any time the configuration database changes. */
-void purgeConfig(void *, int, char const *, char const *, sqlite3_int64)
-{
-	// (pat) NO NO NO.  Do not call LOG from here - it may result in infinite recursion.
-	// LOG(INFO) << "purging configuration cache";
-	gConfig.purge();
-	gConfig.configUpdateKeys();
-	// (pat) FIXME: We cannot regenerate the beacon too often because the changemark is only 2 bits;
-	// we need to be more careful to update the beacon only when it really changes.
-	gBTS.regenerateBeacon();
-	gResetWatchdog();
-	gLogGroup.setAll();
-}
+static void purgeConfig(void *, int, char const *, char const *, sqlite3_int64);
+static void startTransceiver();
+static void createStats();
+static JsonBox::Object nmHandler(JsonBox::Object &request);
+static void processArgs(int argc, char **argv);
+static int initTimeSlots();
+static vector<string> configurationCrossCheck(const string &key);
 
-const char *transceiverPath = "./transceiver";
+static std::vector<std::string> configurationCrossCheck(const std::string &key);
+extern std::string getARFCNsString(unsigned band); // apps/GetConfigurationKeys.cpp
 
-pid_t gTransceiverPid = 0;
+static const char *transceiverPath = "./transceiver";
 
-void startTransceiver()
-{
-	// if local kill the process currently listening on this port
-	if (gConfig.getStr("TRX.IP") == "127.0.0.1") {
-		char killCmd[32];
-		snprintf(killCmd, 31, "fuser -k -n udp %d", (int)gConfig.getNum("TRX.Port"));
-		if (system(killCmd)) {
-		}
-	}
+static pid_t gTransceiverPid = 0;
 
-	// Start the transceiver binary, if the path is defined.
-	// If the path is not defined, the transceiver must be started by some other process.
-	char TRXnumARFCN[4];
-	sprintf(TRXnumARFCN, "%1d", (int)gConfig.getNum("GSM.Radio.ARFCNs"));
-	// std::string extra_args = gConfig.getStr("TRX.Args");	// (pat 3-2014) remvoed pending demonstrated need.
-	string usernotice = format("starting transceiver %s with %s ARFCNs", transceiverPath, TRXnumARFCN);
-	if (getenv(cOpenBTSConfigEnv)) {
-		usernotice += " using config file: ";
-		usernotice += cOpenBTSConfigFile;
-	}
+static struct _applicationFlags {
+	int test;
+	int generateSQL;
+	int generateTeX;
+	int allowMultipleInstances;
+} applicationFlags;
 
-	static char *argv[10];
-	int argc = 0;
-	argv[argc++] = const_cast<char *>(transceiverPath);
-	argv[argc++] = TRXnumARFCN;
-	argv[argc] = NULL;
+static const struct option longOptions[] = {
+	/* name, has_arg, int *flag, int val */
+	{ "help", no_argument, nullptr, 0 },
+	{ "usage", no_argument, nullptr, 0 },
+	{ "version", no_argument, nullptr, 0 },
+	{ "test", no_argument, &applicationFlags.test, 1 },
+	{ "gensql", no_argument, &applicationFlags.generateSQL, 1 },
+	{ "gentex", no_argument, &applicationFlags.generateTeX, 1 },
+	{ "multiple", no_argument, &applicationFlags.allowMultipleInstances, 1 },
+	{ "config", required_argument, nullptr, 0 },
+	{ "debug", required_argument, nullptr, 0 },
+	{ 0, 0, 0, 0 }
+};
 
-	LOG(ALERT) << usernotice;
-	gTransceiverPid = vfork();
-	LOG_ASSERT(gTransceiverPid >= 0);
-	if (gTransceiverPid == 0) {
-		// Pid==0 means this is the process that starts the transceiver.
-		execvp(transceiverPath, argv);
-		LOG(EMERG) << "cannot find " << transceiverPath;
-		_exit(1);
-	} else {
-		int status;
-		waitpid(gTransceiverPid, &status, 0);
-		LOG(EMERG) << "Transceiver quit with status " << status << ". Exiting.";
-		exit(2);
-	}
-}
-
-void createStats()
-{
-	// count of OpenBTS start events
-	gReports.create("OpenBTS.Starts");
-
-	// count of watchdog restarts
-	gReports.create("OpenBTS.Exit.Error.Watchdog");
-	// count of aborts due to problems with CLI socket
-	gReports.create("OpenBTS.Exit.Error.CLISocket");
-	// count of aborts due to loss of transceiver heartbeat
-	gReports.create("OpenBTS.Exit.Error.TransceiverHeartbeat");
-	// count of aborts due to underfined nono-optional configuration parameters
-	gReports.create("OpenBTS.Exit.Error.ConfigurationParameterNotFound");
-
-	// count of CLI commands sent to OpenBTS
-	gReports.create("OpenBTS.CLI.Command");
-	// count of CLI commands where responses could not be returned
-	gReports.create("OpenBTS.CLI.Command.ResponseFailure");
-
-	// count of SIP transactions that failed with 3xx responses from the remote end
-	gReports.create("OpenBTS.SIP.Failed.Remote.3xx");
-	// count of SIP transactions that failed with 4xx responses from the remote end
-	gReports.create("OpenBTS.SIP.Failed.Remote.4xx");
-	// count of SIP transactions that failed with 5xx responses from the remote end
-	gReports.create("OpenBTS.SIP.Failed.Remote.5xx");
-	// count of SIP transactions that failed with 6xx responses from the remote end
-	gReports.create("OpenBTS.SIP.Failed.Remote.6xx");
-	// count of SIP transactions that failed with unrecognized responses from the remote end
-	gReports.create("OpenBTS.SIP.Failed.Remote.xxx");
-	// count of SIP transactions that failed due to local-end errors
-	gReports.create("OpenBTS.SIP.Failed.Local");
-	// count of timeout events on SIP socket reads
-	gReports.create("OpenBTS.SIP.ReadTimeout");
-	// count of SIP messages that were never properly acked
-	gReports.create("OpenBTS.SIP.LostProxy");
-	// count of SIP message not sent due to unresolvable host name
-	gReports.create("OpenBTS.SIP.UnresolvedHostname");
-	// count of INVITEs received in the SIP layer
-	gReports.create("OpenBTS.SIP.INVITE.In");
-	// count of INVITEs sent from the in SIP layer
-	gReports.create("OpenBTS.SIP.INVITE.Out");
-	// count of INVITE-OKs sent from the in SIP layer (connection established)
-	gReports.create("OpenBTS.SIP.INVITE-OK.Out");
-	// count of MESSAGEs received in the in SIP layer
-	gReports.create("OpenBTS.SIP.MESSAGE.In");
-	// count of MESSAGESs sent from the SIP layer
-	gReports.create("OpenBTS.SIP.MESSAGE.Out");
-	// count of REGISTERSs sent from the SIP layer
-	gReports.create("OpenBTS.SIP.REGISTER.Out");
-	// count of BYEs sent from the SIP layer
-	gReports.create("OpenBTS.SIP.BYE.Out");
-	// count of BYEs received in the SIP layer
-	gReports.create("OpenBTS.SIP.BYE.In");
-	// count of BYE-OKs sent from SIP layer (final disconnect handshake)
-	gReports.create("OpenBTS.SIP.BYE-OK.Out");
-	// count of BYE-OKs received in SIP layer (final disconnect handshake)
-	gReports.create("OpenBTS.SIP.BYE-OK.In");
-
-	// count of initiated LUR attempts
-	gReports.create("OpenBTS.GSM.MM.LUR.Start");
-	// count of LUR attempts where the server timed out
-	gReports.create("OpenBTS.GSM.MM.LUR.Timeout");
-	// gReports.create("OpenBTS.GSM.MM.LUR.Success");
-	// gReports.create("OpenBTS.GSM.MM.LUR.NotFound");
-	// gReports.create("OpenBTS.GSM.MM.LUR.Allowed");
-	// gReports.create("OpenBTS.GSM.MM.LUR.Rejected");
-	// count of all authentication attempts
-	gReports.create("OpenBTS.GSM.MM.Authenticate.Request");
-	// count of authentication attempts the succeeded
-	gReports.create("OpenBTS.GSM.MM.Authenticate.Success");
-	// count of authentication attempts that failed
-	gReports.create("OpenBTS.GSM.MM.Authenticate.Failure");
-	// count of the number of TMSIs assigned to users
-	gReports.create("OpenBTS.GSM.MM.TMSI.Assigned");
-	// gReports.create("OpenBTS.GSM.MM.TMSI.Unknown");
-	// count of CM Service requests for MOC
-	gReports.create("OpenBTS.GSM.MM.CMServiceRequest.MOC");
-	// count of CM Service requests for MOSMS
-	gReports.create("OpenBTS.GSM.MM.CMServiceRequest.MOSMS");
-	// count of CM Service requests for services we don't support
-	gReports.create("OpenBTS.GSM.MM.CMServiceRequest.Unhandled");
-
-	// count of mobile-originated SMS submissions initiated
-	gReports.create("OpenBTS.GSM.SMS.MOSMS.Start");
-	// count of mobile-originated SMS submissions competed (got CP-ACK for RP-ACK)
-	gReports.create("OpenBTS.GSM.SMS.MOSMS.Complete");
-	// count of mobile-temrinated SMS deliveries initiated
-	gReports.create("OpenBTS.GSM.SMS.MTSMS.Start");
-	// count of mobile-temrinated SMS deliveries completed (got RP-ACK)
-	gReports.create("OpenBTS.GSM.SMS.MTSMS.Complete");
-
-	// count of mobile-originated setup messages
-	gReports.create("OpenBTS.GSM.CC.MOC.Setup");
-	// count of mobile-terminated setup messages
-	gReports.create("OpenBTS.GSM.CC.MTC.Setup");
-	// count of mobile-terminated release messages
-	gReports.create("OpenBTS.GSM.CC.MTD.Release");
-	// count of mobile-originated disconnect messages
-	gReports.create("OpenBTS.GSM.CC.MOD.Disconnect");
-	// total number of minutes of carried calls
-	gReports.create("OpenBTS.GSM.CC.CallMinutes");
-	// count of dropped calls
-	gReports.create("OpenBTS.GSM.CC.DroppedCalls");
-
-	// count of CS (non-GPRS) channel assignments
-	gReports.create("OpenBTS.GSM.RR.ChannelAssignment");
-	// gReports.create("OpenBTS.GSM.RR.ChannelRelease");
-	// count of number of times the beacon was regenerated
-	gReports.create("OpenBTS.GSM.RR.BeaconRegenerated");
-	// count of successful channel assignments
-	gReports.create("OpenBTS.GSM.RR.ChannelSiezed");
-	// gReports.create("OpenBTS.GSM.RR.LinkFailure");
-	// gReports.create("OpenBTS.GSM.RR.Paged.IMSI");
-	// gReports.create("OpenBTS.GSM.RR.Paged.TMSI");
-	// gReports.create("OpenBTS.GSM.RR.Handover.Inbound.Request");
-	// gReports.create("OpenBTS.GSM.RR.Handover.Inbound.Accept");
-	// gReports.create("OpenBTS.GSM.RR.Handover.Inbound.Success");
-	// gReports.create("OpenBTS.GSM.RR.Handover.Outbound.Request");
-	// gReports.create("OpenBTS.GSM.RR.Handover.Outbound.Accept");
-	// gReports.create("OpenBTS.GSM.RR.Handover.Outbound.Success");
-	// histogram of timing advance for accepted RACH bursts
-	gReports.create("OpenBTS.GSM.RR.RACH.TA.Accepted", 0, 63);
-
-	// gReports.create("Transceiver.StaleBurst");
-	// gReports.create("Transceiver.Command.Received");
-	// gReports.create("OpenBTS.TRX.Command.Sent");
-	// gReports.create("OpenBTS.TRX.Command.Failed");
-	// gReports.create("OpenBTS.TRX.FailedStart");
-	// gReports.create("OpenBTS.TRX.LostLink");
-
-	// GPRS
-	// number of RACH bursts processed for GPRS
-	gReports.create("GPRS.RACH");
-	// number of TBFs assigned
-	gReports.create("GPRS.TBF");
-	// number of MSInfo records generated
-	gReports.create("GPRS.MSInfo");
-
-	// (pat) 1-2014 Added RTP thread performance reporting.
-	gReports.create("OpenBTS.RTP.AverageSlack"); // Average head room.
-	gReports.create("OpenBTS.RTP.MinSlack");     // Minimum slack.  Negative is a whoops.
-}
-
-// (pat) Using multiple radios on the same CPU:
-// 1. Provide a seprate config OpenBTS.db file for each OpenBTS + transceiver pair.
-//		I run each OpenBTS+transceiver pair in a separate directory with its own OpenBTS.db set as below.
-//		To set the config file You can use the --config option or set the OpenBTSConfigFile environment
-// variable, 		which also works with gdb.
-// 2. Set TRX.RadioNumber to 1,2,3,...
-// 3. Set transceiver communication TRX.Port differently.  TRX uses >100 ports, so use: 5700, 5900, 6100, etc.
-// 4. Set GSM.Radio.C0 differently.
-// 5. Set GSM.Identity.BSIC.BCC differently.
-// 6. Set GSM.Identity.LAC differently, maybe, but this depends on what you want to do.
-// 7. Change all the external application ports: Peering.Port, RTP.Start, SIP.Local.Port
-// 8. The neighbor tables need to point at each other.  See example below.
-// 9. Change the Peering.NeighborTable.Path.  I just set it to a .db in the current directory.  Changing the other .db
-// files is optional
-// 10. If you have old radios, dont forget to set the TRX.RadioFrequencyOffset for each radio.
-// 11. Doug recommends increasing GSM.Ny1 for handover testing.
-// Note reserved ports: SR uses port 5064 and asterisk uses port 5060.
-// Example using two radios on one computer:
-// TRX.RadioNumber				1			2
-// TRX.Port						5700		5900
-// GSM.Radio.C0					51			60
-// GSM.Identity.BSIC.BCC		2			3
-// GSM.Identity.LAC				1007		1008
-// SIP.Local.Port				5062		5066
-// NodeManager.Commands.Port	45060		45062
-// CLI.Port						49300		49302
-// RTP.Start					16484		16600
-// Peering.Port					16001		16002
-// GSM.Neighbors		127.0.0.1:16002		127.0.0.1:16001
-// Each BTS needs separate versions of these .db files that normally reside in /var/run:  Just put them in the cur dir
-// like this: Peering.NeighborTable.Path NeighborTable.db Control.Reporting.TransactionTable TransactionTable.db
-// Control.Reporting.TMSITable TMSITable.db
-// Control.Reporting.StatsTable StatsTable.db
-// Control.Reporting.PhysStatusTable PhysStatusTable.db
+#define USAGE_STRING "OpenBTS [--version] [--gensql] [--gentex] [--config file.db]"
 
 namespace GSM {
 extern void TestTCHL1FEC();
 }; // namespace GSM
 
-/** Application specific NodeManager logic for handling requests. */
-JsonBox::Object nmHandler(JsonBox::Object &request)
-{
-	JsonBox::Object response;
-	std::string command = request["command"].getString();
+static std::deque<TimeSlot> timeSlotList;
 
-	if (command.compare("monitor") == 0) {
-		response["code"] = JsonBox::Value(200);
-		response["data"]["noiseRSSI"] = JsonBox::Value(0 - gTRX.ARFCN(0)->getNoiseLevel());
-		response["data"]["msTargetRSSI"] = JsonBox::Value((signed)gConfig.getNum("GSM.Radio.RSSITarget"));
-		// FIXME -- This needs to take GPRS channels into account. See #762. (note from CLI::load section)
-		response["data"]["gsmSDCCHActive"] = JsonBox::Value((int)gBTS.SDCCHActive());
-		response["data"]["gsmSDCCHTotal"] = JsonBox::Value((int)gBTS.SDCCHTotal());
-		response["data"]["gsmTCHActive"] = JsonBox::Value((int)gBTS.TCHActive());
-		response["data"]["gsmTCHTotal"] = JsonBox::Value((int)gBTS.TCHTotal());
-		response["data"]["gsmAGCHQueue"] = JsonBox::Value((int)gBTS.AGCHLoad());
-		response["data"]["gsmPCHQueue"] = JsonBox::Value((int)gBTS.PCHLoad());
-	} else if (command.compare("tmsis") == 0) {
-		int verbosity = 2;
-		bool rawFlag = true;
-		unsigned maxRows = 10000;
-		vector<vector<string>> view = gTMSITable.tmsiTabView(verbosity, rawFlag, maxRows);
+// Load configuration from a file.
+static const char *cOpenBTSConfigEnv = "OPENBTS_CONFIG_FILE";
+static const char *cOpenBTSConfigFile;
 
-		int count = 0;
-		JsonBox::Array a;
-		for (vector<vector<string>>::iterator it = view.begin(); it != view.end(); ++it) {
-			// skip the header line
-			// TODO : use the header line to grab appropriate fields and indexes
-			if (count == 0) {
-				count++;
-				continue;
-			}
-			vector<string> &row = *it;
-			JsonBox::Object o;
-			o["IMSI"] = row.at(0);
-			o["TMSI"] = row.at(1);
-			o["IMEI"] = row.at(2);
-			o["AUTH"] = row.at(3);
-			o["CREATED"] = row.at(4);
-			o["ACCESSED"] = row.at(5);
-			o["TMSI_ASSIGNED"] = row.at(6);
-			o["PTMSI_ASSIGNED"] = row.at(7);
-			o["AUTH_EXPIRY"] = row.at(8);
-			o["REJECT_CODE"] = row.at(9);
-			o["ASSOCIATED_URI"] = row.at(10);
-			o["ASSERTED_IDENTITY"] = row.at(11);
-			o["WELCOME_SENT"] = row.at(12);
-			o["A5_SUPPORT"] = row.at(13);
-			o["POWER_CLASS"] = row.at(14);
-			o["RRLP_STATUS"] = row.at(15);
-			o["OLD_TMSI"] = row.at(16);
-			o["OLD_MCC"] = row.at(17);
-			o["OLD_MNC"] = row.at(18);
-			o["OLD_LAC"] = row.at(19);
-			a.push_back(JsonBox::Value(o));
-		}
-		response["code"] = JsonBox::Value(200);
-		response["data"] = JsonBox::Value(a);
-	} else {
-		response["code"] = JsonBox::Value(501);
-	}
+// OpenBTSConfig *gConfigObject;
+ConfigurationTable *gConfigObject;
 
-	return response;
-}
+// Set up the performance reporter.
+ReportingTable *gReports;
 
-static bool bAllowMultipleInstances = false;
+const char *gDateTime = TIMESTAMP_ISO;
 
-void processArgs(int argc, char **argv)
-{
-	// TODO: Properly parse and handle any arguments
-	if (argc > 1) {
-		bool testflag = false;
-		for (int argi = 1; argi < argc; argi++) { // Skip argv[0] which is the program name.
-			if (!strcmp(argv[argi], "--version") || !strcmp(argv[argi], "-v")) {
-				// Print the version number and exit immediately.
-				cout << gVersionString << endl;
-				exit(0);
-			}
-			if (!strcmp(argv[argi], "--test")) {
-				testflag = true;
-				continue;
-			}
-			if (!strcmp(argv[argi], "--gensql")) {
-				cout << gConfig.getDefaultSQL(string(argv[0]), gVersionString) << endl;
-				exit(0);
-			}
-			if (!strcmp(argv[argi], "--gentex")) {
-				cout << gConfig.getTeX(string(argv[0]), gVersionString) << endl;
-				exit(0);
-			}
+// All of the other globals that rely on the global configuration file need to
+// be declared here.
 
-			// Allow multiple occurrences of the program to run.
-			if (!strcmp(argv[argi], "-m")) {
-				bAllowMultipleInstances = true;
-				continue;
-			}
+// The TMSI Table.
+// moved to Control directory: Control::TMSITable *gTMSITable;
 
-			// (pat) Adding support for specified sql config file.
-			// Unfortunately, the Config table was inited quite some time ago,
-			// so stick this arg in the environment, whence the ConfigurationTable can find it, and then
-			// reboot.
-			if (!strcmp(argv[argi], "--config")) {
-				if (++argi == argc) {
-					LOG(ALERT) << "Missing argument to --config option";
-					exit(2);
-				}
-				setenv(cOpenBTSConfigEnv, argv[argi], 1);
-				execl(argv[0], "OpenBTS", NULL);
-				LOG(ALERT) << "execl failed?  Exiting...";
-				exit(0);
-			}
-			if (!strcmp(argv[argi], "--help")) {
-				printf("OpenBTS [--version --gensql --gentex] [--config file.db]\n");
-				printf("OpenBTS exiting...\n");
-				exit(0);
-			}
+// The transaction table.
+// moved to Control directory: Control::TransactionTable *gTransactionTable; // TODO: removed
 
-			printf("OpenBTS: unrecognized argument: %s\nexiting...\n", argv[argi]);
-		}
+// Physical status reporting
+GSM::PhysicalStatus *gPhysStatus;
 
-		if (testflag) {
-			GSM::TestTCHL1FEC();
-			exit(0);
-		}
-	}
-}
+// Configure the BTS object based on the config file.
+// So don't create this until AFTER loading the config file.
+GSM::GSMConfig *gBTS;
 
-std::deque<TimeSlot> timeSlotList;
+// Our interface to the software-defined radio.
+TransceiverManager *gTRX;
 
-static int initTimeSlots() // Return how many slots used by beacon.
-{
-	// The first timeslot is special for the beacon:
-	unsigned beaconSlots = 1;
+/** The global peering interface. */
+Peering::PeerInterface *gPeerInterface;
 
-	int numARFCNs = gConfig.getNum("GSM.Radio.ARFCNs");
-	int scount = 0;
-	for (int cn = 0; cn < numARFCNs; cn++) {
-		for (int tn = 0; tn < 8; tn++) {
-			if (cn == 0 && (beaconSlots & (1 << tn))) {
-				// This cn,tn is used by the beacon.
-				scount++;
-				continue;
-			}
-			timeSlotList.push_back(TimeSlot(cn, tn));
-		}
-	}
-	return scount;
-}
+/** The global neighbor table. */
+Peering::NeighborTable *gNeighborTable;
+
+/** The remote node manager. */
+NodeManager *gNodeManager;
 
 // (pat 3-2014) A collection of routines to retrieve or validate the timeslot configuration.
 // This no longer writes the config variables; they are recalculated at each OpenBTS startup.
@@ -567,24 +202,65 @@ struct TimeSlots {
 
 int main(int argc, char **argv)
 {
-	// mtrace();       // (pat) Enable memory leak detection.  Unfortunately, huge amounts of code have been started
+	Logging::basicConfig("openbts");
+
+	// // (pat) Enable memory leak detection.  Unfortunately, huge amounts of code have been started
 	// in the constructors above.
-	gLogGroup.setAll();
+	// mtrace();
+
+	// Logging::defaultInit();
+
+	/* Determine configuration file */
+	cOpenBTSConfigFile = "/etc/OpenBTS/OpenBTS.db";
+
+	if (getenv(cOpenBTSConfigEnv))
+		cOpenBTSConfigFile = getenv(cOpenBTSConfigEnv);
+
 	processArgs(argc, argv);
+
+	gConfigObject = new OpenBTSConfig(cOpenBTSConfigFile, "OpenBTS", getConfigurationKeys());
+
+	if (applicationFlags.generateSQL) {
+		cout << gConfig.getDefaultSQL(string(argv[0]), gVersionString) << endl;
+		exit(0);
+	}
+
+	if (applicationFlags.generateTeX) {
+		cout << gConfig.getTeX(string(argv[0]), gVersionString) << endl;
+		exit(0);
+	}
+
+	gLogInit("openbts", "", LOG_LOCAL7);
+
+	gReports = new ReportingTable(gConfig.getStr("Control.Reporting.StatsTable").c_str());
+	gTMSITable = new Control::TMSITable();
+	gPhysStatus = new GSM::PhysicalStatus();
+	gBTS = new GSM::GSMConfig();
+	gTRX = new TransceiverManager(gConfig.getNum("GSM.Radio.ARFCNs"), gConfig.getStr("TRX.IP").c_str(), gConfig.getNum("TRX.Port"));
+	gPeerInterface = new Peering::PeerInterface();
+	gNeighborTable = new Peering::NeighborTable();
+	gNodeManager = new NodeManager();
+
+	gLogGroup.setAll();
+
+	if (applicationFlags.test) {
+		GSM::TestTCHL1FEC();
+		exit(0);
+	}
 
 	// register ourself to prevent two instances (and check that no other
 	// one is running).  Note that this MUST be done after the logger gets
 	// initialized.
-	if (!bAllowMultipleInstances)
+	if (!applicationFlags.allowMultipleInstances)
 		gSelf.RegisterProgram(argv[0]);
 
 	createStats();
 
 	gConfig.setCrossCheckHook(&configurationCrossCheck);
 
-	gReports.incr("OpenBTS.Starts");
+	gReports->incr("OpenBTS.Starts");
 
-	gNeighborTable.NeighborTableInit(gConfig.getStr("Peering.NeighborTable.Path").c_str());
+	gNeighborTable->NeighborTableInit(gConfig.getStr("Peering.NeighborTable.Path").c_str());
 
 	try {
 
@@ -596,8 +272,8 @@ int main(int argc, char **argv)
 
 		COUT("\n\n" << gOpenBTSWelcome << "\n");
 		Control::controlInit(); // init Layer3: TMSITable, TransactionTable.
-		gPhysStatus.open(gConfig.getStr("Control.Reporting.PhysStatusTable").c_str());
-		gBTS.gsmInit();
+		gPhysStatus->open(gConfig.getStr("Control.Reporting.PhysStatusTable").c_str());
+		gBTS->gsmInit();
 		gParser.addCommands();
 
 		COUT("\nStarting the system...");
@@ -605,15 +281,15 @@ int main(int argc, char **argv)
 		// (pat 3-16-2014) If there are multiple instances of OpenBTS running, dont go talking to some random
 		// transceiver. (pat) We dont - we talk to the transceiver on the specified port.
 		bool haveTRX = false;
-		// if (! bAllowMultipleInstances) {
+		// if (! allowMultipleInstances) {
 		// is the radio running?
 		// Start the transceiver interface.
 		LOG(INFO) << "checking transceiver";
-		// gTRX.ARFCN(0)->powerOn();
+		// gTRX->ARFCN(0)->powerOn();
 		// sleep(gConfig.getNum("TRX.Timeout.Start"));
-		// bool haveTRX = gTRX.ARFCN(0)->powerOn(false);		This prints an inapplicable warning
+		// bool haveTRX = gTRX->ARFCN(0)->powerOn(false);		This prints an inapplicable warning
 		// message.
-		haveTRX = gTRX.ARFCN(0)->trxRunning(); // This does not print an inapplicable warning message.
+		haveTRX = gTRX->ARFCN(0)->trxRunning(); // This does not print an inapplicable warning message.
 		//}
 
 		Thread transceiverThread;
@@ -631,29 +307,29 @@ int main(int argc, char **argv)
 		SIP::SIPInterfaceStart();
 
 		// Start the peer interface
-		gPeerInterface.start();
+		gPeerInterface->start();
 
 		// Sync factory calibration as defaults from radio EEPROM
-		signed sdrsn = gTRX.ARFCN(0)->getFactoryCalibration("sdrsn");
+		signed sdrsn = gTRX->ARFCN(0)->getFactoryCalibration("sdrsn");
 		if (sdrsn != 0 && sdrsn != 65535) {
 			signed val;
 
-			val = gTRX.ARFCN(0)->getFactoryCalibration("band");
+			val = gTRX->ARFCN(0)->getFactoryCalibration("band");
 			if (gConfig.isValidValue("GSM.Radio.Band", val)) {
 				gConfig.mSchema["GSM.Radio.Band"].updateDefaultValue(val);
 			}
 
-			val = gTRX.ARFCN(0)->getFactoryCalibration("freq");
+			val = gTRX->ARFCN(0)->getFactoryCalibration("freq");
 			if (gConfig.isValidValue("TRX.RadioFrequencyOffset", val)) {
 				gConfig.mSchema["TRX.RadioFrequencyOffset"].updateDefaultValue(val);
 			}
 
-			val = gTRX.ARFCN(0)->getFactoryCalibration("rxgain");
+			val = gTRX->ARFCN(0)->getFactoryCalibration("rxgain");
 			if (gConfig.isValidValue("GSM.Radio.RxGain", val)) {
 				gConfig.mSchema["GSM.Radio.RxGain"].updateDefaultValue(val);
 			}
 
-			val = gTRX.ARFCN(0)->getFactoryCalibration("txgain");
+			val = gTRX->ARFCN(0)->getFactoryCalibration("txgain");
 			if (gConfig.isValidValue("TRX.TxAttenOffset", val)) {
 				gConfig.mSchema["TRX.TxAttenOffset"].updateDefaultValue(val);
 			}
@@ -666,11 +342,11 @@ int main(int argc, char **argv)
 		// Configure the radio.
 		//
 
-		gTRX.start();
+		gTRX->start();
 
 		// Set up the interface to the radio.
 		// Get a handle to the C0 transceiver interface.
-		ARFCNManager *C0radio = gTRX.ARFCN(0);
+		ARFCNManager *C0radio = gTRX->ARFCN(0);
 
 		// Tuning.
 		// Make sure its off for tuning.
@@ -682,17 +358,17 @@ int main(int argc, char **argv)
 			// Tune the radios.
 			unsigned ARFCN = C0 + i * 2;
 			LOG(INFO) << "tuning TRX " << i << " to ARFCN " << ARFCN;
-			ARFCNManager *radio = gTRX.ARFCN(i);
+			ARFCNManager *radio = gTRX->ARFCN(i);
 			radio->tune(ARFCN);
 		}
 
 		// Send either TSC or full BSIC depending on radio need
 		if (gConfig.getBool("GSM.Radio.NeedBSIC")) {
 			// Send BSIC to
-			C0radio->setBSIC(gBTS.BSIC());
+			C0radio->setBSIC(gBTS->BSIC());
 		} else {
 			// Set TSC same as BCC everywhere.
-			C0radio->setTSC(gBTS.BCC());
+			C0radio->setTSC(gBTS->BCC());
 		}
 
 		// Set maximum expected delay spread.
@@ -719,7 +395,7 @@ int main(int argc, char **argv)
 		// Combination-VII is 8 SDCCH.
 		// Combination-I is a TCH/F+FACCH+SACCH (ie, traffic channel.)
 
-		gBTS.createBeacon(C0radio);
+		gBTS->createBeacon(C0radio);
 
 		//
 		// Configure the other slots.
@@ -753,7 +429,7 @@ int main(int argc, char **argv)
 			for (int i = 0; timeSlotList.size() && i < gNumC1s; i++) {
 				TimeSlot ts = timeSlotList.front();
 				timeSlotList.pop_front();
-				gBTS.createCombinationI(gTRX, ts.mCN, ts.mTN);
+				gBTS->createCombinationI(*gTRX, ts.mCN, ts.mTN);
 				sCount++;
 			}
 		}
@@ -762,7 +438,7 @@ int main(int argc, char **argv)
 		for (int i = 0; timeSlotList.size() && i < gNumC7s; i++) {
 			TimeSlot ts = timeSlotList.front();
 			timeSlotList.pop_front();
-			gBTS.createCombinationVII(gTRX, ts.mCN, ts.mTN);
+			gBTS->createCombinationVII(*gTRX, ts.mCN, ts.mTN);
 			sCount++;
 		}
 
@@ -771,7 +447,7 @@ int main(int argc, char **argv)
 			for (int i = 0; timeSlotList.size() && i < gNumC1s; i++) {
 				TimeSlot ts = timeSlotList.front();
 				timeSlotList.pop_front();
-				gBTS.createCombinationI(gTRX, ts.mCN, ts.mTN);
+				gBTS->createCombinationI(*gTRX, ts.mCN, ts.mTN);
 				sCount++;
 			}
 		}
@@ -784,15 +460,15 @@ int main(int argc, char **argv)
 		// Set up idle filling on C0 as needed for unconfigured slots..
 		while (timeSlotList.size() && timeSlotList.front().mCN == 0) {
 			timeSlotList.pop_front();
-			gBTS.createCombination0(gTRX, sCount);
+			gBTS->createCombination0(*gTRX, sCount);
 			sCount++;
 		}
 
 		// Be sure we are not over-reserving.
-		if (0 == gBTS.SDCCHTotal()) {
+		if (0 == gBTS->SDCCHTotal()) {
 			LOG(CRIT) << "No SDCCH channels are allocated!  OpenBTS may not function properly.";
-		} else if (gConfig.getNum("GSM.Channels.SDCCHReserve") >= (int)gBTS.SDCCHTotal()) {
-			int val = gBTS.SDCCHTotal() - 1;
+		} else if (gConfig.getNum("GSM.Channels.SDCCHReserve") >= (int)gBTS->SDCCHTotal()) {
+			int val = gBTS->SDCCHTotal() - 1;
 			if (val < 0) {
 				val = 0;
 			}
@@ -801,12 +477,12 @@ int main(int argc, char **argv)
 		}
 
 		// OK, now it is safe to start the BTS.
-		gBTS.gsmStart();
+		gBTS->gsmStart();
 
 		LOG(INFO) << "system ready";
 
-		gNodeManager.setAppLogicHandler(&nmHandler);
-		gNodeManager.start(
+		gNodeManager->setAppLogicHandler(&nmHandler);
+		gNodeManager->start(
 			gConfig.getNum("NodeManager.Commands.Port"), gConfig.getNum("NodeManager.Events.Port"));
 
 		COUT("\nsystem ready\n");
@@ -820,7 +496,7 @@ int main(int argc, char **argv)
 
 	catch (ConfigurationTableKeyNotFound e) {
 		LOG(EMERG) << "required configuration parameter " << e.key() << " not defined, aborting";
-		gReports.incr("OpenBTS.Exit.Error.ConfigurationParamterNotFound");
+		gReports->incr("OpenBTS.Exit.Error.ConfigurationParamterNotFound");
 	} catch (exception e) {
 		// (pat) This is C++ standard exception.  It will be thrown for string or STL [Standard Template
 		// Library] errors. They are also thrown from the zmq library used by the NodeManager, but the numnuts
@@ -836,8 +512,425 @@ int main(int argc, char **argv)
 	exit(0);
 }
 
+/** Define a function to call any time the configuration database changes. */
+static void purgeConfig(void *, int, char const *, char const *, sqlite3_int64)
+{
+	// (pat) NO NO NO.  Do not call LOG from here - it may result in infinite recursion.
+	// LOG(INFO) << "purging configuration cache";
+	gConfig.purge();
+	gConfig.configUpdateKeys();
+	// (pat) FIXME: We cannot regenerate the beacon too often because the changemark is only 2 bits;
+	// we need to be more careful to update the beacon only when it really changes.
+	gBTS->regenerateBeacon();
+	gResetWatchdog();
+	gLogGroup.setAll();
+}
+
+static void startTransceiver()
+{
+	// if local kill the process currently listening on this port
+	if (gConfig.getStr("TRX.IP") == "127.0.0.1") {
+		char killCmd[32];
+		snprintf(killCmd, 31, "fuser -k -n udp %d", (int)gConfig.getNum("TRX.Port"));
+		if (system(killCmd)) {
+		}
+	}
+
+	// Start the transceiver binary, if the path is defined.
+	// If the path is not defined, the transceiver must be started by some other process.
+	char TRXnumARFCN[4];
+	sprintf(TRXnumARFCN, "%1d", (int)gConfig.getNum("GSM.Radio.ARFCNs"));
+	// std::string extra_args = gConfig.getStr("TRX.Args");	// (pat 3-2014) remvoed pending demonstrated need.
+	string usernotice = format("starting transceiver %s with %s ARFCNs", transceiverPath, TRXnumARFCN);
+	if (getenv(cOpenBTSConfigEnv)) {
+		usernotice += " using config file: ";
+		usernotice += cOpenBTSConfigFile;
+	}
+
+	static char *argv[10];
+	int argc = 0;
+	argv[argc++] = const_cast<char *>(transceiverPath);
+	argv[argc++] = TRXnumARFCN;
+	argv[argc] = NULL;
+
+	LOG(ALERT) << usernotice;
+	gTransceiverPid = vfork();
+	LOG_ASSERT(gTransceiverPid >= 0);
+	if (gTransceiverPid == 0) {
+		// Pid==0 means this is the process that starts the transceiver.
+		execvp(transceiverPath, argv);
+		LOG(EMERG) << "cannot find " << transceiverPath;
+		_exit(1);
+	} else {
+		int status;
+		waitpid(gTransceiverPid, &status, 0);
+		LOG(EMERG) << "Transceiver quit with status " << status << ". Exiting.";
+		exit(2);
+	}
+}
+
+static void createStats()
+{
+	// count of OpenBTS start events
+	gReports->create("OpenBTS.Starts");
+
+	// count of watchdog restarts
+	gReports->create("OpenBTS.Exit.Error.Watchdog");
+	// count of aborts due to problems with CLI socket
+	gReports->create("OpenBTS.Exit.Error.CLISocket");
+	// count of aborts due to loss of transceiver heartbeat
+	gReports->create("OpenBTS.Exit.Error.TransceiverHeartbeat");
+	// count of aborts due to underfined nono-optional configuration parameters
+	gReports->create("OpenBTS.Exit.Error.ConfigurationParameterNotFound");
+
+	// count of CLI commands sent to OpenBTS
+	gReports->create("OpenBTS.CLI.Command");
+	// count of CLI commands where responses could not be returned
+	gReports->create("OpenBTS.CLI.Command.ResponseFailure");
+
+	// count of SIP transactions that failed with 3xx responses from the remote end
+	gReports->create("OpenBTS.SIP.Failed.Remote.3xx");
+	// count of SIP transactions that failed with 4xx responses from the remote end
+	gReports->create("OpenBTS.SIP.Failed.Remote.4xx");
+	// count of SIP transactions that failed with 5xx responses from the remote end
+	gReports->create("OpenBTS.SIP.Failed.Remote.5xx");
+	// count of SIP transactions that failed with 6xx responses from the remote end
+	gReports->create("OpenBTS.SIP.Failed.Remote.6xx");
+	// count of SIP transactions that failed with unrecognized responses from the remote end
+	gReports->create("OpenBTS.SIP.Failed.Remote.xxx");
+	// count of SIP transactions that failed due to local-end errors
+	gReports->create("OpenBTS.SIP.Failed.Local");
+	// count of timeout events on SIP socket reads
+	gReports->create("OpenBTS.SIP.ReadTimeout");
+	// count of SIP messages that were never properly acked
+	gReports->create("OpenBTS.SIP.LostProxy");
+	// count of SIP message not sent due to unresolvable host name
+	gReports->create("OpenBTS.SIP.UnresolvedHostname");
+	// count of INVITEs received in the SIP layer
+	gReports->create("OpenBTS.SIP.INVITE.In");
+	// count of INVITEs sent from the in SIP layer
+	gReports->create("OpenBTS.SIP.INVITE.Out");
+	// count of INVITE-OKs sent from the in SIP layer (connection established)
+	gReports->create("OpenBTS.SIP.INVITE-OK.Out");
+	// count of MESSAGEs received in the in SIP layer
+	gReports->create("OpenBTS.SIP.MESSAGE.In");
+	// count of MESSAGESs sent from the SIP layer
+	gReports->create("OpenBTS.SIP.MESSAGE.Out");
+	// count of REGISTERSs sent from the SIP layer
+	gReports->create("OpenBTS.SIP.REGISTER.Out");
+	// count of BYEs sent from the SIP layer
+	gReports->create("OpenBTS.SIP.BYE.Out");
+	// count of BYEs received in the SIP layer
+	gReports->create("OpenBTS.SIP.BYE.In");
+	// count of BYE-OKs sent from SIP layer (final disconnect handshake)
+	gReports->create("OpenBTS.SIP.BYE-OK.Out");
+	// count of BYE-OKs received in SIP layer (final disconnect handshake)
+	gReports->create("OpenBTS.SIP.BYE-OK.In");
+
+	// count of initiated LUR attempts
+	gReports->create("OpenBTS.GSM.MM.LUR.Start");
+	// count of LUR attempts where the server timed out
+	gReports->create("OpenBTS.GSM.MM.LUR.Timeout");
+	// gReports->create("OpenBTS.GSM.MM.LUR.Success");
+	// gReports->create("OpenBTS.GSM.MM.LUR.NotFound");
+	// gReports->create("OpenBTS.GSM.MM.LUR.Allowed");
+	// gReports->create("OpenBTS.GSM.MM.LUR.Rejected");
+	// count of all authentication attempts
+	gReports->create("OpenBTS.GSM.MM.Authenticate.Request");
+	// count of authentication attempts the succeeded
+	gReports->create("OpenBTS.GSM.MM.Authenticate.Success");
+	// count of authentication attempts that failed
+	gReports->create("OpenBTS.GSM.MM.Authenticate.Failure");
+	// count of the number of TMSIs assigned to users
+	gReports->create("OpenBTS.GSM.MM.TMSI.Assigned");
+	// gReports->create("OpenBTS.GSM.MM.TMSI.Unknown");
+	// count of CM Service requests for MOC
+	gReports->create("OpenBTS.GSM.MM.CMServiceRequest.MOC");
+	// count of CM Service requests for MOSMS
+	gReports->create("OpenBTS.GSM.MM.CMServiceRequest.MOSMS");
+	// count of CM Service requests for services we don't support
+	gReports->create("OpenBTS.GSM.MM.CMServiceRequest.Unhandled");
+
+	// count of mobile-originated SMS submissions initiated
+	gReports->create("OpenBTS.GSM.SMS.MOSMS.Start");
+	// count of mobile-originated SMS submissions competed (got CP-ACK for RP-ACK)
+	gReports->create("OpenBTS.GSM.SMS.MOSMS.Complete");
+	// count of mobile-temrinated SMS deliveries initiated
+	gReports->create("OpenBTS.GSM.SMS.MTSMS.Start");
+	// count of mobile-temrinated SMS deliveries completed (got RP-ACK)
+	gReports->create("OpenBTS.GSM.SMS.MTSMS.Complete");
+
+	// count of mobile-originated setup messages
+	gReports->create("OpenBTS.GSM.CC.MOC.Setup");
+	// count of mobile-terminated setup messages
+	gReports->create("OpenBTS.GSM.CC.MTC.Setup");
+	// count of mobile-terminated release messages
+	gReports->create("OpenBTS.GSM.CC.MTD.Release");
+	// count of mobile-originated disconnect messages
+	gReports->create("OpenBTS.GSM.CC.MOD.Disconnect");
+	// total number of minutes of carried calls
+	gReports->create("OpenBTS.GSM.CC.CallMinutes");
+	// count of dropped calls
+	gReports->create("OpenBTS.GSM.CC.DroppedCalls");
+
+	// count of CS (non-GPRS) channel assignments
+	gReports->create("OpenBTS.GSM.RR.ChannelAssignment");
+	// gReports->create("OpenBTS.GSM.RR.ChannelRelease");
+	// count of number of times the beacon was regenerated
+	gReports->create("OpenBTS.GSM.RR.BeaconRegenerated");
+	// count of successful channel assignments
+	gReports->create("OpenBTS.GSM.RR.ChannelSiezed");
+	// gReports->create("OpenBTS.GSM.RR.LinkFailure");
+	// gReports->create("OpenBTS.GSM.RR.Paged.IMSI");
+	// gReports->create("OpenBTS.GSM.RR.Paged.TMSI");
+	// gReports->create("OpenBTS.GSM.RR.Handover.Inbound.Request");
+	// gReports->create("OpenBTS.GSM.RR.Handover.Inbound.Accept");
+	// gReports->create("OpenBTS.GSM.RR.Handover.Inbound.Success");
+	// gReports->create("OpenBTS.GSM.RR.Handover.Outbound.Request");
+	// gReports->create("OpenBTS.GSM.RR.Handover.Outbound.Accept");
+	// gReports->create("OpenBTS.GSM.RR.Handover.Outbound.Success");
+	// histogram of timing advance for accepted RACH bursts
+	gReports->create("OpenBTS.GSM.RR.RACH.TA.Accepted", 0, 63);
+
+	// gReports->create("Transceiver.StaleBurst");
+	// gReports->create("Transceiver.Command.Received");
+	// gReports->create("OpenBTS.TRX.Command.Sent");
+	// gReports->create("OpenBTS.TRX.Command.Failed");
+	// gReports->create("OpenBTS.TRX.FailedStart");
+	// gReports->create("OpenBTS.TRX.LostLink");
+
+	// GPRS
+	// number of RACH bursts processed for GPRS
+	gReports->create("GPRS.RACH");
+	// number of TBFs assigned
+	gReports->create("GPRS.TBF");
+	// number of MSInfo records generated
+	gReports->create("GPRS.MSInfo");
+
+	// (pat) 1-2014 Added RTP thread performance reporting.
+	gReports->create("OpenBTS.RTP.AverageSlack"); // Average head room.
+	gReports->create("OpenBTS.RTP.MinSlack");     // Minimum slack.  Negative is a whoops.
+}
+
+// (pat) Using multiple radios on the same CPU:
+// 1. Provide a seprate config OpenBTS.db file for each OpenBTS + transceiver pair.
+//		I run each OpenBTS+transceiver pair in a separate directory with its own OpenBTS.db set as below.
+//		To set the config file You can use the --config option or set the OpenBTSConfigFile environment
+// variable, which also works with gdb.
+// 2. Set TRX.RadioNumber to 1,2,3,...
+// 3. Set transceiver communication TRX.Port differently.  TRX uses >100 ports, so use: 5700, 5900, 6100, etc.
+// 4. Set GSM.Radio.C0 differently.
+// 5. Set GSM.Identity.BSIC.BCC differently.
+// 6. Set GSM.Identity.LAC differently, maybe, but this depends on what you want to do.
+// 7. Change all the external application ports: Peering.Port, RTP.Start, SIP.Local.Port
+// 8. The neighbor tables need to point at each other.  See example below.
+// 9. Change the Peering.NeighborTable.Path.  I just set it to a .db in the current directory.  Changing the other .db
+// files is optional
+// 10. If you have old radios, dont forget to set the TRX.RadioFrequencyOffset for each radio.
+// 11. Doug recommends increasing GSM.Ny1 for handover testing.
+// Note reserved ports: SR uses port 5064 and asterisk uses port 5060.
+// Example using two radios on one computer:
+// TRX.RadioNumber			1		2
+// TRX.Port				5700		5900
+// GSM.Radio.C0				51		60
+// GSM.Identity.BSIC.BCC		2		3
+// GSM.Identity.LAC			1007		1008
+// SIP.Local.Port			5062		5066
+// NodeManager.Commands.Port		45060		45062
+// CLI.Port				49300		49302
+// RTP.Start				16484		16600
+// Peering.Port				16001		16002
+// GSM.Neighbors			127.0.0.1:16002	127.0.0.1:16001
+// Each BTS needs separate versions of these .db files that normally reside in /var/run:  Just put them in the cur dir
+// like this: Peering.NeighborTable.Path NeighborTable.db Control.Reporting.TransactionTable TransactionTable.db
+// Control.Reporting.TMSITable TMSITable.db
+// Control.Reporting.StatsTable StatsTable.db
+// Control.Reporting.PhysStatusTable PhysStatusTable.db
+
+/** Application specific NodeManager logic for handling requests. */
+static JsonBox::Object nmHandler(JsonBox::Object &request)
+{
+	JsonBox::Object response;
+	std::string command = request["command"].getString();
+
+	if (command.compare("monitor") == 0) {
+		response["code"] = JsonBox::Value(200);
+		response["data"]["noiseRSSI"] = JsonBox::Value(0 - gTRX->ARFCN(0)->getNoiseLevel());
+		response["data"]["msTargetRSSI"] = JsonBox::Value((signed)gConfig.getNum("GSM.Radio.RSSITarget"));
+		// FIXME -- This needs to take GPRS channels into account. See #762. (note from CLI::load section)
+		response["data"]["gsmSDCCHActive"] = JsonBox::Value((int)gBTS->SDCCHActive());
+		response["data"]["gsmSDCCHTotal"] = JsonBox::Value((int)gBTS->SDCCHTotal());
+		response["data"]["gsmTCHActive"] = JsonBox::Value((int)gBTS->TCHActive());
+		response["data"]["gsmTCHTotal"] = JsonBox::Value((int)gBTS->TCHTotal());
+		response["data"]["gsmAGCHQueue"] = JsonBox::Value((int)gBTS->AGCHLoad());
+		response["data"]["gsmPCHQueue"] = JsonBox::Value((int)gBTS->PCHLoad());
+	} else if (command.compare("tmsis") == 0) {
+		int verbosity = 2;
+		bool rawFlag = true;
+		unsigned maxRows = 10000;
+		vector<vector<string>> view = gTMSITable->tmsiTabView(verbosity, rawFlag, maxRows);
+
+		int count = 0;
+		JsonBox::Array a;
+		for (vector<vector<string>>::iterator it = view.begin(); it != view.end(); ++it) {
+			// skip the header line
+			// TODO : use the header line to grab appropriate fields and indexes
+			if (count == 0) {
+				count++;
+				continue;
+			}
+			vector<string> &row = *it;
+			JsonBox::Object o;
+			o["IMSI"] = row.at(0);
+			o["TMSI"] = row.at(1);
+			o["IMEI"] = row.at(2);
+			o["AUTH"] = row.at(3);
+			o["CREATED"] = row.at(4);
+			o["ACCESSED"] = row.at(5);
+			o["TMSI_ASSIGNED"] = row.at(6);
+			o["PTMSI_ASSIGNED"] = row.at(7);
+			o["AUTH_EXPIRY"] = row.at(8);
+			o["REJECT_CODE"] = row.at(9);
+			o["ASSOCIATED_URI"] = row.at(10);
+			o["ASSERTED_IDENTITY"] = row.at(11);
+			o["WELCOME_SENT"] = row.at(12);
+			o["A5_SUPPORT"] = row.at(13);
+			o["POWER_CLASS"] = row.at(14);
+			o["RRLP_STATUS"] = row.at(15);
+			o["OLD_TMSI"] = row.at(16);
+			o["OLD_MCC"] = row.at(17);
+			o["OLD_MNC"] = row.at(18);
+			o["OLD_LAC"] = row.at(19);
+			a.push_back(JsonBox::Value(o));
+		}
+		response["code"] = JsonBox::Value(200);
+		response["data"] = JsonBox::Value(a);
+	} else {
+		response["code"] = JsonBox::Value(501);
+	}
+
+	return response;
+}
+
+static void processArgs(int argc, char **argv)
+{
+	applicationFlags.test = 0;
+	applicationFlags.generateSQL = 0;
+	applicationFlags.generateTeX = 0;
+	applicationFlags.allowMultipleInstances = 0;
+
+#if 0
+	for (int argi = 1; argi < argc; argi++) {
+		if ((strcmp(argv[argi], "--version") == 0) || (strcmp(argv[argi], "-v") == 0)) {
+			// Print the version number and exit immediately.
+			cout << gVersionString << endl;
+			exit(0);
+		}
+
+		if (strcmp(argv[argi], "--test") == 0) {
+			applicationFlags.test = 1;
+			continue;
+		}
+
+		if (strcmp(argv[argi], "--gensql") == 0) {
+			applicationFlags.generateSQL = 1;
+			continue;
+		}
+
+		if (strcmp(argv[argi], "--gentex") == 0) {
+			applicationFlags.generateTeX = 1;
+			continue;
+		}
+
+		// Allow multiple occurrences of the program to run.
+		if (strcmp(argv[argi], "-m") == 0) {
+			applicationFlags.allowMultipleInstances = 1;
+			continue;
+		}
+
+		if (strcmp(argv[argi], "--config") == 0) {
+			if (++argi == argc) {
+				fprintf(stderr, "Missing argument to --config option\n");
+				exit(2);
+			}
+			cOpenBTSConfigFile = argv[argi];
+			continue;
+		}
+
+		if (strcmp(argv[argi], "--help") == 0) {
+			fprintf(stdout, "OpenBTS [--version] [--gensql] [--gentex] [--config file.db]\n");
+			exit(0);
+		}
+
+		fprintf(stderr, "OpenBTS: unrecognized argument: %s. Exiting...\n", argv[argi]);
+	}
+#endif
+	for (;;) {
+		int optionIndex = 0;
+		int c = getopt_long(argc, argv, "v", longOptions, &optionIndex);
+		if (c == -1)
+			break;
+
+		const char *name = nullptr;
+		switch (c) {
+			case 0:
+				name = longOptions[optionIndex].name;
+
+				if ((strcmp(name, "help") == 0) || (strcmp(name, "usage") == 0)) {
+					fprintf(stdout, "%s\n", USAGE_STRING);
+					exit(0);
+					break;
+				}
+
+				if (strcmp(name, "config") == 0) {
+					cOpenBTSConfigFile = optarg;
+					break;
+				}
+
+				if (strcmp(name, "debug") == 0) {
+					/* cOpenBTSConfigFile = optarg; */
+					fprintf(stderr, "Warning: --debug option still not supported\n");
+					break;
+				}
+
+				break;
+
+			case '?':
+			case ':':
+				fprintf(stderr, "%s\n", USAGE_STRING);
+				exit(1);
+				break;
+
+			default:
+				fprintf(stderr, "%s\n", USAGE_STRING);
+				exit(1);
+				break;
+		}
+	}
+}
+
+static int initTimeSlots() // Return how many slots used by beacon.
+{
+	// The first timeslot is special for the beacon:
+	unsigned beaconSlots = 1;
+
+	int numARFCNs = gConfig.getNum("GSM.Radio.ARFCNs");
+	int scount = 0;
+	for (int cn = 0; cn < numARFCNs; cn++) {
+		for (int tn = 0; tn < 8; tn++) {
+			if (cn == 0 && (beaconSlots & (1 << tn))) {
+				// This cn,tn is used by the beacon.
+				scount++;
+				continue;
+			}
+			timeSlotList.push_back(TimeSlot(cn, tn));
+		}
+	}
+	return scount;
+}
+
 /** Return warning strings about a potential conflicting value */
-vector<string> configurationCrossCheck(const string &key)
+static vector<string> configurationCrossCheck(const string &key)
 {
 	vector<string> warnings;
 	ostringstream warning;

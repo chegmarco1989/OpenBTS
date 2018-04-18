@@ -509,7 +509,7 @@ extern ostream &operator<<(std::ostream &os, const L1Decoder *decp);
 		remember power/timing parameters) then passes the frame up using SAPMux->writeLowSide(),
 		which calls some descendent L2DL.
 		For RACH, writeLowSideRx decodes the burst and sends a message directly
-		to gBTS.channelRequest(), which enqueues them for eventual processing
+		to gBTS->channelRequest(), which enqueues them for eventual processing
 		by AccessGrantResponder().
 
 	Routines:

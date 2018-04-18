@@ -200,7 +200,7 @@ MachineStatus MOSMSMachine::machineRunState(int state, const GSM::L3Message *l3m
 		// l3sendSms(GSM::L3CMServiceAccept(),SAPI0);
 		channel()->l3sendm(GSM::L3CMServiceAccept(), L3_DATA, SAPI0);
 
-		gReports.incr("OpenBTS.GSM.SMS.MOSMS.Start");
+		gReports->incr("OpenBTS.GSM.SMS.MOSMS.Start");
 		return MachineStatusOK;
 	}
 
@@ -319,7 +319,7 @@ MachineStatus MOSMSMachine::machineRunState(int state, const GSM::L3Message *l3m
 		const CPAck *cpack = dynamic_cast<typeof(cpack)>(l3msg);
 		PROCLOG(INFO) << "CPAck " << cpack;
 
-		gReports.incr("OpenBTS.GSM.SMS.MOSMS.Complete");
+		gReports->incr("OpenBTS.GSM.SMS.MOSMS.Complete");
 
 		/* MOSMS RLLP request */
 		// if (gConfig.getBool("Control.SMS.QueryRRLP")) {
@@ -501,7 +501,7 @@ MachineStatus MTSMSMachine::machineRunState1(
 
 		this->mRpduRef = random() % 255;
 
-		gReports.incr("OpenBTS.GSM.SMS.MTSMS.Start");
+		gReports->incr("OpenBTS.GSM.SMS.MTSMS.Start");
 
 		// pat 6-2014.  We just send the ESTABLISH_REQUEST no matter what now.
 		// The LAPDm will respond with ESTABLISH_INDICATION immediately if
@@ -596,7 +596,7 @@ MachineStatus MTSMSMachine::machineRunState1(
 			success = false;
 		}
 
-		gReports.incr("OpenBTS.GSM.SMS.MTSMS.Complete");
+		gReports->incr("OpenBTS.GSM.SMS.MTSMS.Complete");
 
 		// Step 4
 		// Send CP-ACK to the MS.

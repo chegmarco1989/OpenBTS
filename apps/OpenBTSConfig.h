@@ -68,6 +68,14 @@ public:
 	} GSM;
 };
 
-extern OpenBTSConfig gConfig;
+// extern OpenBTSConfig gConfig;
+
+static inline OpenBTSConfig &getConfigObject()
+{
+	assert(gConfigObject);
+	return *static_cast<OpenBTSConfig *>(gConfigObject);
+}
+
+#define gConfig getConfigObject()
 
 #endif

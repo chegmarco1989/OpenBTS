@@ -163,7 +163,7 @@ ChannelCodingType TBF::mtChannelCoding() const
 TBF::TBF(MSInfo *wms, RLCDirType wdir)
 	: mtState(TBFState::Unused), mtDebugId(++Stats.countTBF), mtMS(wms), mtDir(wdir), mtTFI(-1)
 {
-	gReports.incr("GPRS.TBF");
+	gReports->incr("GPRS.TBF");
 	RN_MEMCHKNEW(TBF)
 	mtChannelCodingMax = ChannelCodingMax; // This may be changed by caller.
 	mtCCMin = mtCCMax = (ChannelCodingType)-1;
@@ -522,7 +522,7 @@ void sendAssignmentCcch(PDCHL1FEC *pacch, // The PACCH channel where the MS will
 	npe->mImmAssign = gprsPageCcchStart(pacch, tbf);
 	// We dont support DRX yet, so just set the DRX time to the current frame, ie, assume all MS are in DRX if they
 	// are on CCCH.
-	npe->mDrxBegin = gBTS.time().FN();
+	npe->mDrxBegin = gBTS->time().FN();
 	pagerAddCcchMessageForGprs(npe);
 }
 

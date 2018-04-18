@@ -314,7 +314,7 @@ TranEntry::~TranEntry()
 	}
 
 	// Remove any FIFO from the gPeerInterface.
-	gPeerInterface.removeFIFO(tranID());
+	gPeerInterface->removeFIFO(tranID());
 
 	if (mMMData) {
 		delete mMMData;
@@ -1754,7 +1754,7 @@ void TranInit()
 static string lookupPhoneNumber(string imsi)
 {
 	string number, unused;
-	gTMSITable.getSipIdentities(imsi, number, unused);
+	gTMSITable->getSipIdentities(imsi, number, unused);
 	int len = number.size();
 	if (len >= 2 && number[0] == '<') {
 		number = number.substr(1, len - 2);
@@ -1954,7 +1954,7 @@ void CdrService::cdrOpenFile()
 void *CdrService::cdrServiceLoop(void *arg)
 {
 	CdrService *self = static_cast<CdrService *>(arg);
-	while (!gBTS.btsShutdown()) {
+	while (!gBTS->btsShutdown()) {
 		L3CDR *cdr = self->mCdrQueue.read(); // Blocking read.
 		if (!cdr) {
 			continue;

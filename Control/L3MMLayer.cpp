@@ -1245,7 +1245,7 @@ void MMLayer::mmAddMT(TranEntry *tran)
 		MMUser *mmu = mmFindByImsi(imsi, true);
 		// Is there a guaranteed tmsi?
 		// We will delay this until we page in case an LUR is occurring right now.
-		// if (uint32_t tmsi = gTMSITable.tmsiTabGetTMSI(imsi,true)) { mmu->mmuTmsi = /*tran->subscriber().mTmsi
+		// if (uint32_t tmsi = gTMSITable->tmsiTabGetTMSI(imsi,true)) { mmu->mmuTmsi = /*tran->subscriber().mTmsi
 		// =*/ tmsi; }  LOG(ALERT) << "MMLayer::mmAddMT::mmu gives: " << LOGVAR(mmu);
 		assert(mmu);
 		mmu->mmuAddMT(tran);
@@ -1290,7 +1290,7 @@ TMSI_t MMUser::mmuGetTmsi()
 {
 	if (!this->mmuDidTmsiCheck) {
 		this->mmuDidTmsiCheck = true;
-		if (uint32_t tmsi = gTMSITable.tmsiTabGetTMSI(mmuImsi, true)) {
+		if (uint32_t tmsi = gTMSITable->tmsiTabGetTMSI(mmuImsi, true)) {
 			this->mmuTmsi = tmsi;
 		}
 	}
@@ -1451,7 +1451,7 @@ void MMLayer::printMMUsers(std::ostream &os, bool onlyUnattached)
 void MMLayer::printMMInfo(std::ostream &os)
 {
 	L2ChanList chans;
-	gBTS.getChanVector(chans);
+	gBTS->getChanVector(chans);
 	ScopedLock lock(gMMLock, __FILE__, __LINE__);
 	for (L2ChanList::iterator it = chans.begin(); it != chans.end(); it++) {
 		L3LogicalChannel *chan = dynamic_cast<L3LogicalChannel *>(*it);
@@ -1480,7 +1480,7 @@ string MMLayer::printMMInfo()
 void controlInit()
 {
 	LOG(DEBUG);
-	gTMSITable.tmsiTabOpen(gConfig.getStr("Control.Reporting.TMSITable").c_str());
+	gTMSITable->tmsiTabOpen(gConfig.getStr("Control.Reporting.TMSITable").c_str());
 	LOG(DEBUG);
 	gNewTransactionTable.ttInit();
 	LOG(DEBUG);

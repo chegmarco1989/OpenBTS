@@ -42,7 +42,7 @@ using namespace std;
 // Yate. As a result, everything here has to change. (pat) The access to any database needs to be message oriented if
 // there is any chance of stalling, which could goof up the invoking state machine.
 
-Control::TMSITable gTMSITable;
+Control::TMSITable *gTMSITable;
 
 namespace Control {
 
@@ -582,7 +582,7 @@ uint32_t TMSITable::tmsiTabCreateOrUpdate(
 		// tmsi, we never change it back to a fake tmsi, because we want to reserve the tmsi for this handset
 		// effectively forever.
 		if (!tmsiIsValid(oldRawTmsi)) {
-			gReports.incr("OpenBTS.GSM.MM.TMSI.Assigned");
+			gReports->incr("OpenBTS.GSM.MM.TMSI.Assigned");
 			tmsi = allocateTmsi();
 			queryp->addc("TMSI", tmsi2table(tmsi));
 		} else {
@@ -633,7 +633,7 @@ uint32_t TMSITable::tmsiTabAssign(const string imsi, const GSM::L3LocationAreaId
 	// Return assigned TMSI.
 	assert(mTmsiDB);
 
-	gReports.incr("OpenBTS.GSM.MM.TMSI.Assigned");
+	gReports->incr("OpenBTS.GSM.MM.TMSI.Assigned");
 
 	ScopedLock lock(sTmsiMutex,__FILE__,__LINE__); // This lock should be redundant - sql serializes access, but it may prevent sql retry failures.
 
@@ -693,7 +693,7 @@ uint32_t TMSITable::assign(
 	// Return assigned TMSI.
 	assert(mTmsiDB);
 
-	gReports.incr("OpenBTS.GSM.MM.TMSI.Assigned");
+	gReports->incr("OpenBTS.GSM.MM.TMSI.Assigned");
 
 	ScopedLock lock(sTmsiMutex, __FILE__, __LINE__); // This lock should be redundant - sql serializes access, but
 							 // it may prevent sql retry failures.

@@ -61,12 +61,12 @@ void *ClockLoopAdapter(TransceiverManager *transceiver)
 	// This loop has a period of about 3 seconds.
 
 	gResetWatchdog();
-	while (!gBTS.btsShutdown()) {
+	while (!gBTS->btsShutdown()) {
 		transceiver->clockHandler();
 		LOG(DEBUG) << "watchdog timer expires in " << gWatchdogRemaining() << " seconds";
 		if (gWatchdogExpired()) {
 			LOG(ALERT) << "restarting OpenBTS on expiration of watchdog timer";
-			gReports.incr("OpenBTS.Exit.Error.Watchdog");
+			gReports->incr("OpenBTS.Exit.Error.Watchdog");
 			exit(-2);
 		}
 	}
@@ -87,7 +87,7 @@ void TransceiverManager::clockHandler()
 	// Did the transceiver die??
 	if (msgLen < 0) {
 		LOG(EMERG) << "TRX clock interface timed out, assuming TRX is dead.";
-		gReports.incr("OpenBTS.Exit.Error.TransceiverHeartbeat");
+		gReports->incr("OpenBTS.Exit.Error.TransceiverHeartbeat");
 #if RN_DEVELOPER_MODE
 		// (pat) Added so you can keep debugging without the radio.
 		static int foo = 0;
@@ -105,8 +105,8 @@ void TransceiverManager::clockHandler()
 	if (strncmp(buffer, "IND CLOCK", 9) == 0) {
 		uint32_t FN;
 		sscanf(buffer, "IND CLOCK %u", &FN);
-		LOG(INFO) << "CLOCK indication, current clock = " << gBTS.clock().clockGet() << " new clock =" << FN;
-		gBTS.clock().clockSet(FN);
+		LOG(INFO) << "CLOCK indication, current clock = " << gBTS->clock().clockGet() << " new clock =" << FN;
+		gBTS->clock().clockSet(FN);
 		mHaveClock = true;
 		return;
 	}
@@ -158,7 +158,7 @@ void ::ARFCNManager::installDecoder(GSM::L1Decoder *wL1d)
 // (pat) renamed overloaded function to clarify code
 void ::ARFCNManager::writeHighSideTx(const GSM::TxBurst &burst, const char *culprit)
 {
-	LOG(DEBUG) << culprit << " transmit at time " << gBTS.clock().clockGet() << ": " << burst
+	LOG(DEBUG) << culprit << " transmit at time " << gBTS->clock().clockGet() << ": " << burst
 		   << " steal=" << (int)burst.peekField(60, 1) << (int)burst.peekField(87, 1);
 	// format the transmission request message
 	static const int bufferSize = gSlotLen + 1 + 4 + 1;
@@ -221,7 +221,7 @@ void ::ARFCNManager::driveRx()
 
 void *ReceiveLoopAdapter(::ARFCNManager *manager)
 {
-	while (!gBTS.btsShutdown()) {
+	while (!gBTS->btsShutdown()) {
 		manager->driveRx();
 		pthread_testcancel();
 	}
@@ -349,8 +349,8 @@ int ::ARFCNManager::sendCommand(const char *command)
 bool ::ARFCNManager::tune(int wARFCN)
 {
 	// convert ARFCN number to a frequency
-	unsigned rxFreq = uplinkFreqKHz(gBTS.band(), wARFCN);
-	unsigned txFreq = downlinkFreqKHz(gBTS.band(), wARFCN);
+	unsigned rxFreq = uplinkFreqKHz(gBTS->band(), wARFCN);
+	unsigned txFreq = downlinkFreqKHz(gBTS->band(), wARFCN);
 	// tune rx
 	int status = sendCommand("RXTUNE", rxFreq);
 	if (status != 0) {
@@ -371,7 +371,7 @@ bool ::ARFCNManager::tune(int wARFCN)
 bool ::ARFCNManager::tuneLoopback(int wARFCN)
 {
 	// convert ARFCN number to a frequency
-	unsigned txFreq = downlinkFreqKHz(gBTS.band(), wARFCN);
+	unsigned txFreq = downlinkFreqKHz(gBTS->band(), wARFCN);
 	// tune rx
 	int status = sendCommand("RXTUNE", txFreq);
 	if (status != 0) {

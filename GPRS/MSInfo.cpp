@@ -88,7 +88,7 @@ MSInfo::MSInfo(uint32_t tlli)
 // msTxxxx(5000)		// Needs initialization to prevent abort when we test it,
 // but we will set it again to the real value when we use it.
 {
-	gReports.incr("GPRS.MSInfo");
+	gReports->incr("GPRS.MSInfo");
 	gL2MAC.macAddMS(this);
 }
 

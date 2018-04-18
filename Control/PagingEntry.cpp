@@ -40,7 +40,7 @@ L3MobileIdentity NewPagingEntry::getMobileId()
 	if (!mCheckedForTmsi) {
 		mCheckedForTmsi = true;
 		if (!mTmsi.valid()) {
-			uint32_t tmsi = gTMSITable.tmsiTabGetTMSI(mImsi, true);
+			uint32_t tmsi = gTMSITable->tmsiTabGetTMSI(mImsi, true);
 			LOG(DEBUG) << "tmsiTabGetTMSI imsi=" << mImsi << "returns" << LOGVAR(tmsi);
 			if (tmsi) {
 				mTmsi = tmsi;

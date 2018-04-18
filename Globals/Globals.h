@@ -47,10 +47,11 @@ extern unsigned GPRSDebug;
 extern const char *gDateTime;
 
 /**
-	Just about everything goes into the configuration table.
-	This should be defined in the main body of the top-level application.
-*/
-extern OpenBTSConfig gConfig;
+ * Just about everything goes into the configuration table.
+ * This should be defined in the main body of the top-level application.
+ */
+
+// extern OpenBTSConfig gConfig;
 
 #endif // !defined(BUILD_CLI)
 
@@ -65,21 +66,10 @@ extern const char *gVersionString;
 /** The central parser. */
 extern CommandLine::Parser gParser;
 
-/** The global TMSI table. */
-// extern Control::TMSITable gTMSITable;
-
-/** The physical status reporting table */
-extern GSM::PhysicalStatus gPhysStatus;
-
-/** The global transceiver interface. */
-extern TransceiverManager gTRX;
-
 /** A global watchdog timer. */
 void gResetWatchdog();
 size_t gWatchdogRemaining();
 bool gWatchdogExpired();
-
-extern ReportingTable gReports;
 
 extern const char *gVERSION(void);
 extern const char *gFEATURES(void);

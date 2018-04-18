@@ -291,7 +291,7 @@ extern bool isCBSEnabled();
 /**@addtogroup Globals */
 //@{
 /** A single global GSMConfig object in the global namespace. */
-extern GSM::GSMConfig gBTS;
+extern GSM::GSMConfig *gBTS;
 //@}
 
 #endif

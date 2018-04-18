@@ -308,4 +308,6 @@ private:
 /** C interface for ARFCNManager threads. */
 void *ReceiveLoopAdapter(ARFCNManager *);
 
+extern TransceiverManager *gTRX;
+
 #endif

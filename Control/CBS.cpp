@@ -363,7 +363,7 @@ void *SMSCBSender(void *)
 	LOG(NOTICE) << "SMSCB service starting";
 
 	// Get a channel.
-	GSM::CBCHLogicalChannel *CBCH = gBTS.getCBCH();
+	GSM::CBCHLogicalChannel *CBCH = gBTS->getCBCH();
 
 	while (1) {
 		// Get the next message ready to send.

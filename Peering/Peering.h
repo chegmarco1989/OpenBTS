@@ -157,6 +157,6 @@ extern string sockaddr2string(const struct sockaddr_in *peer, bool noempty);
 
 }; // namespace Peering
 
-extern Peering::PeerInterface gPeerInterface;
+extern Peering::PeerInterface *gPeerInterface;
 
 #endif

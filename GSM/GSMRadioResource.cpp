@@ -144,10 +144,10 @@ FakeRachType fakeRachTypeTranslate(const char *name)
 // Enqueue a fake rach of the specified type.  Used to test/exercise the CCCH code.
 void createFakeRach(FakeRachType rachtype)
 {
-	Time now = gBTS.time();
+	Time now = gBTS->time();
 	AccessGrantResponder(createFakeRachRA(rachtype), now, 0, 1, 0);
 	// ChannelRequestRecord *req = new ChannelRequestRecord(createFakeRachRA(rachtype),now,0,1);
-	// gBTS.channelRequest(req);
+	// gBTS->channelRequest(req);
 }
 
 std::ostream &operator<<(std::ostream &os, const RachInfo &rach)
@@ -171,11 +171,11 @@ std::ostream &operator<<(std::ostream &os, const RachInfo *rach)
 void AccessGrantResponder(unsigned RA, const GSM::Time &when, float RSSI, float timingError,
 	int TN) // The TN the RACH arrived on.  Only non-0 if there are multiple beacon timeslots.
 {
-	gReports.incr("OpenBTS.GSM.RR.RACH.TA.All", (int)(timingError));
-	gReports.incr("OpenBTS.GSM.RR.RACH.RA.All", RA);
+	gReports->incr("OpenBTS.GSM.RR.RACH.TA.All", (int)(timingError));
+	gReports->incr("OpenBTS.GSM.RR.RACH.RA.All", RA);
 
 	// Are we holding off new allocations?
-	if (gBTS.btsHold()) {
+	if (gBTS->btsHold()) {
 		LOG(NOTICE) << "ignoring RACH due to BTS hold-off";
 		return;
 	}
@@ -198,7 +198,7 @@ void AccessGrantResponder(unsigned RA, const GSM::Time &when, float RSSI, float 
 		initialTA = 62;
 
 	RachInfo *rip = new RachInfo(RA, when, RadData(RSSI, initialTA), TN);
-	LOG(DEBUG) << "Incoming RACH:" << *rip << LOGVAR2("now", gBTS.time())
+	LOG(DEBUG) << "Incoming RACH:" << *rip << LOGVAR2("now", gBTS->time())
 		   << LOGVAR2("when%42432", rip->mWhen.FN() % 42432);
 	enqueueRach(rip);
 }

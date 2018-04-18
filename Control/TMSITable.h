@@ -279,6 +279,6 @@ extern unsigned getPreferredA5Algorithm(unsigned A5Bits);
 }; // namespace Control
 
 // This gTMSITable is historically in the global namespace.
-extern Control::TMSITable gTMSITable;
+extern Control::TMSITable *gTMSITable;
 
 #endif

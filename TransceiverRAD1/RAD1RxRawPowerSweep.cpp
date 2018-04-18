@@ -34,10 +34,11 @@
 using namespace std;
 
 /* tomr had to add direct path to OpenBTS.db */
-ConfigurationTable gConfig("/etc/OpenBTS/OpenBTS.db");
+ConfigurationTable *gConfigObject;
 
 int main(int argc, char **argv)
 {
+	gConfigObject = new ConfigurationTable("/etc/OpenBTS/OpenBTS.db");
 
 	gLogInit("RAD1RxRawPowerSweep", "INFO", LOG_LOCAL7);
 
@@ -108,4 +109,8 @@ int main(int argc, char **argv)
 		}
 		printf("RSSI is %f at %fkHz\n", 10 * log10(rcvCeil / (sum / (double)num)), freqkHz);
 	}
+
+	delete gConfigObject;
+
+	return 0;
 }

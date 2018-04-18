@@ -27,7 +27,7 @@
 using namespace std;
 
 // We must have a gConfig now to include BitVector.
-ConfigurationTable gConfig;
+ConfigurationTable *gConfigObject;
 
 BitVector randomBitVector(int n)
 {
@@ -183,7 +183,11 @@ void testAMR()
 
 int main(int argc, char **argv)
 {
+	gConfigObject = new ConfigurationTable();
+
 	testAMR();
+
+	delete gConfigObject;
 
 	return 0;
 }

@@ -65,18 +65,18 @@ void NewCMServiceResponder(const L3CMServiceRequest *cmsrq, MMContext *mmchan)
 	CMServiceTypeCode serviceType = cmsrq->serviceType().type();
 	switch (serviceType) {
 	case L3CMServiceType::MobileOriginatedCall:
-		gReports.incr("OpenBTS.GSM.MM.CMServiceRequest.MOC");
+		gReports->incr("OpenBTS.GSM.MM.CMServiceRequest.MOC");
 		startMOC(cmsrq, mmchan, serviceType);
 		break;
 	case L3CMServiceType::ShortMessage:
-		gReports.incr("OpenBTS.GSM.MM.CMServiceRequest.MOSMS");
+		gReports->incr("OpenBTS.GSM.MM.CMServiceRequest.MOSMS");
 		startMOSMS(cmsrq, mmchan);
 		break;
 	case L3CMServiceType::SupplementaryService:
 		startMOSSD(cmsrq, mmchan);
 		break;
 	default:
-		gReports.incr("OpenBTS.GSM.MM.CMServiceRequest.Unhandled");
+		gReports->incr("OpenBTS.GSM.MM.CMServiceRequest.Unhandled");
 		LOG(NOTICE) << "service not supported for " << *cmsrq;
 		mmchan->l3sendm(L3CMServiceReject(L3RejectCause::Service_Option_Not_Supported));
 		// mmchan->l3sendm(L3ChannelRelease(L3RRCause::Unspecified));
@@ -189,14 +189,14 @@ MachineStatus L3IdentifyMachine::machineRunState(
 		if (mMobileID.type() == IMSIType) {
 			string imsi(mMobileID.digits());
 			tran()->setSubscriberImsi(imsi, false);
-			*mResultPtr = gTMSITable.tmsiTabCheckAuthorization(imsi);
+			*mResultPtr = gTMSITable->tmsiTabCheckAuthorization(imsi);
 			return MachineStatusPopMachine;
 		}
 
 		// If we got a TMSI, find the IMSI.
 		if (mMobileID.type() == TMSIType) {
 			unsigned authorized;
-			string imsi = gTMSITable.tmsiTabGetIMSI(mMobileID.TMSI(), &authorized);
+			string imsi = gTMSITable->tmsiTabGetIMSI(mMobileID.TMSI(), &authorized);
 			LOG(DEBUG) << "lookup" << LOGVAR(mMobileID.TMSI()) << LOGVAR(imsi);
 			if (imsi.size()) {
 				// TODO: We need an option to re-authenticate this handset, but for now,
@@ -229,7 +229,7 @@ MachineStatus L3IdentifyMachine::machineRunState(
 		if (mobileID.type() == IMSIType) {
 			string imsi = string(mobileID.digits());
 			tran()->setSubscriberImsi(imsi, false);
-			*mResultPtr = gTMSITable.tmsiTabCheckAuthorization(imsi);
+			*mResultPtr = gTMSITable->tmsiTabCheckAuthorization(imsi);
 
 		} else {
 			// FIXME -- This is quick-and-dirty, not following GSM 04.08 5.
@@ -325,7 +325,7 @@ static void checkForConfigChanges()
 	if (saveOpenRegistrationPat != openRegistrationPat || saveRejectPat != rejectPat) {
 		saveOpenRegistrationPat = openRegistrationPat;
 		saveRejectPat != rejectPat;
-		gTMSITable.tmsiTabClearAuthCache();
+		gTMSITable->tmsiTabClearAuthCache();
 	}
 }
 
@@ -416,7 +416,7 @@ MachineStatus LUStart::stateRecvLocationUpdatingRequest(const GSM::L3LocationUpd
 	// registration with the SIP registrar.
 
 	// If the handset is allowed to register it may receive a TMSI reassignment.
-	gReports.incr("OpenBTS.GSM.MM.LUR.Start");
+	gReports->incr("OpenBTS.GSM.MM.LUR.Start");
 
 	switch (ludata()->mLUMobileId.type()) {
 	case GSM::IMSIType: {
@@ -427,7 +427,7 @@ MachineStatus LUStart::stateRecvLocationUpdatingRequest(const GSM::L3LocationUpd
 		tran()->setSubscriberImsi(imsi, false); // We will need this for authorization below.
 		// If the MS sent an IMSI but the TMSI is already in the database, most likely we just did not send the
 		// TMSI assignment. but it could also be a tmsi collision.
-		uint32_t tmsi = gTMSITable.tmsiTabGetTMSI(imsi, false); // returns 0 if IMSI not in database.
+		uint32_t tmsi = gTMSITable->tmsiTabGetTMSI(imsi, false); // returns 0 if IMSI not in database.
 		if (tmsi) {
 			ludata()->setTmsi(tmsi, tmsiNotAssigned);
 			// gMMLayer.mmBlockTmsi(tmsi);
@@ -440,10 +440,10 @@ MachineStatus LUStart::stateRecvLocationUpdatingRequest(const GSM::L3LocationUpd
 		uint32_t tmsi = ludata()->mLUMobileId.TMSI();
 		ludata()->mOldTmsi = tmsi;
 		// Look in the TMSI table to see if it's one we assigned.
-		bool sameLAI = ludata()->mLULAI == gBTS.LAI();
+		bool sameLAI = ludata()->mLULAI == gBTS->LAI();
 		string imsi;
 		if (sameLAI)
-			imsi = gTMSITable.tmsiTabGetIMSI(tmsi, NULL);
+			imsi = gTMSITable->tmsiTabGetIMSI(tmsi, NULL);
 		if (imsi.size()) {
 			// There is an TMSI/IMSI pair already in the TMSI table corresponding to this TMSI,
 			// but we dont know if this is the same MS yet.  We will try to authenticate using the stored
@@ -506,7 +506,7 @@ MachineStatus LUStart::stateRecvIdentityResponse(const GSM::L3IdentityResponse *
 				LOG(ERR) << "MS returned two different IMSIs";
 				MMRejectCause failCause = L3RejectCause::Invalid_Mandatory_Information;
 				// There is no ludata()->store yet so just set it directly:
-				gTMSITable.tmsiTabSetRejected(imsi, (int)failCause);
+				gTMSITable->tmsiTabSetRejected(imsi, (int)failCause);
 				// I dont know what the cause should be here, but if this ever happens, we dont care.
 				channel()->l3sendm(L3LocationUpdatingReject(failCause));
 				LOG(INFO) << "SIP term info closeChannel called in stateRecvIdentityResponse";
@@ -621,7 +621,7 @@ MachineStatus LUStart::machineRunState(int state, const GSM::L3Message *l3msg, c
 		TmsiTableStore *store = &ludata()->store;
 		// On the second attempt we need to do a real authentication via registration, not just re-run cached
 		// authentication.
-		if (!ludata()->mSecondAttempt && gTMSITable.tmsiTabGetStore(getImsi(), store)) {
+		if (!ludata()->mSecondAttempt && gTMSITable->tmsiTabGetStore(getImsi(), store)) {
 			// Is the cached authorization still valid?
 			int authExpiry = store->getAuthExpiry();
 			if (authExpiry && time(NULL) <= authExpiry) {
@@ -689,7 +689,7 @@ MachineStatus LUAuthentication::machineRunState(
 {
 	switch (state) {
 	case stateStart: {
-		gReports.incr("OpenBTS.GSM.MM.Authenticate.Request");
+		gReports->incr("OpenBTS.GSM.MM.Authenticate.Request");
 		// Get the mobile's SRES.
 		LOG(INFO) << "sending " << ludata()->mRegistrationResult.text() << " to mobile";
 		uint64_t uRAND;
@@ -830,13 +830,13 @@ MachineStatus LUAuthentication::machineRunState(
 		// it is included in the CC message.
 		int A5Bits = classmark.getA5Bits();
 		ludata()->store.setClassmark(A5Bits, classmark.powerClass());
-		// gTMSITable.classmark(getImsiCh(),classmark);	// This one is going away; we'll update once later.
+		// gTMSITable->classmark(getImsiCh(),classmark);	// This one is going away; we'll update once later.
 
 		if (gConfig.getBool("GSM.Cipher.Encrypt")) {
 			// (pat) 9-2014 hack: GSML1FEC gets the Kc directly out of the tmsi table so we need to flush to
 			// the physical table before sending the ciphering mode command.
-			gTMSITable.tmsiTabUpdate(getImsi(), &ludata()->store);
-			// int encryptionAlgorithm = gTMSITable.getPreferredA5Algorithm(getImsi().c_str());
+			gTMSITable->tmsiTabUpdate(getImsi(), &ludata()->store);
+			// int encryptionAlgorithm = gTMSITable->getPreferredA5Algorithm(getImsi().c_str());
 			int encryptionAlgorithm = getPreferredA5Algorithm(A5Bits);
 			if (!encryptionAlgorithm) {
 				LOG(DEBUG) << "A5/3 and A5/1 not supported: NOT sending Ciphering Mode Command on "
@@ -895,7 +895,7 @@ MachineStatus LUFinish::machineRunState(int state, const GSM::L3Message *l3msg, 
 				LOG(ERR) << "TMSI logic inconsistency";
 			} else {
 				LOG(DEBUG) << LOGVAR(newTmsi);
-				// gTMSITable.tmsiTabReallocationComplete(newTmsi);
+				// gTMSITable->tmsiTabReallocationComplete(newTmsi);
 				ludata()->store.setAssigned(1);
 				// Putting the TMSI in the subscriber info is irrelevant.  This tran is going away
 				// momentarily, but it should be in the MMContext, but even that doesnt matter because
@@ -1006,8 +1006,8 @@ MachineStatus LUFinish::stateSendLUResponse()
 			// Allocate a new tmsi to go with the updated imsi.
 			// Someday the tmsi may come from the registration server.
 			// uint32_t newTmsi =
-			// gTMSITable.tmsiTabAssign(imsi,&ludata()->mLULAI,ludata()->mOldTmsi,&ludata()->store);
-			uint32_t newTmsi = gTMSITable.tmsiTabCreateOrUpdate(
+			// gTMSITable->tmsiTabAssign(imsi,&ludata()->mLULAI,ludata()->mOldTmsi,&ludata()->store);
+			uint32_t newTmsi = gTMSITable->tmsiTabCreateOrUpdate(
 				imsi, &ludata()->store, &ludata()->mLULAI, ludata()->mOldTmsi);
 			ludata()->setTmsi(newTmsi, tmsiNew);
 			break;
@@ -1022,8 +1022,8 @@ MachineStatus LUFinish::stateSendLUResponse()
 			// tmsiTabUpdate.
 			// ludata()->setTmsiStatus(tmsiNew);  no need for this
 			ludata()->store.setAssigned(0); // Make sure TMSI database matches what the MS thinks.
-			// gTMSITable.tmsiTabUpdate(imsi,&ludata()->store);
-			uint32_t newTmsi1 = gTMSITable.tmsiTabCreateOrUpdate(
+			// gTMSITable->tmsiTabUpdate(imsi,&ludata()->store);
+			uint32_t newTmsi1 = gTMSITable->tmsiTabCreateOrUpdate(
 				imsi, &ludata()->store, &ludata()->mLULAI, ludata()->mOldTmsi);
 			ludata()->setTmsi(newTmsi1, tmsiNotAssigned); // Update to reflect possible new tmsi.
 			break;
@@ -1031,7 +1031,7 @@ MachineStatus LUFinish::stateSendLUResponse()
 		case tmsiProvisional: // The TMSI from the tmsi table authenticated.
 			ludata()->setTmsiStatus(tmsiAuthenticated);
 			ludata()->store.setAssigned(1);
-			gTMSITable.tmsiTabUpdate(imsi, &ludata()->store);
+			gTMSITable->tmsiTabUpdate(imsi, &ludata()->store);
 			break;
 
 		case tmsiAuthenticated:
@@ -1044,7 +1044,7 @@ MachineStatus LUFinish::stateSendLUResponse()
 
 		// We update these values on every registration:
 		// update: This is done by the registration engine now.
-		// gTMSITable.putKc(tran()->subscriberIMSI().c_str(),ludata()->mKc, ludata()->mAssociatedUri,
+		// gTMSITable->putKc(tran()->subscriberIMSI().c_str(),ludata()->mKc, ludata()->mAssociatedUri,
 		// ludata()->mAssertedIdentity);
 
 		LOG(DEBUG) << LOGVAR(ludata()->getTmsi()) << LOGVAR(ludata()->getTmsiStatus())
@@ -1054,7 +1054,7 @@ MachineStatus LUFinish::stateSendLUResponse()
 			TmsiStatus stat = ludata()->getTmsiStatus();
 			assert(stat == tmsiNew || stat == tmsiNotAssigned || stat == tmsiAuthenticated);
 			uint32_t ourTmsi = ludata()->getTmsi();
-			string checkImsi = gTMSITable.tmsiTabGetIMSI(ourTmsi, NULL);
+			string checkImsi = gTMSITable->tmsiTabGetIMSI(ourTmsi, NULL);
 			string myimsi(tran()->subscriberIMSI());
 			if (checkImsi != myimsi) {
 				WATCH("TMSI Table insertion created TMSI collision for"
@@ -1067,9 +1067,9 @@ MachineStatus LUFinish::stateSendLUResponse()
 		assert(failCause != L3RejectCause::Zero);
 		LOG(INFO) << "registration FAILED: " << ludata()->mLUMobileId << LOGVAR(failCause);
 		devassert(imsi.size());
-		// gTMSITable.tmsiTabSetRejected(imsi,failCause);
+		// gTMSITable->tmsiTabSetRejected(imsi,failCause);
 		ludata()->store.setRejectCode(failCause);
-		gTMSITable.tmsiTabCreateOrUpdate(imsi, &ludata()->store, &ludata()->mLULAI, ludata()->mOldTmsi);
+		gTMSITable->tmsiTabCreateOrUpdate(imsi, &ludata()->store, &ludata()->mLULAI, ludata()->mOldTmsi);
 		channel()->l3sendm(L3LocationUpdatingReject(failCause));
 
 		sendWelcomeMessage(ludata(),
@@ -1077,7 +1077,7 @@ MachineStatus LUFinish::stateSendLUResponse()
 			"Control.LUR.FailedRegistration.ShortCode", subscriber(), channel());
 
 		// tmsiTabUpdate must be after sendWelcomeMessage optionally updates the welcomeSent field.
-		gTMSITable.tmsiTabUpdate(imsi, &ludata()->store);
+		gTMSITable->tmsiTabUpdate(imsi, &ludata()->store);
 
 		// return closeChannel(L3RRCause::Normal_Event,RELEASE);
 		return MachineStatus::QuitTran(TermCause::Local(failCause));
@@ -1109,7 +1109,7 @@ MachineStatus LUFinish::stateSendLUResponse()
 		// updating accept but the Blackberry just timed out and the BLU Deco Mini sent a SMS CP-ERROR. Update:
 		// blackberry works sometimes. I tried setting the follow-in proceed flag in the LocationUpdatingAccept
 		// and it did not help.
-		channel()->l3sendm(L3LocationUpdatingAccept(gBTS.LAI(), mid, true));
+		channel()->l3sendm(L3LocationUpdatingAccept(gBTS->LAI(), mid, true));
 		// (pat) This 1 second delay was in the original code, so I am duplicating it.
 		// If we dont get the TMSIReallocationComplete within 1 second, go on to the next step anyway.
 		// In the old code if it came later disaster could ensue, but now it would be ok.
@@ -1117,7 +1117,7 @@ MachineStatus LUFinish::stateSendLUResponse()
 		return MachineStatusOK;
 	} else {
 		// Do not send a TMSI assignment, just an LU Accept.
-		channel()->l3sendm(L3LocationUpdatingAccept(gBTS.LAI(), true));
+		channel()->l3sendm(L3LocationUpdatingAccept(gBTS->LAI(), true));
 		return statePostAccept();
 	}
 }
@@ -1146,7 +1146,7 @@ MachineStatus LUFinish::statePostAccept()
 	}
 
 	// tmsiTabUpdate must be after sendWelcomeMessage optionally updates the welcomeSent field.
-	gTMSITable.tmsiTabUpdate(getImsi(), &ludata()->store);
+	gTMSITable->tmsiTabUpdate(getImsi(), &ludata()->store);
 
 	// Release the channel and return.
 	LOG(DEBUG) << "MM procedure complete";
@@ -1173,7 +1173,7 @@ MachineStatus LUNetworkFailure::machineRunState(
 		PROCLOG(ALERT) << "SIP authentication timed out.  Is the proxy running at "
 			       << gConfig.getStr("SIP.Proxy.Registration");
 		// Reject with a "network failure" cause code, 0x11.
-		gReports.incr("OpenBTS.GSM.MM.LUR.Timeout");
+		gReports->incr("OpenBTS.GSM.MM.LUR.Timeout");
 		// (pat) FIXME: I am faithfully duplicating the 4 second delay, but we should find out what
 		// message we are expecting so we can finish if we see it.
 		// Is this T3213 - location updating failure in the MS?
@@ -1232,7 +1232,7 @@ MachineStatus L3RegisterMachine::machineRunState(
 		if (status != 200) {
 			PROCLOG(ERR) << "unexpected" << LOGVAR(status) << " in dialog message";
 		}
-		// gTMSITable.putKc(tran()->subscriberIMSI().c_str(),amsg->dmKc, amsg->dmPAssociatedUri,
+		// gTMSITable->putKc(tran()->subscriberIMSI().c_str(),amsg->dmKc, amsg->dmPAssociatedUri,
 		// amsg->dmPAssertedIdentity);
 		ludata()->store.setKc(amsg->dmKc);
 		ludata()->store.setAssociatedUri(amsg->dmPAssociatedUri);
@@ -1315,7 +1315,7 @@ void imsiDetach(L3MobileIdentity mobid, L3LogicalChannel *chan)
 	if (mobid.isIMSI()) {
 		imsi = string(mobid.digits());
 	} else if (mobid.isTMSI()) {
-		imsi = gTMSITable.tmsiTabGetIMSI(mobid.TMSI(), NULL);
+		imsi = gTMSITable->tmsiTabGetIMSI(mobid.TMSI(), NULL);
 		if (imsi.size() == 0) {
 			LOG(WARNING) << format(
 				"IMSI Detach indication with unrecognized TMSI (0x%x) ignored", mobid.TMSI());

@@ -37,7 +37,7 @@ using namespace Control;
 // (pat) DCCH is a TCHFACCHLogicalChannel or SDCCHLogicalChannel
 void Control::DCCHDispatcher(L3LogicalChannel *DCCH)
 {
-	while (!gBTS.btsShutdown()) {
+	while (!gBTS->btsShutdown()) {
 		// This 'try' is redundant, but we are ultra-cautious here since a mistake means a crash.
 		try {
 			// Wait for a transaction to start.

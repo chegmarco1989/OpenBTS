@@ -163,37 +163,37 @@ PeerInterface::PeerInterface() : mSocket(gConfig.getNum("Peering.Port")), mRefer
 	mSocket.nonblocking();
 }
 
-static void *foo(void *)
+static void *serviceLoopHandler1(void *)
 {
-	gPeerInterface.serviceLoop1(NULL);
+	gPeerInterface->serviceLoop1(NULL);
 	return NULL;
 }
 
-static void *bar(void *)
+static void *serviceLoopHandler2(void *)
 {
-	gPeerInterface.serviceLoop2(NULL);
+	gPeerInterface->serviceLoop2(NULL);
 	return NULL;
 }
 
 void PeerInterface::start()
 {
 	// FIXME - mServer.start(serviceLoop, NULL); wouldn't compile and I'm not smart enough to figure it out
-	mServer1.start(foo, NULL);
-	mServer2.start(bar, NULL);
+	mServer1.start(serviceLoopHandler1, NULL);
+	mServer2.start(serviceLoopHandler2, NULL);
 }
 
 // mucking about every second with the neighbor tables is plenty
 void *PeerInterface::serviceLoop1(void *)
 {
-	// gTRX.C0() needs some time to get ready
+	// gTRX->C0() needs some time to get ready
 	sleep(8);
-	while (!gBTS.btsShutdown()) {
-		gNeighborTable.ntRefresh();
+	while (!gBTS->btsShutdown()) {
+		gNeighborTable->ntRefresh();
 		// (pat) This sleep is how often we look through the neighbor table, not how often we ping the peers;
 		// that is determined inside the neighbor table loop by searching for peers who have not been refreshed
 		// in the Peering.Neighbor.RefreshAge.
 		// We do not need 1 second granularity here, and querying that quickly may be interfering with the
-		// ability of gNeighborTable.getAddress() to access the NeighborTable.
+		// ability of gNeighborTable->getAddress() to access the NeighborTable.
 		sleep(10);
 	}
 	return NULL;
@@ -203,9 +203,9 @@ void *PeerInterface::serviceLoop1(void *)
 // handover gap in the call.  so it needs to be short.  Like 10msec = 10000usec
 void *PeerInterface::serviceLoop2(void *)
 {
-	// gTRX.C0() needs some time to get ready
+	// gTRX->C0() needs some time to get ready
 	sleep(8);
-	while (!gBTS.btsShutdown()) {
+	while (!gBTS->btsShutdown()) {
 		drive();
 		usleep(10000);
 	}
@@ -310,16 +310,16 @@ void PeerInterface::processNeighborParams(const struct sockaddr_in *peer, const 
 			char rsp[150];
 			if (!strchr(message, '=')) {
 				// Send version 1.
-				snprintf(rsp, sizeof(rsp), rspFormatV1, gTRX.C0(), gBTS.BSIC());
+				snprintf(rsp, sizeof(rsp), rspFormatV1, gTRX->C0(), gBTS->BSIC());
 			} else {
 				// Send version 2.
-				int myNoise = gTRX.ARFCN(0)->getNoiseLevel();
-				unsigned tchTotal = gBTS.TCHTotal();
-				unsigned tchAvail = tchTotal - gBTS.TCHActive();
+				int myNoise = gTRX->ARFCN(0)->getNoiseLevel();
+				unsigned tchTotal = gBTS->TCHTotal();
+				unsigned tchAvail = tchTotal - gBTS->TCHActive();
 				snprintf(rsp, sizeof(rsp),
 					"RSP NEIGHBOR_PARAMS V=2 C0=%u BSIC=%u btsid=%u noise=%d arfcns=%d "
 					"TchAvail=%u TchTotal=%u",
-					gTRX.C0(), gBTS.BSIC(), btsid, myNoise, (int)gConfig.getNum("GSM.Radio.ARFCNs"),
+					gTRX->C0(), gBTS->BSIC(), btsid, myNoise, (int)gConfig.getNum("GSM.Radio.ARFCNs"),
 					tchAvail, tchTotal);
 				sendMessage(peer, rsp);
 			}
@@ -368,14 +368,14 @@ void PeerInterface::processNeighborParams(const struct sockaddr_in *peer, const 
 			}
 
 			// Did the neighbor list change?
-			bool change = gNeighborTable.ntAddInfo(newentry);
+			bool change = gNeighborTable->ntAddInfo(newentry);
 			// no change includes unsolicited RSP NEIGHBOR_PARAMS.  drop it.
 			if (!change)
 				return;
 
 			// It there a BCC conflict?
-			int ourBSIC = gBTS.BSIC();
-			if (newentry.mC0 == (int)gTRX.C0()) {
+			int ourBSIC = gBTS->BSIC();
+			if (newentry.mC0 == (int)gTRX->C0()) {
 				if (newentry.mBSIC == ourBSIC) {
 					logAlert(
 						format("neighbor with matching ARFCN.C0 + BSIC [Base Station "
@@ -387,12 +387,12 @@ void PeerInterface::processNeighborParams(const struct sockaddr_in *peer, const 
 					LOG(WARNING)
 						<< format("neighbor with matching ARFCN.C0 but different BSIC [Base "
 							  "Station Identifier] code: C0=%d, BSIC=%u, my BSIC=%u",
-							   newentry.mC0, newentry.mBSIC, gTRX.C0());
+							   newentry.mC0, newentry.mBSIC, gTRX->C0());
 				}
 			}
 
 			// 3-2014: Warn for overlapping ARFCN use.  Fixes ticket #857
-			int myC0 = gTRX.C0();
+			int myC0 = gTRX->C0();
 			int myCEnd = myC0 + gConfig.getNum("GSM.Radio.ARFCNs") - 1;
 			int neighborCEnd = newentry.mC0 + newentry.mNumArfcns - 1;
 			bool overlap = myC0 <= neighborCEnd && myCEnd >= (int)newentry.mC0;
@@ -415,7 +415,7 @@ void PeerInterface::processNeighborParams(const struct sockaddr_in *peer, const 
 				logAlert(format("neighbor with NCC=%u not in NCCsPermitted", neighborNCC));
 			}
 			// There was a change, so regenerate the beacon
-			gBTS.regenerateBeacon();
+			gBTS->regenerateBeacon();
 			return;
 		}
 
@@ -485,7 +485,7 @@ void PeerInterface::processHandoverRequest(const struct sockaddr_in *peer, const
 	// I didnt really want to test this, I just needed the ARFCN.  Could get it by looking up the peer in the
 	// transaction too.
 	NeighborEntry nentry;
-	if (!gNeighborTable.ntFindByPeerAddr(peer, &nentry)) {
+	if (!gNeighborTable->ntFindByPeerAddr(peer, &nentry)) {
 		LOG(WARNING) << "Could not find handover neighbor from peer address:" << sockaddr2string(peer, true);
 		return; // The transaction will die a death by expiry.
 	}
@@ -503,10 +503,10 @@ void PeerInterface::processHandoverRequest(const struct sockaddr_in *peer, const
 
 		// Get a channel allocation.
 		// For now, we are assuming a full-rate channel.
-		// And check gBTS.hold()
+		// And check gBTS->hold()
 		time_t start = time(NULL);
-		if (!gBTS.btsHold()) {
-			chan = gBTS.getTCH(); // (pat) Starts T3101.  Better finish before it expires.
+		if (!gBTS->btsHold()) {
+			chan = gBTS->getTCH(); // (pat) Starts T3101.  Better finish before it expires.
 			if (!chan) {
 				LOG(CRIT) << "congestion, incoming handover request denied";
 			}
@@ -566,7 +566,7 @@ void PeerInterface::processHandoverRequest(const struct sockaddr_in *peer, const
 	const GSM::L3ChannelDescription desc = chan->channelDescription();
 #if 1
 	// Build the L3 HandoverCommand that BS1 will send to the phone to tell it to come to us, BS2.
-	L3HandoverCommand handoverMsg(GSM::L3CellDescription(gTRX.C0(), gBTS.NCC(), gBTS.BCC()),
+	L3HandoverCommand handoverMsg(GSM::L3CellDescription(gTRX->C0(), gBTS->NCC(), gBTS->BCC()),
 		GSM::L3ChannelDescription2(desc), GSM::L3HandoverReference(horef), GSM::L3PowerCommandAndAccessType(),
 		GSM::L3SynchronizationIndication(true, true));
 
@@ -576,8 +576,8 @@ void PeerInterface::processHandoverRequest(const struct sockaddr_in *peer, const
 	sprintf(rsp, "RSP HANDOVER %u 0 0x%s", oldTransID, handoverHex.c_str());
 #else
 	char rsp[50];
-	sprintf(rsp, "RSP HANDOVER %u 0  %u  %u %u %u  %u %u %u %u", oldTransID, horef, gTRX.C0(), gBTS.NCC(),
-		gBTS.BCC(), desc.typeAndOffset(), desc.TN(), desc.TSC(), desc.ARFCN());
+	sprintf(rsp, "RSP HANDOVER %u 0  %u  %u %u %u  %u %u %u %u", oldTransID, horef, gTRX->C0(), gBTS->NCC(),
+		gBTS->BCC(), desc.typeAndOffset(), desc.TN(), desc.TSC(), desc.ARFCN());
 #endif
 	sendMessage(peer, rsp);
 	return;
@@ -629,7 +629,7 @@ void PeerInterface::processHandoverFailure(const struct sockaddr_in *peer, const
 	// Set holdoff on this BTS.
 
 	// FIXME -- We need to decide what else to do here.  See #817.
-	gNeighborTable.setHoldOff(peer, holdoff);
+	gNeighborTable->setHoldOff(peer, holdoff);
 
 	char rsp[50];
 	sprintf(rsp, "ACK HANDOVER_FAILURE %u", transactionID);
@@ -750,14 +750,14 @@ void PeerInterface::sendHandoverComplete(const Control::HandoverEntry *hop)
 {
 	char ind[100];
 	sprintf(ind, "IND HANDOVER_COMPLETE %u", hop->tranID());
-	gPeerInterface.sendUntilAck(hop, ind);
+	gPeerInterface->sendUntilAck(hop, ind);
 }
 
 void PeerInterface::sendHandoverFailure(const Control::HandoverEntry *hop, GSM::RRCause cause, unsigned holdoff)
 {
 	char ind[100];
 	sprintf(ind, "IND HANDOVER_FAILURE %u %u %u", hop->tranID(), cause, holdoff);
-	gPeerInterface.sendUntilAck(hop, ind);
+	gPeerInterface->sendUntilAck(hop, ind);
 }
 
 bool PeerInterface::sendHandoverRequest(string peer, const RefCntPointer<TranEntry> tran, string cause)
@@ -770,7 +770,7 @@ bool PeerInterface::sendHandoverRequest(string peer, const RefCntPointer<TranEnt
 	}
 	// LOG(INFO) <<LOGVAR(peer) <<LOGVAR(msg);
 	LOG(DEBUG) << LOGVAR(peer) << LOGVAR(msg);
-	gPeerInterface.sendMessage(&peerAddr, msg.c_str());
+	gPeerInterface->sendMessage(&peerAddr, msg.c_str());
 	return true;
 }
 

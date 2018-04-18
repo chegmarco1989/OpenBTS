@@ -147,6 +147,6 @@ public:
 
 }; // namespace Peering
 
-extern Peering::NeighborTable gNeighborTable;
+extern Peering::NeighborTable *gNeighborTable;
 
 #endif

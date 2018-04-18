@@ -96,7 +96,7 @@
 #include "A51.h"
 
 // We must have a gConfig now to include BitVector.
-ConfigurationTable gConfig;
+ConfigurationTable *gConfigObject;
 
 /* Test the code by comparing it against
  * a known-good test vector. */
@@ -162,7 +162,11 @@ void test()
 
 int main(int argc, char **argv)
 {
+	gConfigObject = new ConfigurationTable();
+
 	test();
+
+	delete gConfigObject;
 
 	return 0;
 }

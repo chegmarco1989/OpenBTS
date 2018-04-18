@@ -32,8 +32,6 @@
 #include "RLCEngine.h"
 #include "RLCMessages.h"
 
-extern bool gLogToConsole;
-
 namespace GPRS {
 
 struct TFIList *gTFIs;
@@ -356,7 +354,6 @@ void L2MAC::macConfigInit()
 {
 	GPRSSetDebug(configGetNumQ("GPRS.Debug", 0));
 	gGprsWatch = configGetNumQ("GPRS.WATCH", 0);
-	gLogToConsole = configGetNumQ("Log.ToConsole", 0);
 
 	GPRSCellOptions_t &gco = GPRSGetCellOptions();
 	// BEGINCONFIG
@@ -2086,7 +2083,7 @@ void L2MAC::macCheckChannels()
 		int active0 = macActiveChannelsC(0);
 		{
 			TCHFACCHLogicalChannel *lchan;
-			for (; active0 < minChC0 && (lchan = gBTS.getTCH(true, true)); active0++) {
+			for (; active0 < minChC0 && (lchan = gBTS->getTCH(true, true)); active0++) {
 				// GPRSLOG(2)<<"macCheckChannel
 				// loop"<<LOGVAR(active0)<<LOGVAR(minChC0)<<LOGVAR2("lchan",lchan->TN());
 				// We dont "open" the logical channel, which means we dont start
@@ -2106,7 +2103,7 @@ void L2MAC::macCheckChannels()
 			int nfound, need = minChCn - activecn;
 			TCHFACCHLogicalChannel *results[8];
 			// TODO: Prevent this from allocating from C0 if user misconfigures.
-			for (; need > 0 && (nfound = gBTS.getTCHGroup(need, results)); need -= nfound) {
+			for (; need > 0 && (nfound = gBTS->getTCHGroup(need, results)); need -= nfound) {
 				for (int i = 0; i < nfound; i++) {
 					macAddOneChannel(results[i]);
 					addedChannels = true;
@@ -2126,13 +2123,13 @@ void L2MAC::macCheckChannels()
 		int need = minchans - (int)macActiveChannels();
 		TCHFACCHLogicalChannel *lchan;
 		// Allocate from CN0 first.
-		for ( ; need > 0 && (lchan = gBTS.getTCH(true,true)); need--) {
+		for ( ; need > 0 && (lchan = gBTS->getTCH(true,true)); need--) {
 			macAddOneChannel(lchan);
 		}
 		// If we still need more, allocate them from the end of the list.
 		int nfound;
 		TCHFACCHLogicalChannel *results[8];
-		for ( ; need > 0 && (nfound = gBTS.getTCHGroup(need,results)); need -= nfound) {
+		for ( ; need > 0 && (nfound = gBTS->getTCHGroup(need,results)); need -= nfound) {
 			for (int i = 0; i < nfound; i++) {
 				macAddOneChannel(results[i]);
 			}
@@ -2239,7 +2236,7 @@ static void advanceBSNNext(int amt)
 static void serviceLoopSynchronize(bool firsttime)
 {
 	static double timeprev;
-	Time tstart = gBTS.time();
+	Time tstart = gBTS->time();
 
 	if (GPRSDebug) {
 		// This is just a debug check that the GSM master clock is sane.
@@ -2281,17 +2278,17 @@ static void serviceLoopSynchronize(bool firsttime)
 		// Wait for the prev frame to come around.
 		Time tprev(gBSNPrev.FN());
 		tprev = tprev - configGetNumQ("GPRS.ThreadAdvance", 0);
-		gBTS.clock().wait(tprev);
+		gBTS->clock().wait(tprev);
 
 		// Check if the wait is screwing up: It is.
 		// On the ITX board the FN moves backwards 2 units sporadically,
 		// which (I hope) is because the gBTS clock was resynchronized with the radio
 		// causing it to run backwards.
-		Time tnow = gBTS.time();
+		Time tnow = gBTS->time();
 		int deltaAfterWait = GSM::FNDelta(tnow.FN(), tprev.FN());
 		// The deltaAfterWait is usually -1, so ignore that.
 		if (deltaAfterWait > 3 || deltaAfterWait < -1) {
-			GPRSLOG(2) << "gBTS.clock.wait unexpected wait time: " << LOGVAR(deltaAfterWait);
+			GPRSLOG(2) << "gBTS->clock.wait unexpected wait time: " << LOGVAR(deltaAfterWait);
 		}
 
 		// See if this thread was stalled in the last iteration.
@@ -2431,8 +2428,8 @@ static void *macThreadFunc(void *arg)
 	gL2MAC.macRunning = true;
 
 	// Set the current RLC BSN.
-	// Time tstart = gBTS.time().FN();
-	Time tstart = gBTS.time();
+	// Time tstart = gBTS->time().FN();
+	Time tstart = gBTS->time();
 	int fnstart = tstart.FN();
 	gBSNNext = FrameNumber2BSN(fnstart);
 
@@ -2444,7 +2441,7 @@ static void *macThreadFunc(void *arg)
 		int offset = fnstart % 52;
 		if (offset) {
 			fnstart += (52 - offset);
-			gBTS.clock().wait(fnstart);
+			gBTS->clock().wait(fnstart);
 		}
 	}
 

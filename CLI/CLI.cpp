@@ -173,7 +173,7 @@ static void *commandLineFunc(Parser *parser)
 #endif
 	} catch (ConfigurationTableKeyNotFound e) {
 		LOG(EMERG) << "required configuration parameter " << e.key() << " not defined, aborting";
-		gReports.incr("OpenBTS.Exit.Error.ConfigurationParamterNotFound");
+		gReports->incr("OpenBTS.Exit.Error.ConfigurationParamterNotFound");
 	}
 
 	exit(0); // Exit OpenBTS
