@@ -586,6 +586,11 @@ std::vector<unsigned> NeighborTable::getARFCNs() const
 {
 	ScopedLock lock(mLock);
 	vector<unsigned> bcchChannelList;
+
+	unsigned neighborC0 = gConfig.getNum("GSM.Neighbors.C0");
+	if (neighborC0 != 0)
+		bcchChannelList.push_back(neighborC0);
+
 #if NEIGHBOR_TABLE_ON_DISK
 	char query[200];
 	// (pat) ORDER BY UPDATED looks wrong to me.

@@ -1678,6 +1678,12 @@ ConfigurationKeyMap getConfigurationKeys()
 	}
 
 	{
+		ConfigurationKey tmp("GSM.Neighbors.C0", "0", "", ConfigurationKey::CUSTOMERTUNE,
+			ConfigurationKey::VALRANGE, "0:1023", true, "The neighbor C0 ARFCN.");
+		map[tmp.getName()] = tmp;
+	}
+
+	{
 		ConfigurationKey tmp("GSM.RACH.AC", "0x0400", "", ConfigurationKey::CUSTOMERWARN,
 			ConfigurationKey::CHOICE,
 			"0|Full Access,"

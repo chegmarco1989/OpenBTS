@@ -1170,6 +1170,26 @@ static CLIStatus testcall(int argc, char **argv, ostream &os)
 	return SUCCESS;
 }
 
+static CLIStatus endtestcall(int argc, char **argv, ostream &os)
+{
+	if (argc != 2)
+		return BAD_NUM_ARGS;
+
+	char *IMSI = argv[1];
+	if (strlen(IMSI) > 15) {
+		os << IMSI << " is not a valid IMSI" << endl;
+		return BAD_VALUE;
+	}
+
+	char cmd[8] = "STOP";
+	int port = gConfig.getNum("TestCall.Port");
+	UDPSocket controlSocket(port + 1, "127.0.0.1", port);
+	controlSocket.write(cmd);
+	controlSocket.close();
+
+	return SUCCESS;
+}
+
 static void addGprsInfo(vector<string> &row, const GSM::L2LogicalChannel *chan)
 {
 	// "CN TN chan      transaction active recyc UPFER RSSI TXPWR TA_DL RXLEV_DL BER_DL Neighbor Neighbor";
@@ -1909,6 +1929,7 @@ void Parser::addCommands()
 	addCommand("cbs", cbscmd, cbsHelp);
 
 	addCommand("testcall", testcall, "IMSI-- Open a UDP port on 28670 to send AT commands to Handset");
+	addCommand("endtestcall", endtestcall, "IMSI-- terminate testcall");
 	addCommand("fuzzSMS", fuzzSMS, "IMSI -- Open a UDP port on 28670 to send commands to Handset");
 	addCommand("power", powerCommand, powerHelp);
 }
