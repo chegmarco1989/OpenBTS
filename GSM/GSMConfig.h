@@ -120,7 +120,7 @@ private:
 
 	L3LocationAreaIdentity mLAI;
 
-	bool mHold; ///< If true, do not respond to RACH bursts.
+	Bool_z mHold; ///< If true, do not respond to RACH bursts.
 	Bool_z mShutdown;
 
 	unsigned mChangemark;

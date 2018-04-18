@@ -41,7 +41,7 @@ static bool testStart = false;  // Set this to try testing without the channels 
 bool GSM::isCBSEnabled() { return gConfig.getStr("Control.SMSCB.Table").length() != 0; }
 
 GSMConfig::GSMConfig()
-	: mCBCH(NULL), mSI5Frame(SAPI0Sacch, L3_UNIT_DATA), mSI6Frame(SAPI0Sacch, L3_UNIT_DATA), mSI1(NULL), mSI2(NULL),
+	: mCBCH(NULL), mNCC(0), mBCC(0), mSI5Frame(SAPI0Sacch, L3_UNIT_DATA), mSI6Frame(SAPI0Sacch, L3_UNIT_DATA), mSI1(NULL), mSI2(NULL),
 	  mSI3(NULL), mSI4(NULL), mSI5(NULL), mSI6(NULL), mSI13(NULL), mStartTime(::time(NULL)), mChangemark(0)
 {
 }
